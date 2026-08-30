@@ -503,8 +503,9 @@ textarea::placeholder {
 .complete-message {
   position: absolute;
   top: 217px;
-  left: 68px;
-  width: 253px;
+  left: 50%;
+  width: min(253px, calc(100% - 32px));
+  transform: translateX(-50%);
   display: grid;
   justify-items: center;
   gap: 28px;
