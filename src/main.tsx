@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { createRoot } from "react-dom/client";
 import { AnimatePresence, motion } from "framer-motion";
 import "@stackflow/react";
@@ -217,7 +218,10 @@ function App() {
                       setToast("");
                       setSelectedSlotId(slot.id);
                     }}
-                    onNext={() => canContinue && push("details")}
+                    onNext={() => {
+                      if (!canContinue) return;
+                      flushSync(() => push("details"));
+                    }}
                   />
                 )}
                 {route === "details" && (
@@ -511,8 +515,26 @@ function DetailsScreen(props: {
 }) {
   const nameInputRef = useRef<HTMLInputElement>(null);
 
+  useLayoutEffect(() => {
+    focusNameInput();
+    const frame = window.requestAnimationFrame(focusNameInput);
+    const timer = window.setTimeout(focusNameInput, 120);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, []);
+
+  function focusNameInput() {
+    const input = nameInputRef.current;
+    if (!input) return;
+    input.focus({ preventScroll: true });
+    const cursorPosition = input.value.length;
+    input.setSelectionRange(cursorPosition, cursorPosition);
+  }
+
   useEffect(() => {
-    const timer = window.setTimeout(() => nameInputRef.current?.focus(), 420);
+    const timer = window.setTimeout(focusNameInput, 360);
     return () => window.clearTimeout(timer);
   }, []);
 
@@ -523,7 +545,13 @@ function DetailsScreen(props: {
         <SummaryCard rows={[["예약 시간", props.appointmentLabel, timeCalendarIcon], ["대기 시간", "15분", waitIcon]]} />
         <label className="field-block">
           <span>이름을 입력해 주세요</span>
-          <input ref={nameInputRef} value={props.name} onChange={(event) => props.onNameChange(event.target.value)} placeholder="이름 입력" />
+          <input
+            ref={nameInputRef}
+            value={props.name}
+            onChange={(event) => props.onNameChange(event.target.value)}
+            placeholder="이름 입력"
+            autoFocus
+          />
         </label>
         <section className="field-block">
           <span>어떤 진료를 원하시나요?</span>
