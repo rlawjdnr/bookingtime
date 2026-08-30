@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import { AnimatePresence, motion } from "framer-motion";
 import "@stackflow/react";
 import "./styles.css";
+import { hasSupabaseConfig, supabase } from "./lib/supabaseClient";
 
 import backIcon from "./assets/figma/back.svg";
 import calendarIcon from "./assets/figma/calendar-line.svg";
@@ -41,11 +42,29 @@ type Booking = {
   status: "confirmed" | "cancelled";
 };
 
+type ReservationRow = {
+  id: string;
+  patient_name: string;
+  appointment_date: string;
+  appointment_time: string;
+  treatment: Treatment;
+  wait_minutes: number;
+  status: "confirmed" | "cancelled";
+};
+
+type TimeBlockRow = {
+  id: string;
+  time_label: string;
+  capacity: number;
+  is_open: boolean;
+};
+
 type AppointmentStore = {
   subscribe(listener: () => void): () => void;
   create(booking: Booking): Promise<Booking>;
   cancel(id: string, reason: string): Promise<Booking | undefined>;
   list(): Promise<Booking[]>;
+  listSlots(): Promise<Slot[]>;
 };
 
 const activeBookingStorageKey = "hospital-reservation.activeBooking";
@@ -85,13 +104,21 @@ const screenVariants = {
 class SyncReadyAppointmentStore implements AppointmentStore {
   private bookings: Booking[] = [];
   private listeners = new Set<() => void>();
+  private isRemoteReady = hasSupabaseConfig && Boolean(supabase);
+  private realtimeChannel: ReturnType<NonNullable<typeof supabase>["channel"]> | null = null;
 
   subscribe(listener: () => void) {
     this.listeners.add(listener);
+    this.ensureRealtime();
     return () => this.listeners.delete(listener);
   }
 
   async create(booking: Booking) {
+    if (this.isRemoteReady && supabase) {
+      const { error } = await supabase.from("reservations").insert(toReservationRow(booking));
+      if (error) throw error;
+    }
+
     this.bookings = [booking, ...this.bookings.filter((item) => item.id !== booking.id)];
     this.emit();
     await this.sync("create", booking);
@@ -102,6 +129,15 @@ class SyncReadyAppointmentStore implements AppointmentStore {
     const booking = this.bookings.find((item) => item.id === id);
     if (!booking) return undefined;
     const cancelled = { ...booking, status: "cancelled" as const };
+
+    if (this.isRemoteReady && supabase) {
+      const { error } = await supabase
+        .from("reservations")
+        .update({ status: "cancelled", cancel_reason: reason, updated_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw error;
+    }
+
     this.bookings = this.bookings.map((item) => (item.id === id ? cancelled : item));
     this.emit();
     await this.sync("cancel", { ...cancelled, cancelReason: reason });
@@ -109,7 +145,37 @@ class SyncReadyAppointmentStore implements AppointmentStore {
   }
 
   async list() {
+    if (this.isRemoteReady && supabase) {
+      const { data, error } = await supabase.from("reservations").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      this.bookings = (data || []).map(fromReservationRow);
+    }
+
     return this.bookings;
+  }
+
+  async listSlots() {
+    if (this.isRemoteReady && supabase) {
+      const { data, error } = await supabase.from("appointment_time_blocks").select("*").order("sort_order", { ascending: true });
+      if (error) throw error;
+      return (data || []).map(fromTimeBlockRow);
+    }
+
+    return initialSlots;
+  }
+
+  private ensureRealtime() {
+    if (!this.isRemoteReady || !supabase || this.realtimeChannel) return;
+
+    this.realtimeChannel = supabase
+      .channel("reservation-admin-sync")
+      .on("postgres_changes", { event: "*", schema: "public", table: "reservations" }, () => {
+        void this.list().then(() => this.emit());
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "appointment_time_blocks" }, () => {
+        this.emit();
+      })
+      .subscribe();
   }
 
   private emit() {
@@ -133,13 +199,42 @@ function App() {
   const [patientName, setPatientName] = useState(restoredBooking?.patientName ?? "");
   const [treatment, setTreatment] = useState<Treatment>(restoredBooking?.treatment ?? "없음");
   const [booking, setBooking] = useState<Booking | null>(restoredBooking);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [baseSlots, setBaseSlots] = useState<Slot[]>(initialSlots);
   const [toast, setToast] = useState("");
   const [isCancelOpen, setIsCancelOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [skipStackMotion, setSkipStackMotion] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
 
-  const selectedSlot = initialSlots.find((slot) => slot.id === selectedSlotId) ?? initialSlots[0];
+  const slots = useMemo(() => applyBookingsToSlots(baseSlots, selectedDate, bookings), [baseSlots, selectedDate, bookings]);
+  const selectedSlot = slots.find((slot) => slot.id === selectedSlotId) ?? slots[0];
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadAdminData = () => {
+      void Promise.all([appointmentStore.list(), appointmentStore.listSlots()])
+        .then(([items, nextSlots]) => {
+          if (!isMounted) return;
+          setBookings(items);
+          setBaseSlots(nextSlots);
+        })
+        .catch(() => {
+          if (!isMounted) return;
+          setBookings([]);
+          setBaseSlots(initialSlots);
+        });
+    };
+
+    loadAdminData();
+    const unsubscribe = appointmentStore.subscribe(loadAdminData);
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     if (!skipStackMotion) return;
@@ -172,25 +267,34 @@ function App() {
       waitMinutes: 15,
       status: "confirmed",
     };
-    await appointmentStore.create(nextBooking);
-    saveActiveBooking(nextBooking);
-    setBooking(nextBooking);
-    push("complete");
+    try {
+      await appointmentStore.create(nextBooking);
+      saveActiveBooking(nextBooking);
+      setBooking(nextBooking);
+      push("complete");
+    } catch {
+      setToast("예약 저장에 실패했어요");
+    }
   };
 
   const cancelBooking = async (reason: string) => {
     if (!booking) return;
     setIsCancelling(true);
-    await appointmentStore.cancel(booking.id, reason);
-    clearActiveBooking();
-    setSkipStackMotion(true);
-    setDirection(-1);
-    setStack(["time"]);
-    window.setTimeout(() => {
-      setIsCancelOpen(false);
+    try {
+      await appointmentStore.cancel(booking.id, reason);
+      clearActiveBooking();
+      setSkipStackMotion(true);
+      setDirection(-1);
+      setStack(["time"]);
+      window.setTimeout(() => {
+        setIsCancelOpen(false);
+        setIsCancelling(false);
+        setToast("예약을 취소했어요");
+      }, 180);
+    } catch {
       setIsCancelling(false);
-      setToast("예약을 취소했어요");
-    }, 180);
+      setToast("예약 취소에 실패했어요");
+    }
   };
 
   return (
@@ -206,7 +310,7 @@ function App() {
                   <TimeScreen
                     selectedDate={selectedDate}
                     selectedSlotId={selectedSlotId}
-                    slots={initialSlots}
+                    slots={slots}
                     toast={toast}
                     onDismissToast={() => setToast("")}
                     onOpenCalendar={() => setIsCalendarOpen(true)}
@@ -767,6 +871,56 @@ function BottomCTA(props: { children: React.ReactNode; disabled?: boolean; varia
       </TapButton>
     </div>
   );
+}
+
+function applyBookingsToSlots(slots: Slot[], selectedDate: Date, bookings: Booking[]) {
+  const dateKey = toDateKey(selectedDate);
+
+  return slots.map((slot) => {
+    const confirmedCount = bookings.filter(
+      (item) => item.status === "confirmed" && item.date === dateKey && item.time === slot.time,
+    ).length;
+    const remaining = Math.max(0, slot.remaining - confirmedCount);
+
+    return {
+      ...slot,
+      remaining,
+      closed: slot.closed || remaining <= 0,
+    };
+  });
+}
+
+function toReservationRow(booking: Booking) {
+  return {
+    id: booking.id,
+    patient_name: booking.patientName,
+    appointment_date: booking.date,
+    appointment_time: booking.time,
+    treatment: booking.treatment,
+    wait_minutes: booking.waitMinutes,
+    status: booking.status,
+  };
+}
+
+function fromReservationRow(row: ReservationRow): Booking {
+  return {
+    id: row.id,
+    patientName: row.patient_name,
+    date: row.appointment_date,
+    time: row.appointment_time,
+    treatment: row.treatment,
+    waitMinutes: row.wait_minutes,
+    status: row.status,
+  };
+}
+
+function fromTimeBlockRow(row: TimeBlockRow): Slot {
+  return {
+    id: row.id,
+    time: row.time_label,
+    remaining: row.capacity,
+    closed: !row.is_open || row.capacity <= 0,
+  };
 }
 
 function makeCalendarDays(date: Date) {
