@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import "@stackflow/react";
 import "./styles.css";
 import { hasSupabaseConfig, supabase } from "./lib/supabaseClient";
+import { syncReservationToGoogleSheet } from "./lib/googleSheetsSync";
 
 import backIcon from "./assets/figma/back.svg";
 import calendarIcon from "./assets/figma/calendar-line.svg";
@@ -193,6 +194,9 @@ class SyncReadyAppointmentStore implements AppointmentStore {
 
   private async sync(action: "create" | "cancel", payload: unknown) {
     window.dispatchEvent(new CustomEvent("reservation-sync", { detail: { action, payload } }));
+    await syncReservationToGoogleSheet(action, payload).catch((error) => {
+      console.warn("Google Sheets sync failed", error);
+    });
   }
 }
 
