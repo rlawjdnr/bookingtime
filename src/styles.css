@@ -1,0 +1,689 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css");
+
+:root {
+  --background: #ffffff;
+  --text: #1a1c20;
+  --muted: #555d6d;
+  --disabled: #b0b3ba;
+  --line: #eeeff1;
+  --surface: #f7f8f9;
+  --danger: #fa342c;
+  --danger-bg: #fdf0f0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #eef0f3;
+  color: var(--text);
+  font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: 0;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+  letter-spacing: 0;
+}
+
+button {
+  border: 0;
+  cursor: pointer;
+  background: transparent;
+  color: inherit;
+}
+
+.app-shell {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+}
+
+.phone-frame {
+  width: min(100vw, 390px);
+  min-height: 100dvh;
+  max-height: 844px;
+  aspect-ratio: 390 / 844;
+  background: var(--background);
+  position: relative;
+  overflow: hidden;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  background: var(--background);
+  overflow: hidden;
+}
+
+.cancel-modal {
+  z-index: 40;
+}
+
+.loading-cover {
+  position: absolute;
+  inset: 0;
+  z-index: 45;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.loading-cover span {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #d1d3d8;
+  border-top-color: var(--text);
+  border-radius: 999px;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.screen-dim {
+  position: absolute;
+  inset: 0;
+  background: var(--text);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.topbar {
+  height: 89px;
+  padding: 50px 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.topbar.centered {
+  height: 82px;
+  padding-bottom: 8px;
+}
+
+.complete-topbar {
+  height: 77px;
+  padding: 50px 16px 8px;
+  justify-content: center;
+}
+
+.clinic-title,
+.summary-row span,
+.date-select span {
+  display: flex;
+  align-items: center;
+}
+
+.clinic-title {
+  gap: 6px;
+  font-size: 16px;
+}
+
+.clinic-title strong {
+  font-weight: 600;
+}
+
+.clinic-status {
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.icon-18,
+.summary-row img {
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+}
+
+.svg-icon {
+  display: block;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
+.hospital-icon {
+  width: 15.3px;
+  height: 15.3px;
+}
+
+.back-icon {
+  width: 11.4px;
+  height: 19.54px;
+}
+
+.calendar-icon {
+  width: 17.5px;
+  height: 17.92px;
+}
+
+.chevron {
+  width: 12px;
+  height: 7px;
+}
+
+.summary-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.radio-icon {
+  width: 32px;
+  height: 32px;
+}
+
+.complete-icon {
+  width: 48.09px;
+  height: 53.17px;
+}
+
+.calendar-arrow {
+  width: 11.4px;
+  height: 19.54px;
+}
+
+.month-arrow {
+  width: 7px;
+  height: 12px;
+}
+
+.icon-button,
+.header-spacer {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+}
+
+.close-button {
+  display: grid;
+  place-items: center;
+}
+
+.close-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.header-title {
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.complete-header-title {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: normal;
+}
+
+.content {
+  padding: 18px 16px 120px;
+}
+
+.content h1,
+.calendar-sheet h1 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.32;
+  font-weight: 600;
+}
+
+.content h1.screen-title {
+  font-size: 18px;
+}
+
+.date-select {
+  width: 100%;
+  height: 50px;
+  margin-top: 10px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.date-select span {
+  gap: 8px;
+  font-size: 16px;
+}
+
+.date-select strong {
+  font-weight: 600;
+}
+
+.date-select .chevron {
+  margin-right: 6px;
+}
+
+.slot-section {
+  margin-top: 28px;
+}
+
+.slot-section p {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.slot-card {
+  height: 62px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  text-align: left;
+}
+
+.slot-card strong {
+  font-size: 15px;
+  line-height: 1.2;
+  font-weight: 500;
+}
+
+.slot-card span {
+  margin-top: 1px;
+  color: #2a3038;
+  font-size: 14px;
+}
+
+.slot-card.selected {
+  border: 2px solid var(--text);
+  padding: 11px;
+}
+
+.slot-card.selected strong {
+  font-weight: 600;
+}
+
+.slot-card.closed {
+  color: var(--disabled);
+}
+
+.slot-card.closed span {
+  color: var(--disabled);
+}
+
+.bottom-cta,
+.bottom-stack {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 12px 16px calc(32px + env(safe-area-inset-bottom));
+  background: var(--background);
+}
+
+.bottom-cta.in-sheet {
+  padding-bottom: 24px;
+}
+
+.primary-button,
+.danger-button,
+.light-button {
+  width: 100%;
+  min-height: 53px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 17px;
+  line-height: 1.47;
+  text-decoration: none;
+}
+
+.primary-button {
+  background: var(--text);
+  color: #fff;
+  font-weight: 500;
+}
+
+.danger-button,
+.light-button {
+  font-weight: 600;
+}
+
+.primary-button:disabled {
+  background: #d1d3d8;
+}
+
+.danger-button {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.light-button {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.details-content {
+  padding-top: 24px;
+}
+
+.summary {
+  width: 100%;
+  padding: 14px 18px;
+  background: var(--surface);
+  border-radius: 12px;
+}
+
+.summary.flat {
+  padding: 0 6px;
+  background: #fff;
+}
+
+.summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 30px;
+  font-size: 15px;
+}
+
+.summary-row span {
+  gap: 8px;
+  font-weight: 400;
+}
+
+.summary-row strong {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.field-block {
+  display: block;
+  margin-top: 40px;
+}
+
+.field-block > span {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 18px;
+  line-height: 1.32;
+  font-weight: 600;
+}
+
+input,
+textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--text);
+  outline: none;
+}
+
+input:focus,
+textarea:focus,
+textarea.selected {
+  border: 2px solid var(--text);
+}
+
+input {
+  height: 49px;
+  padding: 14px 12px;
+  font-weight: 500;
+}
+
+input:focus {
+  padding: 13px 11px;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--disabled);
+  font-weight: 500;
+}
+
+.option-list {
+  display: grid;
+  gap: 8px;
+}
+
+.option-row {
+  min-height: 58px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.option-row.selected {
+  border: 2px solid var(--text);
+  padding: 11px 13px;
+}
+
+.option-row strong {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.option-row.selected strong {
+  font-weight: 600;
+}
+
+.complete-message {
+  position: absolute;
+  top: 217px;
+  left: 68px;
+  width: 253px;
+  display: grid;
+  justify-items: center;
+  gap: 28px;
+}
+
+.complete-message .complete-icon {
+  margin-top: 2px;
+}
+
+.complete-message h1 {
+  margin: 0;
+  text-align: center;
+  font-size: 20px;
+  line-height: 1.32;
+  font-weight: 600;
+}
+
+.complete-summary {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 160px;
+  height: 122px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+}
+
+.bottom-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.cancel-content {
+  padding-top: 46px;
+}
+
+.cancel-content .option-list {
+  margin-top: 41px;
+}
+
+textarea {
+  height: 133px;
+  padding: 14px 12px;
+  resize: none;
+}
+
+textarea:focus,
+textarea.selected {
+  padding: 13px 11px;
+}
+
+.toast {
+  position: absolute;
+  z-index: 50;
+  left: 16px;
+  right: 16px;
+  bottom: 96px;
+  height: 41px;
+  padding: 12px;
+  background: var(--text);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  overflow: hidden;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.toast span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.snackbar-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.toast button {
+  color: #fff;
+  font-weight: 400;
+}
+
+.sheet-dim {
+  position: absolute;
+  inset: 0;
+  background: rgba(26, 28, 32, 0.12);
+  z-index: 20;
+}
+
+.calendar-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 525px;
+  padding: 29px 16px 0;
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+}
+
+.confirm-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 338px;
+  padding: 29px 16px 32px;
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+}
+
+.confirm-sheet h1 {
+  margin: 0;
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.32;
+}
+
+.confirm-sheet .summary {
+  margin-top: 14px;
+  padding: 12px 18px;
+}
+
+.confirm-actions {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 32px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.month-control {
+  height: 24px;
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.month-control button {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+}
+
+.month-control strong {
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.calendar-grid {
+  margin-top: 4px;
+  display: grid;
+  grid-template-columns: repeat(7, 40px);
+  justify-content: space-between;
+  row-gap: 4px;
+}
+
+.calendar-grid.weekdays {
+  margin-top: 28px;
+}
+
+.calendar-grid span,
+.calendar-grid button {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  font-size: 17px;
+}
+
+.calendar-grid span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.calendar-grid button:disabled {
+  cursor: default;
+  color: var(--disabled);
+}
+
+.calendar-grid button.picked {
+  border-radius: 999px;
+  background: var(--text);
+  color: #fff;
+}
+
+@media (min-width: 600px) {
+  .phone-frame {
+    min-height: 844px;
+    box-shadow: 0 24px 80px rgba(26, 28, 32, 0.18);
+  }
+}
