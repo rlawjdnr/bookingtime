@@ -116,7 +116,7 @@ class SyncReadyAppointmentStore implements AppointmentStore {
 
   async create(booking: Booking) {
     if (!this.isRemoteReady && this.shouldRequireRemote) {
-      throw new Error("Supabase environment variables are missing.");
+      throw new Error("Supabase 환경변수가 배포에 반영되지 않았어요.");
     }
 
     if (this.isRemoteReady && supabase) {
@@ -136,7 +136,7 @@ class SyncReadyAppointmentStore implements AppointmentStore {
     const cancelled = { ...booking, status: "cancelled" as const };
 
     if (!this.isRemoteReady && this.shouldRequireRemote) {
-      throw new Error("Supabase environment variables are missing.");
+      throw new Error("Supabase 환경변수가 배포에 반영되지 않았어요.");
     }
 
     if (this.isRemoteReady && supabase) {
@@ -167,7 +167,7 @@ class SyncReadyAppointmentStore implements AppointmentStore {
     if (this.isRemoteReady && supabase) {
       const { data, error } = await supabase.from("appointment_time_blocks").select("*").order("sort_order", { ascending: true });
       if (error) throw error;
-      return (data || []).map(fromTimeBlockRow);
+      if (data?.length) return data.map(fromTimeBlockRow);
     }
 
     return initialSlots;
@@ -217,7 +217,13 @@ function App() {
   const [isCancelling, setIsCancelling] = useState(false);
 
   const slots = useMemo(() => applyBookingsToSlots(baseSlots, selectedDate, bookings), [baseSlots, selectedDate, bookings]);
-  const selectedSlot = slots.find((slot) => slot.id === selectedSlotId) ?? slots[0];
+  const selectedSlot = slots.find((slot) => slot.id === selectedSlotId) ?? slots.find((slot) => !slot.closed) ?? initialSlots[0];
+
+  useEffect(() => {
+    if (!selectedSlot.closed) return;
+    const firstOpenSlot = slots.find((slot) => !slot.closed);
+    if (firstOpenSlot) setSelectedSlotId(firstOpenSlot.id);
+  }, [selectedSlot.closed, slots]);
 
   useEffect(() => {
     let isMounted = true;
@@ -262,7 +268,7 @@ function App() {
   };
 
   const appointmentLabel = `${formatShortDate(selectedDate)} ${selectedSlot.time}`;
-  const canContinue = !selectedSlot.closed;
+  const canContinue = Boolean(selectedSlot && !selectedSlot.closed);
   const canBook = patientName.trim().length > 0;
 
   const submitBooking = async () => {
@@ -283,7 +289,7 @@ function App() {
       push("complete");
     } catch (error) {
       console.error("Failed to create reservation", error);
-      setToast("예약 저장에 실패했어요");
+      setToast(getReservationErrorMessage(error));
     }
   };
 
@@ -322,8 +328,6 @@ function App() {
                     selectedDate={selectedDate}
                     selectedSlotId={selectedSlotId}
                     slots={slots}
-                    toast={toast}
-                    onDismissToast={() => setToast("")}
                     onOpenCalendar={() => setIsCalendarOpen(true)}
                     onSelectSlot={(slot) => {
                       if (slot.closed) {
@@ -393,6 +397,7 @@ function App() {
             />
           )}
         </AnimatePresence>
+        <Toast message={toast} onDismiss={() => setToast("")} />
       </div>
     </main>
   );
@@ -560,15 +565,13 @@ function TimeScreen(props: {
   selectedDate: Date;
   selectedSlotId: string;
   slots: Slot[];
-  toast: string;
-  onDismissToast: () => void;
   onOpenCalendar: () => void;
   onSelectSlot: (slot: Slot) => void;
   onNext: () => void;
 }) {
   const morning = props.slots.filter((slot) => Number(slot.time.split(":")[0]) < 13);
   const afternoon = props.slots.filter((slot) => Number(slot.time.split(":")[0]) >= 13);
-  const selectedSlot = props.slots.find((slot) => slot.id === props.selectedSlotId);
+  const selectedSlot = props.slots.find((slot) => slot.id === props.selectedSlotId) ?? props.slots.find((slot) => !slot.closed);
   const relativeDateLabel = getRelativeDateLabel(props.selectedDate);
 
   return (
@@ -587,7 +590,6 @@ function TimeScreen(props: {
         <SlotGroup title="오전" slots={morning} selectedId={props.selectedSlotId} onSelect={props.onSelectSlot} />
         <SlotGroup title="오후" slots={afternoon} selectedId={props.selectedSlotId} onSelect={props.onSelectSlot} />
       </div>
-      <Toast message={props.toast} onDismiss={props.onDismissToast} />
       <BottomCTA disabled={!selectedSlot || selectedSlot.closed} onClick={props.onNext}>
         {selectedSlot && !selectedSlot.closed ? `${selectedSlot.time} 진료 예약하기` : "원하는 시간을 선택해주세요"}
       </BottomCTA>
@@ -932,6 +934,17 @@ function fromTimeBlockRow(row: TimeBlockRow): Slot {
     remaining: row.capacity,
     closed: !row.is_open || row.capacity <= 0,
   };
+}
+
+function getReservationErrorMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || "");
+
+  if (message.includes("환경변수")) return message;
+  if (message.includes("row-level security") || message.includes("RLS")) return "Supabase RLS 설정을 확인해주세요";
+  if (message.includes("reservations")) return "예약 테이블을 확인해주세요";
+  if (message.includes("Failed to fetch")) return "Supabase 연결을 확인해주세요";
+
+  return "예약 저장에 실패했어요";
 }
 
 function makeCalendarDays(date: Date) {
