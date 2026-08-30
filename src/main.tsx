@@ -105,6 +105,7 @@ class SyncReadyAppointmentStore implements AppointmentStore {
   private bookings: Booking[] = [];
   private listeners = new Set<() => void>();
   private isRemoteReady = hasSupabaseConfig && Boolean(supabase);
+  private shouldRequireRemote = import.meta.env.PROD;
   private realtimeChannel: ReturnType<NonNullable<typeof supabase>["channel"]> | null = null;
 
   subscribe(listener: () => void) {
@@ -114,6 +115,10 @@ class SyncReadyAppointmentStore implements AppointmentStore {
   }
 
   async create(booking: Booking) {
+    if (!this.isRemoteReady && this.shouldRequireRemote) {
+      throw new Error("Supabase environment variables are missing.");
+    }
+
     if (this.isRemoteReady && supabase) {
       const { error } = await supabase.from("reservations").insert(toReservationRow(booking));
       if (error) throw error;
@@ -129,6 +134,10 @@ class SyncReadyAppointmentStore implements AppointmentStore {
     const booking = this.bookings.find((item) => item.id === id);
     if (!booking) return undefined;
     const cancelled = { ...booking, status: "cancelled" as const };
+
+    if (!this.isRemoteReady && this.shouldRequireRemote) {
+      throw new Error("Supabase environment variables are missing.");
+    }
 
     if (this.isRemoteReady && supabase) {
       const { error } = await supabase
@@ -272,7 +281,8 @@ function App() {
       saveActiveBooking(nextBooking);
       setBooking(nextBooking);
       push("complete");
-    } catch {
+    } catch (error) {
+      console.error("Failed to create reservation", error);
       setToast("예약 저장에 실패했어요");
     }
   };
@@ -291,7 +301,8 @@ function App() {
         setIsCancelling(false);
         setToast("예약을 취소했어요");
       }, 180);
-    } catch {
+    } catch (error) {
+      console.error("Failed to cancel reservation", error);
       setIsCancelling(false);
       setToast("예약 취소에 실패했어요");
     }
