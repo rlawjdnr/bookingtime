@@ -1,5 +1,5 @@
 const defaultSheetsWebhookUrl =
-  "https://script.google.com/macros/s/AKfycbyjswkGZx8MHZsOCH5mum3JnF2EyAMS13yewAqz_nETnaHnL4DhPIrjGh6r2635-Og/exec";
+  "https://script.google.com/macros/s/AKfycbwHm1S3_8QkoLGaNXcfp_KbRzWquSoQtFRAaRFNkHZfQvlAizHpEvNjYBIu5zJDy1A/exec";
 
 const sheetsWebhookUrl = import.meta.env.VITE_SHEETS_WEBHOOK_URL || defaultSheetsWebhookUrl;
 

@@ -355,3 +355,15 @@ function logSync_(source, action, status, detail) {
 function json_(data) {
   return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
 }
+
+function setupSupabaseSyncTriggers() {
+  const spreadsheetId = typeof SPREADSHEET_ID !== "undefined" ? SPREADSHEET_ID : SpreadsheetApp.getActive().getId();
+  const triggers = ScriptApp.getProjectTriggers();
+  const hasEditTrigger = triggers.some((trigger) => trigger.getHandlerFunction() === "onEdit");
+
+  if (!hasEditTrigger) {
+    ScriptApp.newTrigger("onEdit").forSpreadsheet(spreadsheetId).onEdit().create();
+  }
+
+  SpreadsheetApp.getActive().toast("구글 시트와 Supabase 실시간 동기화 준비가 끝났어요.", "연결 완료", 5);
+}
