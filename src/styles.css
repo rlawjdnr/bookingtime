@@ -113,8 +113,8 @@ a {
   position: sticky;
   top: 0;
   z-index: 15;
-  height: 89px;
-  padding: 50px 16px 20px;
+  height: 55px;
+  padding: 16px 16px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -123,13 +123,13 @@ a {
 }
 
 .topbar.centered {
-  height: 82px;
+  height: 48px;
   padding-bottom: 8px;
 }
 
 .complete-topbar {
-  height: 77px;
-  padding: 50px 16px 8px;
+  height: 43px;
+  padding: 16px 16px 8px;
   justify-content: center;
 }
 
