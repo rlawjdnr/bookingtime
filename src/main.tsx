@@ -64,12 +64,25 @@ type TimeBlockRow = {
   is_open: boolean;
 };
 
+type WaitRule = {
+  timeBlockId: string;
+  reservationOrder: number;
+  waitMinutes: number;
+};
+
+type WaitRuleRow = {
+  time_block_id: string;
+  reservation_order: number;
+  wait_minutes: number;
+};
+
 type AppointmentStore = {
   subscribe(listener: () => void): () => void;
   create(booking: Booking): Promise<Booking>;
   cancel(id: string, reason: string): Promise<Booking | undefined>;
   list(): Promise<Booking[]>;
   listSlots(): Promise<Slot[]>;
+  listWaitRules(): Promise<WaitRule[]>;
 };
 
 const activeBookingStorageKey = "hospital-reservation.activeBooking";
@@ -178,6 +191,20 @@ class SyncReadyAppointmentStore implements AppointmentStore {
     return initialSlots;
   }
 
+  async listWaitRules() {
+    if (this.isRemoteReady && supabase) {
+      const { data, error } = await supabase
+        .from("wait_time_rules")
+        .select("time_block_id,reservation_order,wait_minutes")
+        .order("time_block_id", { ascending: true })
+        .order("reservation_order", { ascending: true });
+      if (error) throw error;
+      return (data || []).map(fromWaitRuleRow);
+    }
+
+    return [];
+  }
+
   private ensureRealtime() {
     if (!this.isRemoteReady || !supabase || this.realtimeChannel) return;
 
@@ -187,6 +214,9 @@ class SyncReadyAppointmentStore implements AppointmentStore {
         void this.list().then(() => this.emit());
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "appointment_time_blocks" }, () => {
+        this.emit();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "wait_time_rules" }, () => {
         this.emit();
       })
       .subscribe();
@@ -220,6 +250,7 @@ function App() {
   const [booking, setBooking] = useState<Booking | null>(restoredBooking);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [baseSlots, setBaseSlots] = useState<Slot[]>(initialSlots);
+  const [waitRules, setWaitRules] = useState<WaitRule[]>([]);
   const [toast, setToast] = useState("");
   const [isCancelOpen, setIsCancelOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -239,16 +270,18 @@ function App() {
     let isMounted = true;
 
     const loadAdminData = () => {
-      void Promise.all([appointmentStore.list(), appointmentStore.listSlots()])
-        .then(([items, nextSlots]) => {
+      void Promise.all([appointmentStore.list(), appointmentStore.listSlots(), appointmentStore.listWaitRules()])
+        .then(([items, nextSlots, nextWaitRules]) => {
           if (!isMounted) return;
           setBookings(items);
           setBaseSlots(nextSlots);
+          setWaitRules(nextWaitRules);
         })
         .catch(() => {
           if (!isMounted) return;
           setBookings([]);
           setBaseSlots(initialSlots);
+          setWaitRules([]);
         });
     };
 
@@ -306,6 +339,7 @@ function App() {
   }
 
   const appointmentLabel = `${formatShortDate(selectedDate)} ${selectedSlot.time}`;
+  const waitMinutes = getWaitMinutesForNextReservation(selectedSlot, selectedDate, bookings, waitRules);
   const canContinue = Boolean(selectedSlot && !selectedSlot.closed);
   const canBook = patientName.trim().length > 0;
 
@@ -317,7 +351,7 @@ function App() {
       date: toDateKey(selectedDate),
       time: selectedSlot.time,
       treatment,
-      waitMinutes: 15,
+      waitMinutes,
       status: "confirmed",
     };
     try {
@@ -384,6 +418,7 @@ function App() {
                 {route === "details" && (
                   <DetailsScreen
                     appointmentLabel={appointmentLabel}
+                    waitMinutes={waitMinutes}
                     canBook={canBook}
                     name={patientName}
                     treatment={treatment}
@@ -404,6 +439,7 @@ function App() {
           {isConfirmOpen && (
             <ConfirmBookingSheet
               appointmentLabel={appointmentLabel}
+              waitMinutes={waitMinutes}
               patientName={patientName.trim()}
               treatment={treatment}
               onClose={() => setIsConfirmOpen(false)}
@@ -479,12 +515,14 @@ function CancelModal({
 
 function ConfirmBookingSheet({
   appointmentLabel,
+  waitMinutes,
   patientName,
   treatment,
   onClose,
   onConfirm,
 }: {
   appointmentLabel: string;
+  waitMinutes: number;
   patientName: string;
   treatment: Treatment;
   onClose: () => void;
@@ -508,7 +546,7 @@ function ConfirmBookingSheet({
         <SummaryCard
           rows={[
             ["예약 시간", appointmentLabel, timeCalendarIcon],
-            ["대기 시간", "15분", waitIcon],
+            ["대기 시간", `${waitMinutes}분`, waitIcon],
             ["진료 과목", treatment, treatmentIcon],
           ]}
         />
@@ -660,6 +698,7 @@ function SlotGroup(props: { title: string; slots: Slot[]; selectedId: string; on
 
 function DetailsScreen(props: {
   appointmentLabel: string;
+  waitMinutes: number;
   canBook: boolean;
   name: string;
   treatment: Treatment;
@@ -697,7 +736,7 @@ function DetailsScreen(props: {
     <>
       <Header back={props.onBack} compact />
       <div className="content details-content">
-        <SummaryCard rows={[["예약 시간", props.appointmentLabel, timeCalendarIcon], ["대기 시간", "15분", waitIcon]]} />
+        <SummaryCard rows={[["예약 시간", props.appointmentLabel, timeCalendarIcon], ["대기 시간", `${props.waitMinutes}분`, waitIcon]]} />
         <label className="field-block">
           <span>이름을 입력해 주세요</span>
           <input
@@ -972,6 +1011,27 @@ function fromTimeBlockRow(row: TimeBlockRow): Slot {
     remaining: row.capacity,
     closed: !row.is_open || row.capacity <= 0,
   };
+}
+
+function fromWaitRuleRow(row: WaitRuleRow): WaitRule {
+  return {
+    timeBlockId: row.time_block_id,
+    reservationOrder: row.reservation_order,
+    waitMinutes: row.wait_minutes,
+  };
+}
+
+function getWaitMinutesForNextReservation(slot: Slot, selectedDate: Date, bookings: Booking[], waitRules: WaitRule[]) {
+  const dateKey = toDateKey(selectedDate);
+  const reservationOrder =
+    bookings.filter((item) => item.status === "confirmed" && item.date === dateKey && item.time === slot.time).length + 1;
+  const rulesForSlot = waitRules
+    .filter((rule) => rule.timeBlockId === slot.id)
+    .sort((a, b) => a.reservationOrder - b.reservationOrder);
+  const exactRule = rulesForSlot.find((rule) => rule.reservationOrder === reservationOrder);
+  const previousRule = rulesForSlot.filter((rule) => rule.reservationOrder < reservationOrder).slice(-1)[0];
+
+  return exactRule?.waitMinutes ?? previousRule?.waitMinutes ?? 15;
 }
 
 function getReservationErrorMessage(error: unknown) {

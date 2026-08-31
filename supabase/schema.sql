@@ -127,3 +127,10 @@ begin
 exception
   when duplicate_object then null;
 end $$;
+
+do $$
+begin
+  alter publication supabase_realtime add table public.wait_time_rules;
+exception
+  when duplicate_object then null;
+end $$;
