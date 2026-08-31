@@ -67,11 +67,9 @@ function btUpsertReservationFromApp_(booking) {
     "",
   ];
 
-  if (foundRow) {
-    sheet.getRange(foundRow, 1, 1, values.length).setValues([values]);
-  } else {
-    sheet.appendRow(values);
-  }
+  const targetRow = foundRow || sheet.getLastRow() + 1;
+  sheet.getRange(targetRow, 5).setNumberFormat("@");
+  sheet.getRange(targetRow, 1, 1, values.length).setValues([values]);
 }
 
 function btCancelReservationFromApp_(booking) {
@@ -92,7 +90,7 @@ function btSyncReservationRowToSupabase_(sheet, row) {
   const values = sheet.getRange(row, 1, 1, 12).getValues()[0];
   const patientName = String(values[2] || "").trim();
   const appointmentDate = btToDateKey_(values[3]);
-  const appointmentTime = String(values[4] || "").trim();
+  const appointmentTime = btToTimeLabel_(values[4]);
   if (!patientName || !appointmentDate || !appointmentTime) return;
 
   const id = String(values[10] || Utilities.getUuid());
@@ -238,6 +236,26 @@ function btToDateKey_(value) {
   const mm = String(date.getMonth() + 1).padStart(2, "0");
   const dd = String(date.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
+}
+
+function btToTimeLabel_(value) {
+  if (!value) return "";
+  if (value instanceof Date) {
+    const hour = value.getHours();
+    const minute = value.getMinutes();
+    return minute ? `${hour}:${String(minute).padStart(2, "0")}` : `${hour}:00`;
+  }
+  return String(value).trim();
+}
+
+function cleanupIntegrationTestRows() {
+  const sheet = btGetSheet_("예약현황");
+  for (let row = sheet.getLastRow(); row >= 2; row -= 1) {
+    if (String(sheet.getRange(row, 3).getValue()).trim() === "연동테스트") {
+      sheet.deleteRow(row);
+    }
+  }
+  btRefreshCalendar_();
 }
 
 function btRefreshCalendar_() {

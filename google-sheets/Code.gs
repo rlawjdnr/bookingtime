@@ -79,11 +79,9 @@ function upsertReservationFromApp_(booking) {
     "",
   ];
 
-  if (foundRow) {
-    sheet.getRange(foundRow, 1, 1, values.length).setValues([values]);
-  } else {
-    sheet.appendRow(values);
-  }
+  const targetRow = foundRow || sheet.getLastRow() + 1;
+  sheet.getRange(targetRow, 5).setNumberFormat("@");
+  sheet.getRange(targetRow, 1, 1, values.length).setValues([values]);
 }
 
 function cancelReservationFromApp_(booking) {
@@ -104,7 +102,7 @@ function syncReservationRowToSupabase_(sheet, row) {
   const values = sheet.getRange(row, 1, 1, 12).getValues()[0];
   const patientName = String(values[2] || "").trim();
   const appointmentDate = toDateKey_(values[3]);
-  const appointmentTime = String(values[4] || "").trim();
+  const appointmentTime = toTimeLabel_(values[4]);
   if (!patientName || !appointmentDate || !appointmentTime) return;
 
   const id = String(values[10] || Utilities.getUuid());
@@ -344,6 +342,26 @@ function toDateKey_(value) {
   const mm = String(date.getMonth() + 1).padStart(2, "0");
   const dd = String(date.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
+}
+
+function toTimeLabel_(value) {
+  if (!value) return "";
+  if (value instanceof Date) {
+    const hour = value.getHours();
+    const minute = value.getMinutes();
+    return minute ? `${hour}:${String(minute).padStart(2, "0")}` : `${hour}:00`;
+  }
+  return String(value).trim();
+}
+
+function cleanupIntegrationTestRows() {
+  const sheet = getSheet_(SHEETS.reservations);
+  for (let row = sheet.getLastRow(); row >= 2; row -= 1) {
+    if (String(sheet.getRange(row, 3).getValue()).trim() === "연동테스트") {
+      sheet.deleteRow(row);
+    }
+  }
+  if (typeof setupReservationCalendar === "function") setupReservationCalendar();
 }
 
 function logSync_(source, action, status, detail) {
