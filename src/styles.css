@@ -567,7 +567,7 @@ textarea.selected {
   z-index: 80;
   left: 16px;
   right: 16px;
-  bottom: calc(16px + env(safe-area-inset-bottom));
+  bottom: 96px;
   height: 41px;
   padding: 12px;
   background: var(--text);

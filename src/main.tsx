@@ -901,9 +901,9 @@ function Toast({ message, onDismiss }: { message: string; onDismiss: () => void 
       {message && (
         <motion.div
           className="toast"
-          initial={{ y: "calc(100% + 32px)", opacity: 0 }}
+          initial={{ y: "calc(100% + 112px)", opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          exit={{ y: "calc(100% + 32px)", opacity: 0 }}
+          exit={{ y: "calc(100% + 112px)", opacity: 0 }}
           transition={{ y: snackbarSpring, opacity: { duration: 0.08 } }}
         >
           <span><img className="svg-icon snackbar-icon" src={icon} alt="" />{message}</span>
