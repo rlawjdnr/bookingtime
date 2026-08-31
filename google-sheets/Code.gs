@@ -199,7 +199,7 @@ function setupReservationCalendar() {
   const ss = SpreadsheetApp.getActive();
   const calendarSheet = ss.getSheetByName(SHEETS.calendar) || ss.insertSheet(SHEETS.calendar, 0);
   const reservationSheet = getSheet_(SHEETS.reservations);
-  const selectedCell = calendarSheet.getRange("J2");
+  const selectedCell = calendarSheet.getRange("M2");
   const selected = selectedCell.getValue() || new Date();
   const selectedDate = toDate_(selected);
   const year = selectedDate.getFullYear();
@@ -208,11 +208,14 @@ function setupReservationCalendar() {
   const last = new Date(year, month + 1, 0);
   const mondayOffset = (start.getDay() + 6) % 7;
 
+  calendarSheet.getDataRange().breakApart();
   calendarSheet.clear();
   calendarSheet.setHiddenGridlines(true);
+  calendarSheet.hideColumns(13);
   calendarSheet.getRange("A1:H1").merge().setValue("날짜별 예약 보기").setFontSize(18).setFontWeight("bold");
   calendarSheet.getRange("A2:H2").merge().setValue(`${year}년 ${month + 1}월`).setFontSize(14).setFontWeight("bold");
   calendarSheet.getRange("A3:G3").setValues([["월", "화", "수", "목", "금", "토", "일"]]).setFontWeight("bold").setHorizontalAlignment("center");
+  selectedCell.setValue(selectedDate).setNumberFormat("yyyy-mm-dd");
 
   const counts = getReservationCountsByDate_(reservationSheet);
   let day = 1;
@@ -250,9 +253,9 @@ function onSelectionChange(e) {
   const value = range.getValue();
   if (!value || Number(value) < 1 || Number(value) > 31) return;
 
-  const current = toDate_(sheet.getRange("J2").getValue() || new Date());
+  const current = toDate_(sheet.getRange("M2").getValue() || new Date());
   const selected = new Date(current.getFullYear(), current.getMonth(), Number(value));
-  sheet.getRange("J2").setValue(selected);
+  sheet.getRange("M2").setValue(selected).setNumberFormat("yyyy-mm-dd");
   setupReservationCalendar();
 }
 
