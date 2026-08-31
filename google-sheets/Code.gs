@@ -17,6 +17,11 @@ const STATUS_TO_SHEET = {
   cancelled: "예약 취소",
 };
 
+const RESERVATION_HEADER_ROW = 3;
+const RESERVATION_DATA_START_ROW = 4;
+const RESERVATION_COLUMN_COUNT = 12;
+const RESERVATION_DATE_FILTER_CELL = "B1";
+
 function doPost(e) {
   try {
     const body = JSON.parse(e.postData && e.postData.contents ? e.postData.contents : "{}");
@@ -40,10 +45,19 @@ function onEdit(e) {
   const sheet = e.range.getSheet();
   const name = sheet.getName();
   const row = e.range.getRow();
-  if (row < 2) return;
+  const column = e.range.getColumn();
 
   try {
-    if (name === SHEETS.reservations) syncReservationRowToSupabase_(sheet, row);
+    if (name === SHEETS.reservations) {
+      setupReservationStatusView_(sheet);
+      if (row === 1 && column === 2) {
+        applyReservationDateFilter_(sheet);
+        return;
+      }
+      if (row < RESERVATION_DATA_START_ROW) return;
+      syncReservationRowToSupabase_(sheet, row);
+    }
+    if (row < 2) return;
     if (name === SHEETS.timeBlocks) syncTimeBlockRowToSupabase_(sheet, row);
     if (name === SHEETS.waitRules) syncWaitRuleRowToSupabase_(sheet, row);
     if (name === SHEETS.clinic) syncClinicSettingsToSupabase_();
@@ -59,6 +73,7 @@ function onEdit(e) {
 
 function upsertReservationFromApp_(booking) {
   const sheet = getSheet_(SHEETS.reservations);
+  setupReservationStatusView_(sheet);
   const id = String(booking.id || "");
   if (!id) throw new Error("예약 ID가 없어서 시트에 저장하지 못했어요.");
 
@@ -79,13 +94,16 @@ function upsertReservationFromApp_(booking) {
     "",
   ];
 
-  const targetRow = foundRow || sheet.getLastRow() + 1;
+  const targetRow = foundRow || Math.max(sheet.getLastRow() + 1, RESERVATION_DATA_START_ROW);
+  sheet.getRange(targetRow, 4).setNumberFormat("@");
   sheet.getRange(targetRow, 5).setNumberFormat("@");
   sheet.getRange(targetRow, 1, 1, values.length).setValues([values]);
+  applyReservationDateFilter_(sheet);
 }
 
 function cancelReservationFromApp_(booking) {
   const sheet = getSheet_(SHEETS.reservations);
+  setupReservationStatusView_(sheet);
   const id = String(booking.id || "");
   const row = findRowByValue_(sheet, 11, id);
   if (!row) {
@@ -96,9 +114,11 @@ function cancelReservationFromApp_(booking) {
   sheet.getRange(row, 2).setValue("예약 취소");
   sheet.getRange(row, 9).setValue(new Date());
   sheet.getRange(row, 12).setValue(booking.cancelReason || "");
+  applyReservationDateFilter_(sheet);
 }
 
 function syncReservationRowToSupabase_(sheet, row) {
+  setupReservationStatusView_(sheet);
   const values = sheet.getRange(row, 1, 1, 12).getValues()[0];
   const patientName = String(values[2] || "").trim();
   const appointmentDate = toDateKey_(values[3]);
@@ -128,6 +148,7 @@ function syncReservationRowToSupabase_(sheet, row) {
     sheet.getRange(row, 11).setValue(id);
   }
   logSync_("관리자 시트", "예약현황", "성공", id);
+  applyReservationDateFilter_(sheet);
 }
 
 function syncTimeBlockRowToSupabase_(sheet, row) {
@@ -197,66 +218,63 @@ function syncClinicSettingsToSupabase_() {
 
 function setupReservationCalendar() {
   const ss = SpreadsheetApp.getActive();
-  const calendarSheet = ss.getSheetByName(SHEETS.calendar) || ss.insertSheet(SHEETS.calendar, 0);
-  const reservationSheet = getSheet_(SHEETS.reservations);
-  const selectedCell = calendarSheet.getRange("M2");
-  const selected = selectedCell.getValue() || new Date();
-  const selectedDate = toDate_(selected);
-  const year = selectedDate.getFullYear();
-  const month = selectedDate.getMonth();
-  const start = new Date(year, month, 1);
-  const last = new Date(year, month + 1, 0);
-  const mondayOffset = (start.getDay() + 6) % 7;
+  const calendarSheet = ss.getSheetByName(SHEETS.calendar);
+  if (calendarSheet && ss.getSheets().length > 1) calendarSheet.hideSheet();
 
-  calendarSheet.getDataRange().breakApart();
-  calendarSheet.clear();
-  calendarSheet.setHiddenGridlines(true);
-  calendarSheet.hideColumns(13);
-  calendarSheet.getRange("A1:H1").merge().setValue("날짜별 예약 보기").setFontSize(18).setFontWeight("bold");
-  calendarSheet.getRange("A2:H2").merge().setValue(`${year}년 ${month + 1}월`).setFontSize(14).setFontWeight("bold");
-  calendarSheet.getRange("A3:G3").setValues([["월", "화", "수", "목", "금", "토", "일"]]).setFontWeight("bold").setHorizontalAlignment("center");
-  selectedCell.setValue(selectedDate).setNumberFormat("yyyy-mm-dd");
-
-  const counts = getReservationCountsByDate_(reservationSheet);
-  let day = 1;
-  for (let index = 0; index < 42; index += 1) {
-    const row = 4 + Math.floor(index / 7) * 3;
-    const col = 1 + (index % 7);
-    const cell = calendarSheet.getRange(row, col);
-    const countCell = calendarSheet.getRange(row + 1, col);
-
-    if (index >= mondayOffset && day <= last.getDate()) {
-      const date = new Date(year, month, day);
-      const key = toDateKey_(date);
-      cell.setValue(day).setHorizontalAlignment("center").setVerticalAlignment("middle");
-      countCell.setValue(counts[key] ? `예약 ${counts[key]}명` : "").setHorizontalAlignment("center").setFontSize(9);
-      if (toDateKey_(selectedDate) === key) {
-        cell.setBackground("#1A1C20").setFontColor("#FFFFFF");
-        countCell.setBackground("#1A1C20").setFontColor("#FFFFFF");
-      }
-      day += 1;
-    }
-  }
-
-  calendarSheet.getRange("I1:L1").merge().setValue("선택한 날짜 예약").setFontSize(18).setFontWeight("bold");
-  calendarSheet.getRange("I2:L2").merge().setValue(toDateKey_(selectedDate));
-  renderSelectedDateReservations_(calendarSheet, reservationSheet, selectedDate);
-  calendarSheet.autoResizeColumns(1, 12);
+  const sheet = getSheet_(SHEETS.reservations);
+  setupReservationStatusView_(sheet);
+  applyReservationDateFilter_(sheet);
 }
 
 function onSelectionChange(e) {
-  const sheet = e && e.range ? e.range.getSheet() : null;
-  if (!sheet || sheet.getName() !== SHEETS.calendar) return;
+  return;
+}
 
-  const range = e.range;
-  if (range.getColumn() > 7 || range.getRow() < 4 || range.getRow() > 19) return;
-  const value = range.getValue();
-  if (!value || Number(value) < 1 || Number(value) > 31) return;
+function setupReservationStatusView_(sheet) {
+  const existingFilter = sheet.getFilter();
+  if (existingFilter) existingFilter.remove();
 
-  const current = toDate_(sheet.getRange("M2").getValue() || new Date());
-  const selected = new Date(current.getFullYear(), current.getMonth(), Number(value));
-  sheet.getRange("M2").setValue(selected).setNumberFormat("yyyy-mm-dd");
-  setupReservationCalendar();
+  const firstCell = String(sheet.getRange("A1").getValue() || "").trim();
+  if (firstCell !== "조회 날짜") {
+    sheet.insertRowsBefore(1, 2);
+  }
+
+  const filterCell = sheet.getRange(RESERVATION_DATE_FILTER_CELL);
+  if (!filterCell.getValue()) filterCell.setValue(new Date());
+
+  sheet.getRange("A1").setValue("조회 날짜").setFontWeight("bold").setBackground("#F1F3F5");
+  filterCell
+    .setNumberFormat("yyyy-mm-dd")
+    .setDataValidation(SpreadsheetApp.newDataValidation().requireDate().setAllowInvalid(false).build())
+    .setNote("보고 싶은 예약 날짜를 선택하면 아래 목록이 그 날짜 예약만 시간순으로 보여요.");
+  sheet.getRange("A2:L2").breakApart();
+  sheet.getRange("A2:L2").merge().setValue("선택한 날짜의 예약만 표시됩니다. 전체 목록을 보려면 필터를 해제하거나 조회 날짜를 바꿔주세요.").setFontColor("#5F6368");
+  sheet.getRange(RESERVATION_HEADER_ROW, 1, 1, RESERVATION_COLUMN_COUNT)
+    .setValues([["예약번호", "예약 상태", "환자 이름", "예약 날짜", "예약 시간", "진료 항목", "대기 시간(분)", "예약 접수 시간", "예약 취소 시간", "입력 위치", "예약 ID", "취소 사유"]])
+    .setFontWeight("bold")
+    .setBackground("#E9ECEF");
+  sheet.setFrozenRows(RESERVATION_HEADER_ROW);
+  sheet.getRange(RESERVATION_DATA_START_ROW, 4, Math.max(sheet.getMaxRows() - RESERVATION_DATA_START_ROW + 1, 1), 1).setNumberFormat("@");
+  sheet.getRange(RESERVATION_DATA_START_ROW, 5, Math.max(sheet.getMaxRows() - RESERVATION_DATA_START_ROW + 1, 1), 1).setNumberFormat("@");
+}
+
+function applyReservationDateFilter_(sheet) {
+  const selectedDateKey = toDateKey_(sheet.getRange(RESERVATION_DATE_FILTER_CELL).getValue() || new Date());
+  const lastRow = Math.max(sheet.getLastRow(), RESERVATION_DATA_START_ROW);
+
+  if (lastRow >= RESERVATION_DATA_START_ROW) {
+    const dateRange = sheet.getRange(RESERVATION_DATA_START_ROW, 4, lastRow - RESERVATION_DATA_START_ROW + 1, 1);
+    const normalizedDates = dateRange.getValues().map(([value]) => [toDateKey_(value)]);
+    dateRange.setNumberFormat("@").setValues(normalizedDates);
+  }
+
+  const previousFilter = sheet.getFilter();
+  if (previousFilter) previousFilter.remove();
+
+  const filterRange = sheet.getRange(RESERVATION_HEADER_ROW, 1, lastRow - RESERVATION_HEADER_ROW + 1, RESERVATION_COLUMN_COUNT);
+  const filter = filterRange.createFilter();
+  filter.setColumnFilterCriteria(4, SpreadsheetApp.newFilterCriteria().whenTextEqualTo(selectedDateKey).build());
+  filter.sort(5, true);
 }
 
 function getReservationCountsByDate_(sheet) {
@@ -322,10 +340,10 @@ function getSheet_(name) {
 function findRowByValue_(sheet, column, value) {
   if (!value) return 0;
   const lastRow = sheet.getLastRow();
-  if (lastRow < 2) return 0;
-  const values = sheet.getRange(2, column, lastRow - 1, 1).getValues();
+  if (lastRow < RESERVATION_DATA_START_ROW) return 0;
+  const values = sheet.getRange(RESERVATION_DATA_START_ROW, column, lastRow - RESERVATION_DATA_START_ROW + 1, 1).getValues();
   const index = values.findIndex((row) => String(row[0]) === String(value));
-  return index >= 0 ? index + 2 : 0;
+  return index >= 0 ? index + RESERVATION_DATA_START_ROW : 0;
 }
 
 function makeReservationNo_(id) {

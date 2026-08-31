@@ -8,6 +8,9 @@ const BT_STATUS_TO_SHEET = {
   cancelled: "예약 취소",
 };
 
+const BT_RESERVATION_DATA_START_ROW = 4;
+const BT_RESERVATION_COLUMN_COUNT = 12;
+
 function doPost(e) {
   try {
     const body = JSON.parse(e.postData && e.postData.contents ? e.postData.contents : "{}");
@@ -31,10 +34,19 @@ function onEdit(e) {
   const sheet = e.range.getSheet();
   const name = sheet.getName();
   const row = e.range.getRow();
-  if (row < 2) return;
+  const column = e.range.getColumn();
 
   try {
-    if (name === "예약현황") btSyncReservationRowToSupabase_(sheet, row);
+    if (name === "예약현황") {
+      btSetupReservationStatusView_(sheet);
+      if (row === 1 && column === 2) {
+        btApplyReservationDateFilter_(sheet);
+        return;
+      }
+      if (row < BT_RESERVATION_DATA_START_ROW) return;
+      btSyncReservationRowToSupabase_(sheet, row);
+    }
+    if (row < 2) return;
     if (name === "시간블록") btSyncTimeBlockRowToSupabase_(sheet, row);
     if (name === "대기시간규칙") btSyncWaitRuleRowToSupabase_(sheet, row);
     if (name === "병원설정") btSyncClinicSettingsToSupabase_();
@@ -48,6 +60,7 @@ function onEdit(e) {
 
 function btUpsertReservationFromApp_(booking) {
   const sheet = btGetSheet_("예약현황");
+  btSetupReservationStatusView_(sheet);
   const id = String(booking.id || "");
   if (!id) throw new Error("예약 ID가 없어서 시트에 저장하지 못했어요.");
 
@@ -67,13 +80,16 @@ function btUpsertReservationFromApp_(booking) {
     "",
   ];
 
-  const targetRow = foundRow || sheet.getLastRow() + 1;
+  const targetRow = foundRow || Math.max(sheet.getLastRow() + 1, BT_RESERVATION_DATA_START_ROW);
+  sheet.getRange(targetRow, 4).setNumberFormat("@");
   sheet.getRange(targetRow, 5).setNumberFormat("@");
   sheet.getRange(targetRow, 1, 1, values.length).setValues([values]);
+  btApplyReservationDateFilter_(sheet);
 }
 
 function btCancelReservationFromApp_(booking) {
   const sheet = btGetSheet_("예약현황");
+  btSetupReservationStatusView_(sheet);
   const id = String(booking.id || "");
   const row = btFindRowByValue_(sheet, 11, id);
   if (!row) {
@@ -84,9 +100,11 @@ function btCancelReservationFromApp_(booking) {
   sheet.getRange(row, 2).setValue("예약 취소");
   sheet.getRange(row, 9).setValue(new Date());
   sheet.getRange(row, 12).setValue(booking.cancelReason || "");
+  btApplyReservationDateFilter_(sheet);
 }
 
 function btSyncReservationRowToSupabase_(sheet, row) {
+  btSetupReservationStatusView_(sheet);
   const values = sheet.getRange(row, 1, 1, 12).getValues()[0];
   const patientName = String(values[2] || "").trim();
   const appointmentDate = btToDateKey_(values[3]);
@@ -118,6 +136,7 @@ function btSyncReservationRowToSupabase_(sheet, row) {
     sheet.getRange(row, 11).setValue(id);
   }
   btLogSync_("관리자 시트", "예약현황", "성공", id);
+  btApplyReservationDateFilter_(sheet);
 }
 
 function btSyncTimeBlockRowToSupabase_(sheet, row) {
@@ -218,10 +237,10 @@ function btGetSheet_(name) {
 function btFindRowByValue_(sheet, column, value) {
   if (!value) return 0;
   const lastRow = sheet.getLastRow();
-  if (lastRow < 2) return 0;
-  const values = sheet.getRange(2, column, lastRow - 1, 1).getValues();
+  if (lastRow < BT_RESERVATION_DATA_START_ROW) return 0;
+  const values = sheet.getRange(BT_RESERVATION_DATA_START_ROW, column, lastRow - BT_RESERVATION_DATA_START_ROW + 1, 1).getValues();
   const index = values.findIndex((row) => String(row[0]) === String(value));
-  return index >= 0 ? index + 2 : 0;
+  return index >= 0 ? index + BT_RESERVATION_DATA_START_ROW : 0;
 }
 
 function btMakeReservationNo_(id) {
@@ -250,7 +269,7 @@ function btToTimeLabel_(value) {
 
 function cleanupIntegrationTestRows() {
   const sheet = btGetSheet_("예약현황");
-  for (let row = sheet.getLastRow(); row >= 2; row -= 1) {
+  for (let row = sheet.getLastRow(); row >= BT_RESERVATION_DATA_START_ROW; row -= 1) {
     const patientName = String(sheet.getRange(row, 3).getValue()).trim();
     if (patientName === "연동테스트" || patientName === "속도테스트") {
       sheet.deleteRow(row);
@@ -261,6 +280,14 @@ function cleanupIntegrationTestRows() {
 
 function btRefreshCalendar_() {
   if (typeof setupReservationCalendar === "function") setupReservationCalendar();
+}
+
+function btSetupReservationStatusView_(sheet) {
+  if (typeof setupReservationStatusView_ === "function") setupReservationStatusView_(sheet);
+}
+
+function btApplyReservationDateFilter_(sheet) {
+  if (typeof applyReservationDateFilter_ === "function") applyReservationDateFilter_(sheet);
 }
 
 function btLogSync_(source, action, status, detail) {
