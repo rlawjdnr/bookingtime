@@ -25,6 +25,10 @@ import waitIcon from "./assets/figma/wait-fill.svg";
 
 type Route = "time" | "details" | "complete";
 type Treatment = "없음" | "침 치료" | "한약 처방";
+type StackEntry = {
+  id: number;
+  route: Route;
+};
 
 type Slot = {
   id: string;
@@ -202,7 +206,11 @@ const appointmentStore = new SyncReadyAppointmentStore();
 
 function App() {
   const restoredBooking = useMemo(() => loadActiveBooking(), []);
-  const [stack, setStack] = useState<Route[]>(restoredBooking ? ["complete"] : ["time"]);
+  const stackIdRef = useRef(1);
+  const stackMotionLockRef = useRef<number | null>(null);
+  const [stack, setStack] = useState<StackEntry[]>([
+    { id: 0, route: restoredBooking ? "complete" : "time" },
+  ]);
   const [direction, setDirection] = useState(1);
   const [selectedDate, setSelectedDate] = useState(restoredBooking ? parseBookingDate(restoredBooking.date) : getToday());
   const [selectedSlotId, setSelectedSlotId] = useState(restoredBooking ? getSlotIdByTime(restoredBooking.time) : "1600");
@@ -259,15 +267,43 @@ function App() {
     return () => window.cancelAnimationFrame(frame);
   }, [skipStackMotion]);
 
+  useEffect(() => {
+    return () => {
+      if (stackMotionLockRef.current) window.clearTimeout(stackMotionLockRef.current);
+    };
+  }, []);
+
   const push = (route: Route) => {
+    if (stackMotionLockRef.current) return;
     setDirection(1);
-    setStack((prev) => [...prev, route]);
+    setStack((prev) => {
+      if (prev[prev.length - 1]?.route === route) return prev;
+      return [...prev, { id: stackIdRef.current++, route }];
+    });
+    lockStackMotion();
   };
 
   const back = () => {
+    if (stackMotionLockRef.current) return;
     setDirection(-1);
     setStack((prev) => (prev.length > 1 ? prev.slice(0, -1) : prev));
+    lockStackMotion();
   };
+
+  const resetStack = (route: Route) => {
+    if (stackMotionLockRef.current) {
+      window.clearTimeout(stackMotionLockRef.current);
+      stackMotionLockRef.current = null;
+    }
+    setStack([{ id: stackIdRef.current++, route }]);
+  };
+
+  function lockStackMotion() {
+    if (stackMotionLockRef.current) window.clearTimeout(stackMotionLockRef.current);
+    stackMotionLockRef.current = window.setTimeout(() => {
+      stackMotionLockRef.current = null;
+    }, 560);
+  }
 
   const appointmentLabel = `${formatShortDate(selectedDate)} ${selectedSlot.time}`;
   const canContinue = Boolean(selectedSlot && !selectedSlot.closed);
@@ -303,7 +339,7 @@ function App() {
       clearActiveBooking();
       setSkipStackMotion(true);
       setDirection(-1);
-      setStack(["time"]);
+      resetStack("time");
       window.setTimeout(() => {
         setIsCancelOpen(false);
         setIsCancelling(false);
@@ -320,11 +356,11 @@ function App() {
     <main className="app-shell">
       <div className="phone-frame">
         <AnimatePresence custom={direction} initial={false}>
-          {stack.map((route, index) => {
+          {stack.map(({ id, route }, index) => {
             const isTop = index === stack.length - 1;
 
             return (
-              <ScreenMotion key={`${route}-${index}`} direction={direction} index={index} isTop={isTop} instant={skipStackMotion}>
+              <ScreenMotion key={id} direction={direction} index={index} isTop={isTop} instant={skipStackMotion}>
                 {route === "time" && (
                   <TimeScreen
                     selectedDate={selectedDate}
