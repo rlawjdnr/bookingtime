@@ -5,20 +5,30 @@ const sheetsWebhookUrl = import.meta.env.VITE_SHEETS_WEBHOOK_URL || defaultSheet
 
 type SheetsReservationAction = "create" | "cancel";
 
-export async function syncReservationToGoogleSheet(action: SheetsReservationAction, payload: unknown) {
+export function syncReservationToGoogleSheet(action: SheetsReservationAction, payload: unknown) {
   if (!sheetsWebhookUrl) return;
 
-  await fetch(sheetsWebhookUrl, {
+  const body = JSON.stringify({
+    action,
+    payload,
+    source: "bookingtime-web",
+    syncedAt: new Date().toISOString(),
+  });
+
+  if (navigator.sendBeacon) {
+    const blob = new Blob([body], { type: "text/plain;charset=utf-8" });
+    if (navigator.sendBeacon(sheetsWebhookUrl, blob)) return;
+  }
+
+  void fetch(sheetsWebhookUrl, {
     method: "POST",
     mode: "no-cors",
+    keepalive: true,
     headers: {
       "Content-Type": "text/plain;charset=utf-8",
     },
-    body: JSON.stringify({
-      action,
-      payload,
-      source: "bookingtime-web",
-      syncedAt: new Date().toISOString(),
-    }),
+    body,
+  }).catch((error) => {
+    console.warn("Google Sheets sync failed", error);
   });
 }

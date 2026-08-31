@@ -251,7 +251,8 @@ function btToTimeLabel_(value) {
 function cleanupIntegrationTestRows() {
   const sheet = btGetSheet_("예약현황");
   for (let row = sheet.getLastRow(); row >= 2; row -= 1) {
-    if (String(sheet.getRange(row, 3).getValue()).trim() === "연동테스트") {
+    const patientName = String(sheet.getRange(row, 3).getValue()).trim();
+    if (patientName === "연동테스트" || patientName === "속도테스트") {
       sheet.deleteRow(row);
     }
   }

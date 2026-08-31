@@ -357,7 +357,8 @@ function toTimeLabel_(value) {
 function cleanupIntegrationTestRows() {
   const sheet = getSheet_(SHEETS.reservations);
   for (let row = sheet.getLastRow(); row >= 2; row -= 1) {
-    if (String(sheet.getRange(row, 3).getValue()).trim() === "연동테스트") {
+    const patientName = String(sheet.getRange(row, 3).getValue()).trim();
+    if (patientName === "연동테스트" || patientName === "속도테스트") {
       sheet.deleteRow(row);
     }
   }

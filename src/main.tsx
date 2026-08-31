@@ -127,7 +127,7 @@ class SyncReadyAppointmentStore implements AppointmentStore {
 
     this.bookings = [booking, ...this.bookings.filter((item) => item.id !== booking.id)];
     this.emit();
-    await this.sync("create", booking);
+    this.sync("create", booking);
     return booking;
   }
 
@@ -150,7 +150,7 @@ class SyncReadyAppointmentStore implements AppointmentStore {
 
     this.bookings = this.bookings.map((item) => (item.id === id ? cancelled : item));
     this.emit();
-    await this.sync("cancel", { ...cancelled, cancelReason: reason });
+    this.sync("cancel", { ...cancelled, cancelReason: reason });
     return cancelled;
   }
 
@@ -192,11 +192,9 @@ class SyncReadyAppointmentStore implements AppointmentStore {
     this.listeners.forEach((listener) => listener());
   }
 
-  private async sync(action: "create" | "cancel", payload: unknown) {
+  private sync(action: "create" | "cancel", payload: unknown) {
     window.dispatchEvent(new CustomEvent("reservation-sync", { detail: { action, payload } }));
-    await syncReservationToGoogleSheet(action, payload).catch((error) => {
-      console.warn("Google Sheets sync failed", error);
-    });
+    syncReservationToGoogleSheet(action, payload);
   }
 }
 
