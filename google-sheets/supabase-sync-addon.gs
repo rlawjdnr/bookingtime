@@ -8,6 +8,7 @@ const BT_STATUS_TO_SHEET = {
   cancelled: "예약 취소",
 };
 
+const BT_BOOKING_SPREADSHEET_ID = "1zcmCfbGr-mEmr8XBynYEdPGO5UzfOklM-nr4NqqIWUg";
 const BT_RESERVATION_DATA_START_ROW = 4;
 const BT_RESERVATION_COLUMN_COUNT = 12;
 
@@ -228,10 +229,15 @@ function btSupabaseRequest_(path, method, payload, options) {
 }
 
 function btGetSheet_(name) {
-  const ss = typeof SPREADSHEET_ID !== "undefined" ? SpreadsheetApp.openById(SPREADSHEET_ID) : SpreadsheetApp.getActive();
+  const ss = btGetSpreadsheet_();
   const sheet = ss.getSheetByName(name);
   if (!sheet) throw new Error(`${name} 시트를 찾지 못했어요.`);
   return sheet;
+}
+
+function btGetSpreadsheet_() {
+  if (typeof SPREADSHEET_ID !== "undefined") return SpreadsheetApp.openById(SPREADSHEET_ID);
+  return SpreadsheetApp.openById(BT_BOOKING_SPREADSHEET_ID);
 }
 
 function btFindRowByValue_(sheet, column, value) {
@@ -301,7 +307,7 @@ function btJson_(data) {
 }
 
 function setupSupabaseSyncTriggers() {
-  const spreadsheetId = typeof SPREADSHEET_ID !== "undefined" ? SPREADSHEET_ID : SpreadsheetApp.getActive().getId();
+  const spreadsheetId = typeof SPREADSHEET_ID !== "undefined" ? SPREADSHEET_ID : BT_BOOKING_SPREADSHEET_ID;
   const triggers = ScriptApp.getProjectTriggers();
   const hasEditTrigger = triggers.some((trigger) => trigger.getHandlerFunction() === "onEdit");
 
@@ -309,5 +315,5 @@ function setupSupabaseSyncTriggers() {
     ScriptApp.newTrigger("onEdit").forSpreadsheet(spreadsheetId).onEdit().create();
   }
 
-  SpreadsheetApp.getActive().toast("구글 시트와 Supabase 실시간 동기화 준비가 끝났어요.", "연결 완료", 5);
+  btGetSpreadsheet_().toast("구글 시트와 Supabase 실시간 동기화 준비가 끝났어요.", "연결 완료", 5);
 }

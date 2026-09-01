@@ -7,6 +7,7 @@ const SHEETS = {
   logs: "동기화로그",
 };
 
+const BOOKING_SPREADSHEET_ID = "1zcmCfbGr-mEmr8XBynYEdPGO5UzfOklM-nr4NqqIWUg";
 const STATUS_TO_DB = {
   "예약 완료": "confirmed",
   "예약 취소": "cancelled",
@@ -217,13 +218,18 @@ function syncClinicSettingsToSupabase_() {
 }
 
 function setupReservationCalendar() {
-  const ss = SpreadsheetApp.getActive();
+  const ss = getSpreadsheet_();
   const calendarSheet = ss.getSheetByName(SHEETS.calendar);
   if (calendarSheet && ss.getSheets().length > 1) calendarSheet.hideSheet();
 
   const sheet = getSheet_(SHEETS.reservations);
   setupReservationStatusView_(sheet);
   applyReservationDateFilter_(sheet);
+}
+
+function setupBookingSheetAdmin() {
+  setupReservationCalendar();
+  getSpreadsheet_().toast("예약현황에 날짜 선택 필터를 만들었어요.", "설정 완료", 5);
 }
 
 function onSelectionChange(e) {
@@ -332,9 +338,14 @@ function supabaseRequest_(path, method, payload, options) {
 }
 
 function getSheet_(name) {
-  const sheet = SpreadsheetApp.getActive().getSheetByName(name);
+  const sheet = getSpreadsheet_().getSheetByName(name);
   if (!sheet) throw new Error(`${name} 시트를 찾지 못했어요.`);
   return sheet;
+}
+
+function getSpreadsheet_() {
+  if (typeof SPREADSHEET_ID !== "undefined") return SpreadsheetApp.openById(SPREADSHEET_ID);
+  return SpreadsheetApp.openById(BOOKING_SPREADSHEET_ID);
 }
 
 function findRowByValue_(sheet, column, value) {
@@ -387,7 +398,7 @@ function cleanupIntegrationTestRows() {
 }
 
 function logSync_(source, action, status, detail) {
-  const sheet = SpreadsheetApp.getActive().getSheetByName(SHEETS.logs);
+  const sheet = getSpreadsheet_().getSheetByName(SHEETS.logs);
   if (!sheet) return;
   sheet.appendRow([new Date(), source, action, status, detail]);
 }
@@ -397,7 +408,7 @@ function json_(data) {
 }
 
 function setupSupabaseSyncTriggers() {
-  const spreadsheetId = typeof SPREADSHEET_ID !== "undefined" ? SPREADSHEET_ID : SpreadsheetApp.getActive().getId();
+  const spreadsheetId = typeof SPREADSHEET_ID !== "undefined" ? SPREADSHEET_ID : BOOKING_SPREADSHEET_ID;
   const triggers = ScriptApp.getProjectTriggers();
   const hasEditTrigger = triggers.some((trigger) => trigger.getHandlerFunction() === "onEdit");
 
@@ -405,5 +416,5 @@ function setupSupabaseSyncTriggers() {
     ScriptApp.newTrigger("onEdit").forSpreadsheet(spreadsheetId).onEdit().create();
   }
 
-  SpreadsheetApp.getActive().toast("구글 시트와 Supabase 실시간 동기화 준비가 끝났어요.", "연결 완료", 5);
+  getSpreadsheet_().toast("구글 시트와 Supabase 실시간 동기화 준비가 끝났어요.", "연결 완료", 5);
 }
