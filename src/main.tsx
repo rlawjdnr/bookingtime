@@ -182,7 +182,11 @@ class SyncReadyAppointmentStore implements AppointmentStore {
 
   async listSlots() {
     if (this.isRemoteReady && supabase) {
-      const { data, error } = await supabase.from("appointment_time_blocks").select("*").order("sort_order", { ascending: true });
+      const { data, error } = await supabase
+        .from("appointment_time_blocks")
+        .select("*")
+        .eq("is_open", true)
+        .order("sort_order", { ascending: true });
       if (error) throw error;
       if (data?.length) return data.map(fromTimeBlockRow);
     }
