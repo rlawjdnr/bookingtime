@@ -49,21 +49,25 @@ set clinic_name = excluded.clinic_name,
 
 insert into public.appointment_time_blocks (id, time_label, capacity, is_open, sort_order)
 values
-  ('0900', '9:00', 3, true, 10),
-  ('1000', '10:00', 0, false, 20),
+  ('0930', '9:30', 5, true, 10),
+  ('1015', '10:15', 5, true, 20),
   ('1100', '11:00', 1, true, 30),
-  ('1200', '12:00', 5, true, 40),
+  ('1145', '11:45', 5, true, 40),
   ('1400', '14:00', 5, true, 50),
-  ('1500', '15:00', 5, true, 60),
-  ('1600', '16:00', 5, true, 70),
-  ('1700', '17:00', 5, true, 80),
-  ('1730', '17:00', 5, true, 90)
+  ('1510', '15:10', 5, true, 60),
+  ('1620', '16:20', 5, true, 70),
+  ('1730', '17:30', 5, true, 80)
 on conflict (id) do update
 set time_label = excluded.time_label,
     capacity = excluded.capacity,
     is_open = excluded.is_open,
     sort_order = excluded.sort_order,
     updated_at = now();
+
+update public.appointment_time_blocks
+set is_open = false,
+    updated_at = now()
+where id not in ('0930', '1015', '1100', '1145', '1400', '1510', '1620', '1730');
 
 alter table public.clinic_settings enable row level security;
 alter table public.appointment_time_blocks enable row level security;

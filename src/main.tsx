@@ -94,15 +94,14 @@ const clinic = {
 };
 
 const initialSlots: Slot[] = [
-  { id: "0900", time: "9:00", remaining: 3 },
-  { id: "1000", time: "10:00", remaining: 0, closed: true },
+  { id: "0930", time: "9:30", remaining: 5 },
+  { id: "1015", time: "10:15", remaining: 5 },
   { id: "1100", time: "11:00", remaining: 1 },
-  { id: "1200", time: "12:00", remaining: 5 },
+  { id: "1145", time: "11:45", remaining: 5 },
   { id: "1400", time: "14:00", remaining: 5 },
-  { id: "1500", time: "15:00", remaining: 5 },
-  { id: "1600", time: "16:00", remaining: 5 },
-  { id: "1700", time: "17:00", remaining: 5 },
-  { id: "1730", time: "17:00", remaining: 5 },
+  { id: "1510", time: "15:10", remaining: 5 },
+  { id: "1620", time: "16:20", remaining: 5 },
+  { id: "1730", time: "17:30", remaining: 5 },
 ];
 
 const treatments: Treatment[] = ["없음", "침 치료", "한약 처방"];
@@ -243,7 +242,7 @@ function App() {
   ]);
   const [direction, setDirection] = useState(1);
   const [selectedDate, setSelectedDate] = useState(restoredBooking ? parseBookingDate(restoredBooking.date) : getToday());
-  const [selectedSlotId, setSelectedSlotId] = useState(restoredBooking ? getSlotIdByTime(restoredBooking.time) : "1600");
+  const [selectedSlotId, setSelectedSlotId] = useState(restoredBooking ? getSlotIdByTime(restoredBooking.time) : "1400");
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [patientName, setPatientName] = useState(restoredBooking?.patientName ?? "");
   const [treatment, setTreatment] = useState<Treatment>(restoredBooking?.treatment ?? "없음");
@@ -1122,7 +1121,7 @@ function toDateKey(date: Date) {
 }
 
 function getSlotIdByTime(time: string) {
-  return initialSlots.find((slot) => slot.time === time)?.id ?? "1600";
+  return initialSlots.find((slot) => slot.time === time)?.id ?? "1400";
 }
 
 function formatMonthDayWeek(date: Date) {
