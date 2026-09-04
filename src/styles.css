@@ -715,6 +715,14 @@ textarea.selected {
   color: var(--disabled);
 }
 
+.calendar-grid button.closed {
+  color: var(--p0);
+}
+
+.calendar-grid button.unopened {
+  color: #b0b3ba;
+}
+
 .calendar-grid button.picked {
   border-radius: 999px;
   background: var(--text);

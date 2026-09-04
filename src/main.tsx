@@ -1275,16 +1275,25 @@ function CalendarSheet(props: { openDays: number; daySettings: DaySetting[]; sel
         </div>
         <div className="calendar-grid weekdays">{["월", "화", "수", "목", "금", "토", "일"].map((day) => <span key={day}>{day}</span>)}</div>
         <div className="calendar-grid">
-          {days.map((date, index) => (
-            <TapButton
-              key={date ? date.toISOString() : `empty-${index}`}
-              className={date && sameDay(date, focusedDate) ? "picked" : ""}
-              disabled={!date || !isDateOpen(date)}
-              onClick={() => date && setFocusedDate(date)}
-            >
-              {date?.getDate()}
-            </TapButton>
-          ))}
+          {days.map((date, index) => {
+            const dayStatus = date ? getAdminCalendarDayStatus(date, props.openDays, props.daySettings) : "open";
+            const isPicked = date && sameDay(date, focusedDate);
+
+            return (
+              <TapButton
+                key={date ? date.toISOString() : `empty-${index}`}
+                className={[
+                  isPicked ? "picked" : "",
+                  dayStatus === "closed" ? "closed" : "",
+                  dayStatus === "unopened" ? "unopened" : "",
+                ].filter(Boolean).join(" ")}
+                disabled={!date || !isDateOpen(date)}
+                onClick={() => date && setFocusedDate(date)}
+              >
+                {date?.getDate()}
+              </TapButton>
+            );
+          })}
         </div>
         <BottomCTA inSheet disabled={!isDateOpen(focusedDate)} onClick={() => props.onSelect(focusedDate)}>선택하기</BottomCTA>
       </motion.section>
@@ -1655,9 +1664,9 @@ function AdminCalendarPanel(props: {
       </div>
       <div className="admin-divider" />
       <div className="admin-toggle-row">
-        <span>오늘 진료일</span>
+        <span>진료일</span>
         <AdminSwitch
-          label="오늘 진료일"
+          label="진료일"
           checked={isClinicDay}
           onChange={(checked) =>
             props.onSaveDaySetting({
@@ -1669,9 +1678,9 @@ function AdminCalendarPanel(props: {
         />
       </div>
       <div className="admin-toggle-row">
-        <span>오늘 예약 오픈</span>
+        <span>예약 오픈</span>
         <AdminSwitch
-          label="오늘 예약 오픈"
+          label="예약 오픈"
           checked={isClinicDay && isOpen}
           onChange={(checked) => props.onSaveDaySetting({ date: dateKey, isClosed: checked ? false : !isClinicDay, isOpen: checked })}
         />
