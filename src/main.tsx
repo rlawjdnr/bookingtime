@@ -29,6 +29,8 @@ import adminDropdownIcon from "./assets/figma/admin-dropdown.svg";
 import adminRadioEmptyIcon from "./assets/figma/admin-radio-empty.svg";
 import adminRadioSelectedIcon from "./assets/figma/admin-radio-selected.svg";
 
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD ?? "000000";
+
 type Route = "time" | "details" | "complete";
 type Treatment = string;
 type StackEntry = {
@@ -1721,12 +1723,22 @@ function AdminSettingsPanel(props: {
   const [waitInterval, setWaitInterval] = useState(getWaitInterval(props.waitRules));
   const [isClinicEditOpen, setIsClinicEditOpen] = useState(false);
   const [isTreatmentAddOpen, setIsTreatmentAddOpen] = useState(false);
+  const [isSettingsAuthorized, setIsSettingsAuthorized] = useState(false);
+  const [pendingSettingsAction, setPendingSettingsAction] = useState<(() => void) | null>(null);
 
   useEffect(() => setClinicDraft(props.clinicSettings), [props.clinicSettings]);
   useEffect(() => setCapacity(getCommonCapacity(props.slots)), [props.slots]);
   useEffect(() => setWaitInterval(getWaitInterval(props.waitRules)), [props.waitRules]);
 
   const visibleTreatments = props.treatmentOptions.filter((option) => option.isOpen);
+  const requestSettingsEdit = (action: () => void) => {
+    if (isSettingsAuthorized) {
+      action();
+      return;
+    }
+
+    setPendingSettingsAction(() => action);
+  };
 
   return (
     <section className="admin-settings">
@@ -1734,8 +1746,8 @@ function AdminSettingsPanel(props: {
       <div className="admin-settings-stack">
         <article className="admin-setting-card">
           <h2>병원 정보</h2>
-          <AdminSettingValueRow label="병원 이름" value={props.clinicSettings.name} action={<AdminEditChip onClick={() => setIsClinicEditOpen(true)} />} />
-          <AdminSettingValueRow label="전화번호" value={props.clinicSettings.phone} action={<AdminEditChip onClick={() => setIsClinicEditOpen(true)} />} />
+          <AdminSettingValueRow label="병원 이름" value={props.clinicSettings.name} action={<AdminEditChip onClick={() => requestSettingsEdit(() => setIsClinicEditOpen(true))} />} />
+          <AdminSettingValueRow label="전화번호" value={props.clinicSettings.phone} action={<AdminEditChip onClick={() => requestSettingsEdit(() => setIsClinicEditOpen(true))} />} />
         </article>
         <article className="admin-setting-card">
           <h2>예약 가능일</h2>
@@ -1744,8 +1756,8 @@ function AdminSettingsPanel(props: {
             action={
               <AdminStepper
                 value={`${props.clinicSettings.openDays}일 후까지`}
-                onDecrease={() => props.onSaveClinic({ ...props.clinicSettings, openDays: Math.max(1, props.clinicSettings.openDays - 1) })}
-                onIncrease={() => props.onSaveClinic({ ...props.clinicSettings, openDays: props.clinicSettings.openDays + 1 })}
+                onDecrease={() => requestSettingsEdit(() => props.onSaveClinic({ ...props.clinicSettings, openDays: Math.max(1, props.clinicSettings.openDays - 1) }))}
+                onIncrease={() => requestSettingsEdit(() => props.onSaveClinic({ ...props.clinicSettings, openDays: props.clinicSettings.openDays + 1 }))}
               />
             }
           />
@@ -1759,13 +1771,17 @@ function AdminSettingsPanel(props: {
                 value={`${capacity}명`}
                 onDecrease={() => {
                   const next = Math.max(1, capacity - 1);
-                  setCapacity(next);
-                  props.onSaveCapacity(next);
+                  requestSettingsEdit(() => {
+                    setCapacity(next);
+                    props.onSaveCapacity(next);
+                  });
                 }}
                 onIncrease={() => {
                   const next = capacity + 1;
-                  setCapacity(next);
-                  props.onSaveCapacity(next);
+                  requestSettingsEdit(() => {
+                    setCapacity(next);
+                    props.onSaveCapacity(next);
+                  });
                 }}
               />
             }
@@ -1777,13 +1793,17 @@ function AdminSettingsPanel(props: {
                 value={`${waitInterval}분`}
                 onDecrease={() => {
                   const next = Math.max(0, waitInterval - 5);
-                  setWaitInterval(next);
-                  props.onSaveWaitInterval(next);
+                  requestSettingsEdit(() => {
+                    setWaitInterval(next);
+                    props.onSaveWaitInterval(next);
+                  });
                 }}
                 onIncrease={() => {
                   const next = waitInterval + 5;
-                  setWaitInterval(next);
-                  props.onSaveWaitInterval(next);
+                  requestSettingsEdit(() => {
+                    setWaitInterval(next);
+                    props.onSaveWaitInterval(next);
+                  });
                 }}
               />
             }
@@ -1792,7 +1812,7 @@ function AdminSettingsPanel(props: {
         <article className="admin-setting-card">
           <header>
             <h2>진료 과목</h2>
-            <TapButton className="admin-add-text-button" onClick={() => setIsTreatmentAddOpen(true)}>
+            <TapButton className="admin-add-text-button" onClick={() => requestSettingsEdit(() => setIsTreatmentAddOpen(true))}>
               <img className="svg-icon" src={adminPlusIcon} alt="" />
               추가
             </TapButton>
@@ -1802,7 +1822,7 @@ function AdminSettingsPanel(props: {
               <TapButton
                 className="admin-chip"
                 key={option.id}
-                onClick={() => props.onSaveTreatments(props.treatmentOptions.map((item) => item.id === option.id ? { ...item, isOpen: false } : item))}
+                onClick={() => requestSettingsEdit(() => props.onSaveTreatments(props.treatmentOptions.map((item) => item.id === option.id ? { ...item, isOpen: false } : item)))}
               >
                 {option.label}
                 <img className="svg-icon" src={adminChipCloseIcon} alt="" />
@@ -1832,6 +1852,17 @@ function AdminSettingsPanel(props: {
                 { id: makeTreatmentId(label), label, isOpen: true, sortOrder: visibleTreatments.length * 10 },
               ]);
               setIsTreatmentAddOpen(false);
+            }}
+          />
+        )}
+        {pendingSettingsAction && (
+          <AdminPasswordModal
+            onClose={() => setPendingSettingsAction(null)}
+            onConfirm={() => {
+              const action = pendingSettingsAction;
+              setIsSettingsAuthorized(true);
+              setPendingSettingsAction(null);
+              action();
             }}
           />
         )}
@@ -1871,6 +1902,57 @@ function AdminStepper({ value, onDecrease, onIncrease }: { value: string; onDecr
         <img className="svg-icon" src={adminPlusIcon} alt="" />
       </TapButton>
     </div>
+  );
+}
+
+function AdminPasswordModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: () => void }) {
+  const [password, setPassword] = useState("");
+  const [hasError, setHasError] = useState(false);
+
+  function submitPassword() {
+    if (password === ADMIN_PASSWORD) {
+      onConfirm();
+      return;
+    }
+
+    setHasError(true);
+  }
+
+  return (
+    <motion.div className="admin-modal-dim admin-password-dim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={overlaySpring} onClick={onClose}>
+      <motion.section
+        className="admin-password-modal"
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        transition={overlaySpring}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <h1>
+          설정을 수정하려면
+          <br />
+          비밀번호를 입력해주세요
+        </h1>
+        <div className="admin-password-field">
+          <input
+            value={password}
+            onChange={(event) => {
+              setPassword(event.target.value.replace(/\D/g, "").slice(0, 6));
+              setHasError(false);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") submitPassword();
+            }}
+            inputMode="numeric"
+            type="password"
+            placeholder="비밀번호 6자리"
+            autoFocus
+          />
+          {hasError && <p>비밀번호가 틀렸어요</p>}
+        </div>
+        <TapButton className="admin-password-submit" onClick={submitPassword}>수정하기</TapButton>
+      </motion.section>
+    </motion.div>
   );
 }
 
