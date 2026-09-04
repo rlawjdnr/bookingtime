@@ -426,7 +426,7 @@ class SyncReadyAppointmentStore implements AppointmentStore {
       Array.from({ length: Math.max(1, slot.remaining) }, (_, index) => ({
         time_block_id: slot.id,
         reservation_order: index + 1,
-        wait_minutes: index * intervalMinutes,
+        wait_minutes: (index + 1) * intervalMinutes,
       })),
     );
 
@@ -2143,13 +2143,8 @@ function getWaitMinutesForNextReservation(slot: Slot, selectedDate: Date, bookin
   const dateKey = toDateKey(selectedDate);
   const reservationOrder =
     bookings.filter((item) => item.status === "confirmed" && item.date === dateKey && item.time === slot.time).length + 1;
-  const rulesForSlot = waitRules
-    .filter((rule) => rule.timeBlockId === slot.id)
-    .sort((a, b) => a.reservationOrder - b.reservationOrder);
-  const exactRule = rulesForSlot.find((rule) => rule.reservationOrder === reservationOrder);
-  const previousRule = rulesForSlot.filter((rule) => rule.reservationOrder < reservationOrder).slice(-1)[0];
 
-  return exactRule?.waitMinutes ?? previousRule?.waitMinutes ?? 15;
+  return reservationOrder * getWaitIntervalForSlot(slot.id, waitRules);
 }
 
 function getReservationErrorMessage(error: unknown) {
@@ -2294,8 +2289,23 @@ function getCommonCapacity(slots: Slot[]) {
 }
 
 function getWaitInterval(waitRules: WaitRule[]) {
-  const secondRule = waitRules.find((rule) => rule.reservationOrder === 2);
-  return secondRule?.waitMinutes ?? 15;
+  const firstSlotId = waitRules[0]?.timeBlockId;
+  if (!firstSlotId) return 15;
+  return getWaitIntervalForSlot(firstSlotId, waitRules);
+}
+
+function getWaitIntervalForSlot(slotId: string, waitRules: WaitRule[]) {
+  const rulesForSlot = waitRules
+    .filter((rule) => rule.timeBlockId === slotId)
+    .sort((a, b) => a.reservationOrder - b.reservationOrder);
+  const firstRule = rulesForSlot.find((rule) => rule.reservationOrder === 1);
+  const secondRule = rulesForSlot.find((rule) => rule.reservationOrder === 2);
+  const intervalFromDifference = firstRule && secondRule ? secondRule.waitMinutes - firstRule.waitMinutes : 0;
+
+  if (intervalFromDifference > 0) return intervalFromDifference;
+  if (firstRule && firstRule.waitMinutes > 0) return firstRule.waitMinutes;
+  if (secondRule && secondRule.waitMinutes > 0) return secondRule.waitMinutes;
+  return 15;
 }
 
 function makeTreatmentId(label: string) {
