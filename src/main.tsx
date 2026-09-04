@@ -751,6 +751,7 @@ function App() {
               daySettings={daySettings}
               selectedDate={selectedDate}
               onClose={() => setIsCalendarOpen(false)}
+              onBlockedDate={(message) => setToast(message)}
               onSelect={(date) => {
                 setSelectedDate(date);
                 setIsCalendarOpen(false);
@@ -1246,7 +1247,14 @@ function CancelScreen({
   );
 }
 
-function CalendarSheet(props: { openDays: number; daySettings: DaySetting[]; selectedDate: Date; onClose: () => void; onSelect: (date: Date) => void }) {
+function CalendarSheet(props: {
+  openDays: number;
+  daySettings: DaySetting[];
+  selectedDate: Date;
+  onClose: () => void;
+  onBlockedDate: (message: string) => void;
+  onSelect: (date: Date) => void;
+}) {
   const isDateOpen = (date: Date) => isAdminOpenDate(date, props.openDays, props.daySettings);
   const safeSelectedDate = isDateOpen(props.selectedDate) ? props.selectedDate : getToday();
   const [viewDate, setViewDate] = useState(new Date(safeSelectedDate));
@@ -1287,8 +1295,22 @@ function CalendarSheet(props: { openDays: number; daySettings: DaySetting[]; sel
                   dayStatus === "closed" ? "closed" : "",
                   dayStatus === "unopened" ? "unopened" : "",
                 ].filter(Boolean).join(" ")}
-                disabled={!date || !isDateOpen(date)}
-                onClick={() => date && setFocusedDate(date)}
+                disabled={!date}
+                onClick={() => {
+                  if (!date) return;
+
+                  if (dayStatus === "closed") {
+                    props.onBlockedDate("진료하지 않는 날이에요");
+                    return;
+                  }
+
+                  if (dayStatus === "unopened" || !isDateOpen(date)) {
+                    props.onBlockedDate("아직 예약이 열리지 않은 날이에요");
+                    return;
+                  }
+
+                  setFocusedDate(date);
+                }}
               >
                 {date?.getDate()}
               </TapButton>
@@ -1329,7 +1351,7 @@ function SummaryCard({ rows, flat = false, hideIcons = false }: { rows: [string,
 }
 
 function Toast({ message, onDismiss }: { message: string; onDismiss: () => void }) {
-  const icon = message.includes("마감") ? snackbarAlertIcon : snackbarCheckIcon;
+  const icon = message.includes("마감") || message.includes("진료하지") || message.includes("예약이 열리지") ? snackbarAlertIcon : snackbarCheckIcon;
 
   useEffect(() => {
     if (!message) return;
