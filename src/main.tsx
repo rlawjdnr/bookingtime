@@ -1502,11 +1502,6 @@ function AdminApp() {
           onSaveWaitInterval={(minutes) =>
             appointmentStore.saveWaitInterval(baseSlots, minutes).then(() => setToast("대기 시간 규칙을 저장했어요")).catch((error) => setToast(getReservationErrorMessage(error)))
           }
-          onSaveSlots={(slots) =>
-            Promise.all(slots.map((slot, index) => appointmentStore.saveSlot(slot, (index + 1) * 10)))
-              .then(() => setToast("예약 시간을 저장했어요"))
-              .catch((error) => setToast(getReservationErrorMessage(error)))
-          }
           onSaveTreatments={(options) =>
             appointmentStore.saveTreatments(options).then(() => setToast("진료 과목을 저장했어요")).catch((error) => setToast(getReservationErrorMessage(error)))
           }
@@ -1719,14 +1714,12 @@ function AdminSettingsPanel(props: {
   onSaveClinic: (settings: ClinicSettings) => void;
   onSaveCapacity: (capacity: number) => void;
   onSaveWaitInterval: (minutes: number) => void;
-  onSaveSlots: (slots: Slot[]) => void;
   onSaveTreatments: (options: TreatmentOption[]) => void;
 }) {
   const [clinicDraft, setClinicDraft] = useState(props.clinicSettings);
   const [capacity, setCapacity] = useState(getCommonCapacity(props.slots));
   const [waitInterval, setWaitInterval] = useState(getWaitInterval(props.waitRules));
   const [isClinicEditOpen, setIsClinicEditOpen] = useState(false);
-  const [isSlotsEditOpen, setIsSlotsEditOpen] = useState(false);
   const [isTreatmentAddOpen, setIsTreatmentAddOpen] = useState(false);
 
   useEffect(() => setClinicDraft(props.clinicSettings), [props.clinicSettings]);
@@ -1759,11 +1752,6 @@ function AdminSettingsPanel(props: {
         </article>
         <article className="admin-setting-card">
           <h2>예약 시간</h2>
-          <AdminSettingValueRow
-            label="시간 블록"
-            value={`오전 ${props.slots.filter((slot) => Number(slot.time.split(":")[0]) < 13).length}개, 오후 ${props.slots.filter((slot) => Number(slot.time.split(":")[0]) >= 13).length}개`}
-            action={<AdminEditChip onClick={() => setIsSlotsEditOpen(true)} />}
-          />
           <AdminSettingValueRow
             label="시간 당 예약 가능 인원"
             action={
@@ -1844,16 +1832,6 @@ function AdminSettingsPanel(props: {
                 { id: makeTreatmentId(label), label, isOpen: true, sortOrder: visibleTreatments.length * 10 },
               ]);
               setIsTreatmentAddOpen(false);
-            }}
-          />
-        )}
-        {isSlotsEditOpen && (
-          <AdminSlotsEditModal
-            slots={props.slots}
-            onClose={() => setIsSlotsEditOpen(false)}
-            onSave={(slots) => {
-              props.onSaveSlots(slots);
-              setIsSlotsEditOpen(false);
             }}
           />
         )}
