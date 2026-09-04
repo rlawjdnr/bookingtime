@@ -1619,8 +1619,9 @@ function AdminCalendarPanel(props: {
   const days = useMemo(() => makeCalendarDays(props.viewDate), [props.viewDate]);
   const dateKey = toDateKey(props.selectedDate);
   const defaultOpen = isDefaultOpenBookingDate(props.selectedDate, props.openDays);
-  const isClosed = Boolean(props.daySetting?.isClosed);
-  const isOpen = props.daySetting?.isOpen ?? defaultOpen;
+  const defaultClinicDay = isDefaultClinicDay(props.selectedDate);
+  const isClinicDay = props.daySetting ? !props.daySetting.isClosed : defaultClinicDay;
+  const isOpen = props.daySetting?.isOpen ?? (isClinicDay && defaultOpen);
 
   return (
     <aside className="admin-side-panel">
@@ -1654,19 +1655,25 @@ function AdminCalendarPanel(props: {
       </div>
       <div className="admin-divider" />
       <div className="admin-toggle-row">
-        <span>오늘 휴무일로 설정</span>
+        <span>오늘 진료일</span>
         <AdminSwitch
-          label="오늘 휴무일로 설정"
-          checked={isClosed}
-          onChange={(checked) => props.onSaveDaySetting({ date: dateKey, isClosed: checked, isOpen: checked ? false : defaultOpen })}
+          label="오늘 진료일"
+          checked={isClinicDay}
+          onChange={(checked) =>
+            props.onSaveDaySetting({
+              date: dateKey,
+              isClosed: !checked,
+              isOpen: checked ? (props.daySetting?.isOpen ?? defaultOpen) : false,
+            })
+          }
         />
       </div>
       <div className="admin-toggle-row">
         <span>오늘 예약 오픈</span>
         <AdminSwitch
           label="오늘 예약 오픈"
-          checked={isOpen && !isClosed}
-          onChange={(checked) => props.onSaveDaySetting({ date: dateKey, isClosed: checked ? false : isClosed, isOpen: checked })}
+          checked={isClinicDay && isOpen}
+          onChange={(checked) => props.onSaveDaySetting({ date: dateKey, isClosed: checked ? false : !isClinicDay, isOpen: checked })}
         />
       </div>
     </aside>
@@ -2261,7 +2268,11 @@ function isSelectableBookingDate(date: Date, openDays: number) {
 }
 
 function isDefaultOpenBookingDate(date: Date, openDays: number) {
-  return isSelectableBookingDate(date, openDays) && date.getDay() !== 0;
+  return isSelectableBookingDate(date, openDays) && isDefaultClinicDay(date);
+}
+
+function isDefaultClinicDay(date: Date) {
+  return date.getDay() !== 0;
 }
 
 function toPhoneHref(phone: string) {
@@ -2300,9 +2311,11 @@ function isAdminOpenDate(date: Date, openDays: number, daySettings: DaySetting[]
 
 function getAdminCalendarDayStatus(date: Date, openDays: number, daySettings: DaySetting[]) {
   const daySetting = getDaySetting(daySettings, date);
-  if (daySetting?.isClosed) return "closed";
+  const defaultClinicDay = isDefaultClinicDay(date);
+  const isClinicDay = daySetting ? !daySetting.isClosed : defaultClinicDay;
+
+  if (!isClinicDay) return "closed";
   if (daySetting?.isOpen) return "open";
-  if (date.getDay() === 0) return "closed";
   if (daySetting?.isOpen === false) return "unopened";
   if (!isSelectableBookingDate(date, openDays)) return "unopened";
   return "open";
