@@ -29,7 +29,7 @@ import adminDropdownIcon from "./assets/figma/admin-dropdown.svg";
 import adminRadioEmptyIcon from "./assets/figma/admin-radio-empty.svg";
 import adminRadioSelectedIcon from "./assets/figma/admin-radio-selected.svg";
 
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD ?? "3359799@";
+const ADMIN_SESSION_KEY = "bookingtime-admin-authenticated";
 
 type Route = "time" | "details" | "complete";
 type Treatment = string;
@@ -1390,6 +1390,9 @@ function BottomCTA(props: { children: React.ReactNode; disabled?: boolean; varia
 }
 
 function AdminApp() {
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(
+    () => sessionStorage.getItem(ADMIN_SESSION_KEY) === "true",
+  );
   const [activeTab, setActiveTab] = useState<"reservations" | "settings">(
     window.location.pathname.startsWith("/admin/settings") ? "settings" : "reservations",
   );
@@ -1428,9 +1431,10 @@ function AdminApp() {
   };
 
   useEffect(() => {
+    if (!isAdminAuthenticated) return;
     loadAdminData();
     return appointmentStore.subscribe(loadAdminData);
-  }, []);
+  }, [isAdminAuthenticated]);
 
   const treatmentLabels = treatmentOptions.map((option) => option.label);
   const selectedDaySetting = getDaySetting(daySettings, selectedDate);
@@ -1438,21 +1442,43 @@ function AdminApp() {
   const selectedDayClosed = Boolean(selectedDaySetting?.isClosed) || !selectedDayOpen;
   const displaySlots = applyBookingsToSlots(baseSlots, selectedDate, bookings, selectedDayClosed);
 
+  if (!isAdminAuthenticated) {
+    return (
+      <AdminLoginScreen
+        onLogin={() => {
+          sessionStorage.setItem(ADMIN_SESSION_KEY, "true");
+          setIsAdminAuthenticated(true);
+        }}
+      />
+    );
+  }
+
   return (
     <main className="admin-shell">
       <aside className="admin-sidebar">
-        <div className="admin-logo">
-          <span className="icon-18"><img className="svg-icon hospital-icon" src={hospitalIcon} alt="" /></span>
-          <strong>{clinicSettings.name}</strong>
+        <div className="admin-sidebar-main">
+          <div className="admin-logo">
+            <span className="icon-18"><img className="svg-icon hospital-icon" src={hospitalIcon} alt="" /></span>
+            <strong>{clinicSettings.name}</strong>
+          </div>
+          <nav className="admin-nav">
+            <TapButton className={activeTab === "reservations" ? "active" : ""} onClick={() => switchAdminTab("reservations")}>
+              예약 현황
+            </TapButton>
+            <TapButton className={activeTab === "settings" ? "active" : ""} onClick={() => switchAdminTab("settings")}>
+              설정
+            </TapButton>
+          </nav>
         </div>
-        <nav className="admin-nav">
-          <TapButton className={activeTab === "reservations" ? "active" : ""} onClick={() => switchAdminTab("reservations")}>
-            예약 현황
-          </TapButton>
-          <TapButton className={activeTab === "settings" ? "active" : ""} onClick={() => switchAdminTab("settings")}>
-            설정
-          </TapButton>
-        </nav>
+        <TapButton
+          className="admin-logout-button"
+          onClick={() => {
+            sessionStorage.removeItem(ADMIN_SESSION_KEY);
+            setIsAdminAuthenticated(false);
+          }}
+        >
+          로그아웃
+        </TapButton>
       </aside>
       {activeTab === "reservations" ? (
         <>
@@ -1723,22 +1749,12 @@ function AdminSettingsPanel(props: {
   const [waitInterval, setWaitInterval] = useState(getWaitInterval(props.waitRules));
   const [isClinicEditOpen, setIsClinicEditOpen] = useState(false);
   const [isTreatmentAddOpen, setIsTreatmentAddOpen] = useState(false);
-  const [isSettingsAuthorized, setIsSettingsAuthorized] = useState(false);
-  const [pendingSettingsAction, setPendingSettingsAction] = useState<(() => void) | null>(null);
 
   useEffect(() => setClinicDraft(props.clinicSettings), [props.clinicSettings]);
   useEffect(() => setCapacity(getCommonCapacity(props.slots)), [props.slots]);
   useEffect(() => setWaitInterval(getWaitInterval(props.waitRules)), [props.waitRules]);
 
   const visibleTreatments = props.treatmentOptions.filter((option) => option.isOpen);
-  const requestSettingsEdit = (action: () => void) => {
-    if (isSettingsAuthorized) {
-      action();
-      return;
-    }
-
-    setPendingSettingsAction(() => action);
-  };
 
   return (
     <section className="admin-settings">
@@ -1746,8 +1762,8 @@ function AdminSettingsPanel(props: {
       <div className="admin-settings-stack">
         <article className="admin-setting-card">
           <h2>병원 정보</h2>
-          <AdminSettingValueRow label="병원 이름" value={props.clinicSettings.name} action={<AdminEditChip onClick={() => requestSettingsEdit(() => setIsClinicEditOpen(true))} />} />
-          <AdminSettingValueRow label="전화번호" value={props.clinicSettings.phone} action={<AdminEditChip onClick={() => requestSettingsEdit(() => setIsClinicEditOpen(true))} />} />
+          <AdminSettingValueRow label="병원 이름" value={props.clinicSettings.name} action={<AdminEditChip onClick={() => setIsClinicEditOpen(true)} />} />
+          <AdminSettingValueRow label="전화번호" value={props.clinicSettings.phone} action={<AdminEditChip onClick={() => setIsClinicEditOpen(true)} />} />
         </article>
         <article className="admin-setting-card">
           <h2>예약 가능일</h2>
@@ -1756,8 +1772,8 @@ function AdminSettingsPanel(props: {
             action={
               <AdminStepper
                 value={`${props.clinicSettings.openDays}일 후까지`}
-                onDecrease={() => requestSettingsEdit(() => props.onSaveClinic({ ...props.clinicSettings, openDays: Math.max(1, props.clinicSettings.openDays - 1) }))}
-                onIncrease={() => requestSettingsEdit(() => props.onSaveClinic({ ...props.clinicSettings, openDays: props.clinicSettings.openDays + 1 }))}
+                onDecrease={() => props.onSaveClinic({ ...props.clinicSettings, openDays: Math.max(1, props.clinicSettings.openDays - 1) })}
+                onIncrease={() => props.onSaveClinic({ ...props.clinicSettings, openDays: props.clinicSettings.openDays + 1 })}
               />
             }
           />
@@ -1771,17 +1787,13 @@ function AdminSettingsPanel(props: {
                 value={`${capacity}명`}
                 onDecrease={() => {
                   const next = Math.max(1, capacity - 1);
-                  requestSettingsEdit(() => {
-                    setCapacity(next);
-                    props.onSaveCapacity(next);
-                  });
+                  setCapacity(next);
+                  props.onSaveCapacity(next);
                 }}
                 onIncrease={() => {
                   const next = capacity + 1;
-                  requestSettingsEdit(() => {
-                    setCapacity(next);
-                    props.onSaveCapacity(next);
-                  });
+                  setCapacity(next);
+                  props.onSaveCapacity(next);
                 }}
               />
             }
@@ -1793,17 +1805,13 @@ function AdminSettingsPanel(props: {
                 value={`${waitInterval}분`}
                 onDecrease={() => {
                   const next = Math.max(0, waitInterval - 5);
-                  requestSettingsEdit(() => {
-                    setWaitInterval(next);
-                    props.onSaveWaitInterval(next);
-                  });
+                  setWaitInterval(next);
+                  props.onSaveWaitInterval(next);
                 }}
                 onIncrease={() => {
                   const next = waitInterval + 5;
-                  requestSettingsEdit(() => {
-                    setWaitInterval(next);
-                    props.onSaveWaitInterval(next);
-                  });
+                  setWaitInterval(next);
+                  props.onSaveWaitInterval(next);
                 }}
               />
             }
@@ -1812,7 +1820,7 @@ function AdminSettingsPanel(props: {
         <article className="admin-setting-card">
           <header>
             <h2>진료 과목</h2>
-            <TapButton className="admin-add-text-button" onClick={() => requestSettingsEdit(() => setIsTreatmentAddOpen(true))}>
+            <TapButton className="admin-add-text-button" onClick={() => setIsTreatmentAddOpen(true)}>
               <img className="svg-icon" src={adminPlusIcon} alt="" />
               추가
             </TapButton>
@@ -1822,7 +1830,7 @@ function AdminSettingsPanel(props: {
               <TapButton
                 className="admin-chip"
                 key={option.id}
-                onClick={() => requestSettingsEdit(() => props.onSaveTreatments(props.treatmentOptions.map((item) => item.id === option.id ? { ...item, isOpen: false } : item)))}
+                onClick={() => props.onSaveTreatments(props.treatmentOptions.map((item) => item.id === option.id ? { ...item, isOpen: false } : item))}
               >
                 {option.label}
                 <img className="svg-icon" src={adminChipCloseIcon} alt="" />
@@ -1852,17 +1860,6 @@ function AdminSettingsPanel(props: {
                 { id: makeTreatmentId(label), label, isOpen: true, sortOrder: visibleTreatments.length * 10 },
               ]);
               setIsTreatmentAddOpen(false);
-            }}
-          />
-        )}
-        {pendingSettingsAction && (
-          <AdminPasswordModal
-            onClose={() => setPendingSettingsAction(null)}
-            onConfirm={() => {
-              const action = pendingSettingsAction;
-              setIsSettingsAuthorized(true);
-              setPendingSettingsAction(null);
-              action();
             }}
           />
         )}
@@ -1905,13 +1902,18 @@ function AdminStepper({ value, onDecrease, onIncrease }: { value: string; onDecr
   );
 }
 
-function AdminPasswordModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: () => void }) {
+function AdminLoginScreen({ onLogin }: { onLogin: () => void }) {
   const [password, setPassword] = useState("");
   const [hasError, setHasError] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function submitPassword() {
-    if (password === ADMIN_PASSWORD) {
-      onConfirm();
+  async function submitPassword() {
+    setIsSubmitting(true);
+    const isValid = await verifyAdminPassword(password);
+    setIsSubmitting(false);
+
+    if (isValid) {
+      onLogin();
       return;
     }
 
@@ -1919,21 +1921,23 @@ function AdminPasswordModal({ onClose, onConfirm }: { onClose: () => void; onCon
   }
 
   return (
-    <motion.div className="admin-modal-dim admin-password-dim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={overlaySpring} onClick={onClose}>
+    <main className="admin-login-shell">
       <motion.section
-        className="admin-password-modal"
+        className="admin-login-card"
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.95, opacity: 0 }}
         transition={overlaySpring}
-        onClick={(event) => event.stopPropagation()}
       >
+        <div className="admin-login-logo">
+          <span className="icon-18"><img className="svg-icon hospital-icon" src={hospitalIcon} alt="" /></span>
+          <strong>이목구비 김한의원</strong>
+        </div>
         <h1>
-          설정을 수정하려면
+          관리자 로그인
           <br />
           비밀번호를 입력해주세요
         </h1>
-        <div className="admin-password-field">
+        <div className="admin-login-field">
           <input
             value={password}
             onChange={(event) => {
@@ -1941,7 +1945,7 @@ function AdminPasswordModal({ onClose, onConfirm }: { onClose: () => void; onCon
               setHasError(false);
             }}
             onKeyDown={(event) => {
-              if (event.key === "Enter") submitPassword();
+              if (event.key === "Enter") void submitPassword();
             }}
             type="password"
             placeholder="비밀번호 입력"
@@ -1949,9 +1953,11 @@ function AdminPasswordModal({ onClose, onConfirm }: { onClose: () => void; onCon
           />
           {hasError && <p>비밀번호가 틀렸어요</p>}
         </div>
-        <TapButton className="admin-password-submit" onClick={submitPassword}>수정하기</TapButton>
+        <TapButton className="admin-login-submit" disabled={isSubmitting} onClick={() => void submitPassword()}>
+          {isSubmitting ? "확인 중" : "로그인"}
+        </TapButton>
       </motion.section>
-    </motion.div>
+    </main>
   );
 }
 
@@ -2387,6 +2393,25 @@ function getWaitIntervalForSlot(slotId: string, waitRules: WaitRule[]) {
   if (firstRule && firstRule.waitMinutes > 0) return firstRule.waitMinutes;
   if (secondRule && secondRule.waitMinutes > 0) return secondRule.waitMinutes;
   return 15;
+}
+
+async function verifyAdminPassword(password: string) {
+  if (import.meta.env.DEV) return password === "3359799@";
+
+  try {
+    const response = await fetch("/api/admin-login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
+    });
+
+    if (!response.ok) return false;
+    const result = await response.json();
+    return result.ok === true;
+  } catch (error) {
+    console.error("Failed to verify admin password", error);
+    return false;
+  }
 }
 
 function makeTreatmentId(label: string) {
