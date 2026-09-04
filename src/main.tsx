@@ -29,7 +29,7 @@ import adminDropdownIcon from "./assets/figma/admin-dropdown.svg";
 import adminRadioEmptyIcon from "./assets/figma/admin-radio-empty.svg";
 import adminRadioSelectedIcon from "./assets/figma/admin-radio-selected.svg";
 
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD ?? "000000";
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD ?? "3359799@";
 
 type Route = "time" | "details" | "complete";
 type Treatment = string;
@@ -1937,15 +1937,14 @@ function AdminPasswordModal({ onClose, onConfirm }: { onClose: () => void; onCon
           <input
             value={password}
             onChange={(event) => {
-              setPassword(event.target.value.replace(/\D/g, "").slice(0, 6));
+              setPassword(event.target.value);
               setHasError(false);
             }}
             onKeyDown={(event) => {
               if (event.key === "Enter") submitPassword();
             }}
-            inputMode="numeric"
             type="password"
-            placeholder="비밀번호 6자리"
+            placeholder="비밀번호 입력"
             autoFocus
           />
           {hasError && <p>비밀번호가 틀렸어요</p>}
