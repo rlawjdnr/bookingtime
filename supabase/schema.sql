@@ -7,10 +7,27 @@ create table if not exists public.clinic_settings (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.clinic_day_settings (
+  target_date date primary key,
+  is_closed boolean not null default false,
+  is_open boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.appointment_time_blocks (
   id text primary key,
   time_label text not null,
   capacity integer not null default 0,
+  is_open boolean not null default true,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.treatment_options (
+  id text primary key,
+  label text not null,
   is_open boolean not null default true,
   sort_order integer not null default 0,
   created_at timestamptz not null default now(),
@@ -69,9 +86,22 @@ set is_open = false,
     updated_at = now()
 where id not in ('0930', '1015', '1100', '1145', '1400', '1510', '1620', '1730');
 
+insert into public.treatment_options (id, label, is_open, sort_order)
+values
+  ('none', '없음', true, 0),
+  ('acupuncture', '침 치료', true, 10),
+  ('herbal', '한약 처방', true, 20)
+on conflict (id) do update
+set label = excluded.label,
+    is_open = excluded.is_open,
+    sort_order = excluded.sort_order,
+    updated_at = now();
+
 alter table public.clinic_settings enable row level security;
+alter table public.clinic_day_settings enable row level security;
 alter table public.appointment_time_blocks enable row level security;
 alter table public.wait_time_rules enable row level security;
+alter table public.treatment_options enable row level security;
 alter table public.reservations enable row level security;
 
 drop policy if exists "Public read clinic settings" on public.clinic_settings;
@@ -80,17 +110,64 @@ on public.clinic_settings for select
 to anon
 using (true);
 
+drop policy if exists "Public manage clinic settings" on public.clinic_settings;
+create policy "Public manage clinic settings"
+on public.clinic_settings for all
+to anon
+using (true)
+with check (true);
+
+drop policy if exists "Public read day settings" on public.clinic_day_settings;
+create policy "Public read day settings"
+on public.clinic_day_settings for select
+to anon
+using (true);
+
+drop policy if exists "Public manage day settings" on public.clinic_day_settings;
+create policy "Public manage day settings"
+on public.clinic_day_settings for all
+to anon
+using (true)
+with check (true);
+
 drop policy if exists "Public read time blocks" on public.appointment_time_blocks;
 create policy "Public read time blocks"
 on public.appointment_time_blocks for select
 to anon
 using (true);
 
+drop policy if exists "Public manage time blocks" on public.appointment_time_blocks;
+create policy "Public manage time blocks"
+on public.appointment_time_blocks for all
+to anon
+using (true)
+with check (true);
+
 drop policy if exists "Public read wait rules" on public.wait_time_rules;
 create policy "Public read wait rules"
 on public.wait_time_rules for select
 to anon
 using (true);
+
+drop policy if exists "Public manage wait rules" on public.wait_time_rules;
+create policy "Public manage wait rules"
+on public.wait_time_rules for all
+to anon
+using (true)
+with check (true);
+
+drop policy if exists "Public read treatment options" on public.treatment_options;
+create policy "Public read treatment options"
+on public.treatment_options for select
+to anon
+using (true);
+
+drop policy if exists "Public manage treatment options" on public.treatment_options;
+create policy "Public manage treatment options"
+on public.treatment_options for all
+to anon
+using (true)
+with check (true);
 
 drop policy if exists "Public read reservations" on public.reservations;
 create policy "Public read reservations"
@@ -134,7 +211,21 @@ end $$;
 
 do $$
 begin
+  alter publication supabase_realtime add table public.clinic_day_settings;
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
   alter publication supabase_realtime add table public.wait_time_rules;
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter publication supabase_realtime add table public.treatment_options;
 exception
   when duplicate_object then null;
 end $$;

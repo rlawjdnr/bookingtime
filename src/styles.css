@@ -24,6 +24,10 @@ body {
   letter-spacing: 0;
 }
 
+body.admin-page {
+  background: #f7f8f9;
+}
+
 button,
 input,
 textarea {
@@ -719,5 +723,616 @@ textarea.selected {
 @media (min-width: 600px) {
   .phone-frame {
     box-shadow: 0 24px 80px rgba(26, 28, 32, 0.18);
+  }
+}
+
+.admin-shell {
+  min-height: 100dvh;
+  width: 100%;
+  background: #f7f8f9;
+  display: grid;
+  grid-template-columns: 216px minmax(0, 659px) 324px;
+  column-gap: 71px;
+  align-items: start;
+  padding-right: 100px;
+  color: var(--text);
+}
+
+.admin-sidebar {
+  position: sticky;
+  top: 0;
+  min-height: 100dvh;
+  padding: 50px 16px;
+  background: #f7f8f9;
+}
+
+.admin-logo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 16px;
+}
+
+.admin-logo strong {
+  font-weight: 600;
+}
+
+.admin-nav {
+  display: grid;
+  gap: 4px;
+  margin-top: 32px;
+}
+
+.admin-nav button {
+  height: 46px;
+  padding: 0 12px;
+  border-radius: 12px;
+  text-align: left;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.admin-nav button.active {
+  background: rgba(0, 0, 0, 0.03);
+  font-weight: 600;
+}
+
+.admin-reservations,
+.admin-settings,
+.admin-side-panel {
+  padding-top: 100px;
+}
+
+.admin-reservations h1,
+.admin-settings h1 {
+  margin: 0 0 15px;
+  font-size: 17px;
+  line-height: 1.47;
+  font-weight: 600;
+}
+
+.admin-slot-section {
+  display: grid;
+  gap: 8px;
+  margin-top: 30px;
+}
+
+.admin-slot-section:first-of-type {
+  margin-top: 0;
+}
+
+.admin-slot-section > p {
+  margin: 0 0 2px;
+  font-size: 13px;
+  line-height: 1.47;
+}
+
+.admin-time-card {
+  min-height: 53px;
+  padding: 16px;
+  background: #fff;
+  border-radius: 14px;
+}
+
+.admin-time-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 21px;
+}
+
+.admin-time-card header span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-time-card header strong {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.admin-time-card header em {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--text);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.admin-add-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 21px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.admin-add-button span {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  color: #858c98;
+  display: block;
+  flex: 0 0 20px;
+  overflow: hidden;
+  font-size: 0;
+}
+
+.admin-add-button span::before,
+.admin-add-button span::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 9px;
+  height: 2px;
+  border-radius: 999px;
+  background: #858c98;
+  transform: translate(-50%, -50%);
+}
+
+.admin-add-button span::after {
+  width: 2px;
+  height: 9px;
+}
+
+.admin-reservation-row {
+  display: grid;
+  grid-template-columns: 86px 102px 108px minmax(100px, 1fr);
+  gap: 20px;
+  align-items: center;
+  min-height: 34px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+}
+
+.admin-time-card header + .admin-reservation-row {
+  margin-top: 8px;
+}
+
+.admin-reservation-row.cancelled {
+  color: var(--disabled);
+}
+
+.admin-reservation-row.cancelled select:first-child {
+  color: var(--danger);
+}
+
+.admin-reservation-row input,
+.admin-reservation-row select {
+  height: 28px;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 13px;
+}
+
+.admin-reservation-row select:first-child {
+  background: var(--surface);
+}
+
+.admin-reservation-row input:focus,
+.admin-reservation-row select:focus {
+  border: 1px solid var(--text);
+  padding: 3px 5px;
+}
+
+.admin-side-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 17px;
+}
+
+.admin-calendar {
+  width: 324px;
+}
+
+.admin-month-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 24px;
+}
+
+.admin-month-control button {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+}
+
+.admin-month-control strong {
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.admin-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 40px);
+  justify-content: space-between;
+  row-gap: 4px;
+  margin-top: 4px;
+}
+
+.admin-calendar-grid.weekdays {
+  margin-top: 32px;
+}
+
+.admin-calendar-grid span,
+.admin-calendar-grid button {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.admin-calendar-grid span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.admin-calendar-grid button.picked {
+  width: 32px;
+  height: 32px;
+  margin: 4px;
+  border-radius: 999px;
+  background: var(--text);
+  color: #fff;
+}
+
+.admin-divider {
+  width: 324px;
+  height: 1px;
+  background: var(--line);
+}
+
+.admin-toggle-row {
+  width: 324px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.admin-toggle-row input {
+  width: 34px;
+  height: 20px;
+  accent-color: var(--text);
+}
+
+.admin-settings {
+  grid-column: 2 / span 2;
+  width: 486px;
+}
+
+.admin-settings-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-setting-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #fff;
+  border-radius: 14px;
+}
+
+.admin-setting-card h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.47;
+}
+
+.admin-setting-row {
+  width: 100%;
+  min-height: 21px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 13px;
+}
+
+.admin-setting-row > span {
+  color: var(--text);
+  line-height: 1.47;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.admin-setting-row > div {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.admin-setting-row strong {
+  color: #000;
+  font-size: 13px;
+  line-height: 1.47;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.admin-setting-card input {
+  height: 34px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.admin-setting-card input:focus {
+  padding: 6px 7px;
+}
+
+.admin-setting-card em {
+  font-style: normal;
+  font-size: 13px;
+}
+
+.admin-edit-chip,
+.admin-small-button {
+  min-height: 26px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.admin-stepper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-stepper button {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+}
+
+.admin-stepper img {
+  width: 20px;
+  height: 20px;
+}
+
+.admin-stepper strong {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.admin-setting-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-add-text-button {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 21px;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 600;
+}
+
+.admin-add-text-button img {
+  width: 20px;
+  height: 20px;
+}
+
+.admin-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-chip {
+  min-height: 26px;
+  padding: 5px 4px 5px 6px;
+  border-radius: 6px;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.admin-chip img {
+  width: 8px;
+  height: 8px;
+  margin: 4px;
+}
+
+.admin-modal-dim {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  background: rgba(26, 28, 32, 0.12);
+  padding: 16px;
+}
+
+.admin-modal {
+  width: min(530px, 100%);
+  padding: 25px;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 80px rgba(26, 28, 32, 0.18);
+}
+
+.admin-modal h1 {
+  margin: 0 0 24px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.admin-modal label,
+.admin-modal section {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.admin-modal label > span,
+.admin-modal section > span {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.admin-slot-edit-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.admin-slot-edit-list label {
+  display: grid;
+  grid-template-columns: 44px 1fr 20px;
+  gap: 10px;
+  align-items: center;
+  margin: 0;
+  font-size: 13px;
+}
+
+.admin-slot-edit-list input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--text);
+}
+
+.admin-treatment-segment {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.admin-treatment-segment button {
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.admin-treatment-segment button.selected {
+  border: 2px solid var(--text);
+}
+
+.admin-primary-button {
+  min-width: 107px;
+  min-height: 45px;
+  margin-top: 60px;
+  padding: 0 20px;
+  border-radius: 12px;
+  background: var(--text);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.admin-primary-button:disabled {
+  background: #d1d3d8;
+}
+
+.admin-shell .toast {
+  position: fixed;
+  left: auto;
+  right: 24px;
+  bottom: 24px;
+  width: 320px;
+}
+
+@media (max-width: 1260px) {
+  .admin-shell {
+    grid-template-columns: 216px minmax(0, 1fr);
+    gap: 48px;
+    padding-right: 48px;
+  }
+
+  .admin-side-panel {
+    grid-column: 2;
+    padding-top: 24px;
+    padding-bottom: 48px;
+  }
+
+  .admin-settings {
+    grid-column: 2;
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-shell {
+    display: block;
+    padding: 0 16px 40px;
+  }
+
+  .admin-sidebar {
+    position: sticky;
+    z-index: 10;
+    top: 0;
+    min-height: 0;
+    margin: 0 -16px;
+    padding: 16px;
+  }
+
+  .admin-nav {
+    grid-template-columns: 1fr 1fr;
+    margin-top: 20px;
+  }
+
+  .admin-reservations,
+  .admin-settings,
+  .admin-side-panel {
+    width: 100%;
+    padding-top: 28px;
+  }
+
+  .admin-calendar,
+  .admin-divider,
+  .admin-toggle-row {
+    width: 100%;
+  }
+
+  .admin-reservation-row {
+    grid-template-columns: 88px 1fr;
+    gap: 8px;
+    padding: 8px 0;
+  }
+
+  .admin-setting-row {
+    align-items: flex-start;
+  }
+
+  .admin-setting-row > div {
+    flex-wrap: wrap;
   }
 }
