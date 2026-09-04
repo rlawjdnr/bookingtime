@@ -898,6 +898,11 @@ textarea.selected {
 
 .admin-time-card header + .admin-reservation-row {
   margin-top: 8px;
+  border-top: 0;
+}
+
+.admin-time-card .admin-reservation-row:first-of-type {
+  border-top: 0;
 }
 
 .admin-reservation-row.cancelled {
