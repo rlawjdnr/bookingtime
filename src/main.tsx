@@ -26,6 +26,7 @@ import adminMinusIcon from "./assets/figma/admin-minus.svg";
 import adminPlusIcon from "./assets/figma/admin-plus.svg";
 import adminChipCloseIcon from "./assets/figma/admin-chip-close.svg";
 import adminDropdownIcon from "./assets/figma/admin-dropdown.svg";
+import adminLogoutIcon from "./assets/figma/admin-logout.svg";
 import adminRadioEmptyIcon from "./assets/figma/admin-radio-empty.svg";
 import adminRadioSelectedIcon from "./assets/figma/admin-radio-selected.svg";
 
@@ -1477,6 +1478,7 @@ function AdminApp() {
             setIsAdminAuthenticated(false);
           }}
         >
+          <img className="svg-icon" src={adminLogoutIcon} alt="" />
           로그아웃
         </TapButton>
       </aside>
