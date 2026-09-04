@@ -25,6 +25,9 @@ import waitIcon from "./assets/figma/wait-fill.svg";
 import adminMinusIcon from "./assets/figma/admin-minus.svg";
 import adminPlusIcon from "./assets/figma/admin-plus.svg";
 import adminChipCloseIcon from "./assets/figma/admin-chip-close.svg";
+import adminDropdownIcon from "./assets/figma/admin-dropdown.svg";
+import adminRadioEmptyIcon from "./assets/figma/admin-radio-empty.svg";
+import adminRadioSelectedIcon from "./assets/figma/admin-radio-selected.svg";
 
 type Route = "time" | "details" | "complete";
 type Treatment = string;
@@ -49,6 +52,7 @@ type Booking = {
   waitMinutes: number;
   status: "confirmed" | "cancelled";
   cancelReason?: string;
+  createdAt?: string;
 };
 
 type ReservationRow = {
@@ -60,6 +64,7 @@ type ReservationRow = {
   wait_minutes: number;
   status: "confirmed" | "cancelled";
   cancel_reason?: string | null;
+  created_at?: string;
 };
 
 type TimeBlockRow = {
@@ -168,6 +173,7 @@ const cancelReasons = ["시간 변경", "단순 변심"];
 const spring = { type: "spring" as const, stiffness: 420, damping: 36, mass: 0.9 };
 const screenSpring = { type: "spring" as const, stiffness: 480, damping: 50 };
 const snackbarSpring = { type: "spring" as const, stiffness: 480, damping: 50 };
+const overlaySpring = { type: "spring" as const, stiffness: 800, damping: 55 };
 const tapSpring = { type: "spring" as const, stiffness: 1000, damping: 55 };
 const tapReleaseSpring = { type: "spring" as const, stiffness: 800, damping: 55 };
 const screenVariants = {
@@ -499,7 +505,8 @@ function App() {
 
   const slots = useMemo(() => {
     const daySetting = getDaySetting(daySettings, selectedDate);
-    const dayClosed = !isSelectableBookingDate(selectedDate, clinicSettings.openDays) || daySetting?.isClosed || daySetting?.isOpen === false;
+    const dayOpen = daySetting?.isOpen ?? isDefaultOpenBookingDate(selectedDate, clinicSettings.openDays);
+    const dayClosed = Boolean(daySetting?.isClosed) || !dayOpen;
     return applyBookingsToSlots(baseSlots, selectedDate, bookings, dayClosed);
   }, [baseSlots, bookings, clinicSettings.openDays, daySettings, selectedDate]);
   const selectedSlot = slots.find((slot) => slot.id === selectedSlotId) ?? slots.find((slot) => !slot.closed) ?? initialSlots[0];
@@ -610,6 +617,7 @@ function App() {
       treatment,
       waitMinutes,
       status: "confirmed",
+      createdAt: new Date().toISOString(),
     };
     try {
       await appointmentStore.create(nextBooking);
@@ -740,6 +748,7 @@ function App() {
           {isCalendarOpen && (
             <CalendarSheet
               openDays={clinicSettings.openDays}
+              daySettings={daySettings}
               selectedDate={selectedDate}
               onClose={() => setIsCalendarOpen(false)}
               onSelect={(date) => {
@@ -889,6 +898,85 @@ function TapButton(props: React.ComponentProps<typeof motion.button>) {
   );
 }
 
+function AdminStatusSelect(props: {
+  booking: Booking;
+  onUpdate: (updates: Partial<Pick<Booking, "status" | "cancelReason">>) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const statusOptions: Array<{ status: Booking["status"]; label: string }> = [
+    { status: "confirmed", label: "예약완료" },
+    { status: "cancelled", label: "예약취소" },
+  ];
+
+  useEffect(() => {
+    if (!isOpen) {
+      return undefined;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [isOpen]);
+
+  const selectStatus = (status: Booking["status"]) => {
+    props.onUpdate({
+      status,
+      cancelReason: status === "cancelled" ? props.booking.cancelReason || "관리자 취소" : "",
+    });
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="admin-status-select" ref={rootRef}>
+      <TapButton className="admin-status-chip" onClick={() => setIsOpen((value) => !value)} aria-expanded={isOpen}>
+        {props.booking.status === "confirmed" ? "예약 완료" : "예약 취소"}
+        <img className="svg-icon" src={adminDropdownIcon} alt="" />
+      </TapButton>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            className="admin-status-popover"
+            initial={{ opacity: 0, y: -4, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.98 }}
+            transition={overlaySpring}
+          >
+            {statusOptions.map((option) => (
+              <TapButton
+                className={props.booking.status === option.status ? "selected" : ""}
+                key={option.status}
+                onClick={() => selectStatus(option.status)}
+              >
+                {option.label}
+              </TapButton>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function AdminSwitch(props: { checked: boolean; onChange: (checked: boolean) => void; label: string }) {
+  return (
+    <TapButton
+      className={`admin-switch ${props.checked ? "checked" : ""}`}
+      role="switch"
+      aria-checked={props.checked}
+      aria-label={props.label}
+      onClick={() => props.onChange(!props.checked)}
+    >
+      <motion.span layout transition={overlaySpring} />
+    </TapButton>
+  );
+}
+
 function Header({
   clinicSettings,
   back,
@@ -936,9 +1024,10 @@ function TimeScreen(props: {
   onSelectSlot: (slot: Slot) => void;
   onNext: () => void;
 }) {
-  const morning = props.slots.filter((slot) => Number(slot.time.split(":")[0]) < 13);
-  const afternoon = props.slots.filter((slot) => Number(slot.time.split(":")[0]) >= 13);
-  const selectedSlot = props.slots.find((slot) => slot.id === props.selectedSlotId) ?? props.slots.find((slot) => !slot.closed);
+  const visibleSlots = getVisibleSlotsForDate(props.slots, props.selectedDate);
+  const morning = visibleSlots.filter((slot) => Number(slot.time.split(":")[0]) < 13);
+  const afternoon = visibleSlots.filter((slot) => Number(slot.time.split(":")[0]) >= 13);
+  const selectedSlot = visibleSlots.find((slot) => slot.id === props.selectedSlotId) ?? visibleSlots.find((slot) => !slot.closed);
   const relativeDateLabel = getRelativeDateLabel(props.selectedDate);
 
   return (
@@ -965,6 +1054,8 @@ function TimeScreen(props: {
 }
 
 function SlotGroup(props: { title: string; slots: Slot[]; selectedId: string; onSelect: (slot: Slot) => void }) {
+  if (!props.slots.length) return null;
+
   return (
     <section className="slot-section">
       <p>{props.title}</p>
@@ -1155,8 +1246,9 @@ function CancelScreen({
   );
 }
 
-function CalendarSheet(props: { openDays: number; selectedDate: Date; onClose: () => void; onSelect: (date: Date) => void }) {
-  const safeSelectedDate = isSelectableBookingDate(props.selectedDate, props.openDays) ? props.selectedDate : getToday();
+function CalendarSheet(props: { openDays: number; daySettings: DaySetting[]; selectedDate: Date; onClose: () => void; onSelect: (date: Date) => void }) {
+  const isDateOpen = (date: Date) => isAdminOpenDate(date, props.openDays, props.daySettings);
+  const safeSelectedDate = isDateOpen(props.selectedDate) ? props.selectedDate : getToday();
   const [viewDate, setViewDate] = useState(new Date(safeSelectedDate));
   const [focusedDate, setFocusedDate] = useState(new Date(safeSelectedDate));
   const days = useMemo(() => makeCalendarDays(viewDate), [viewDate]);
@@ -1187,14 +1279,14 @@ function CalendarSheet(props: { openDays: number; selectedDate: Date; onClose: (
             <TapButton
               key={date ? date.toISOString() : `empty-${index}`}
               className={date && sameDay(date, focusedDate) ? "picked" : ""}
-              disabled={!date || !isSelectableBookingDate(date, props.openDays)}
+              disabled={!date || !isDateOpen(date)}
               onClick={() => date && setFocusedDate(date)}
             >
               {date?.getDate()}
             </TapButton>
           ))}
         </div>
-        <BottomCTA inSheet disabled={!isSelectableBookingDate(focusedDate, props.openDays)} onClick={() => props.onSelect(focusedDate)}>선택하기</BottomCTA>
+        <BottomCTA inSheet disabled={!isDateOpen(focusedDate)} onClick={() => props.onSelect(focusedDate)}>선택하기</BottomCTA>
       </motion.section>
     </motion.div>
   );
@@ -1207,7 +1299,7 @@ function CalendarSheet(props: { openDays: number; selectedDate: Date; onClose: (
       nextMonth.getMonth(),
       Math.min(focusedDate.getDate(), lastDay),
     );
-    const nextFocusedDate = isSelectableBookingDate(preferredDate, props.openDays) ? preferredDate : getToday();
+    const nextFocusedDate = isDateOpen(preferredDate) ? preferredDate : getToday();
 
     setViewDate(nextMonth);
     setFocusedDate(nextFocusedDate);
@@ -1309,7 +1401,8 @@ function AdminApp() {
 
   const treatmentLabels = treatmentOptions.map((option) => option.label);
   const selectedDaySetting = getDaySetting(daySettings, selectedDate);
-  const selectedDayClosed = selectedDaySetting?.isClosed || selectedDaySetting?.isOpen === false;
+  const selectedDayOpen = selectedDaySetting?.isOpen ?? isDefaultOpenBookingDate(selectedDate, clinicSettings.openDays);
+  const selectedDayClosed = Boolean(selectedDaySetting?.isClosed) || !selectedDayOpen;
   const displaySlots = applyBookingsToSlots(baseSlots, selectedDate, bookings, selectedDayClosed);
 
   return (
@@ -1347,6 +1440,7 @@ function AdminApp() {
             selectedDate={selectedDate}
             viewDate={viewDate}
             openDays={clinicSettings.openDays}
+            daySettings={daySettings}
             daySetting={selectedDaySetting}
             onSelectDate={(date) => {
               setSelectedDate(date);
@@ -1436,8 +1530,9 @@ function AdminReservationList({
   onUpdateReservation: (id: string, updates: Partial<Pick<Booking, "patientName" | "treatment" | "status" | "cancelReason">>) => void;
 }) {
   const dateKey = toDateKey(selectedDate);
-  const morning = slots.filter((slot) => Number(slot.time.split(":")[0]) < 13);
-  const afternoon = slots.filter((slot) => Number(slot.time.split(":")[0]) >= 13);
+  const visibleSlots = getVisibleSlotsForDate(slots, selectedDate);
+  const morning = visibleSlots.filter((slot) => Number(slot.time.split(":")[0]) < 13);
+  const afternoon = visibleSlots.filter((slot) => Number(slot.time.split(":")[0]) >= 13);
 
   return (
     <section className="admin-reservations">
@@ -1473,20 +1568,23 @@ function AdminSlotSection(props: {
   onAdd: (slot: Slot) => void;
   onUpdateReservation: (id: string, updates: Partial<Pick<Booking, "patientName" | "treatment" | "status" | "cancelReason">>) => void;
 }) {
+  if (!props.slots.length) return null;
+
   return (
     <div className="admin-slot-section">
       <p>{props.title}</p>
       {props.slots.map((slot) => {
         const slotBookings = props.bookings
           .filter((booking) => booking.date === props.dateKey && booking.time === slot.time)
-          .sort((a, b) => a.time.localeCompare(b.time));
+          .sort((a, b) => compareBookingsByCreatedAt(a, b));
+        const confirmedCount = slotBookings.filter((booking) => booking.status === "confirmed").length;
 
         return (
           <article className="admin-time-card" key={slot.id}>
             <header>
               <span>
                 <strong>{slot.time}</strong>
-                <em>{slotBookings.filter((booking) => booking.status === "confirmed").length}</em>
+                <em className={confirmedCount === 0 ? "empty" : undefined}>{confirmedCount}</em>
               </span>
               <TapButton className="admin-add-button" onClick={() => props.onAdd(slot)}>
                 <span aria-hidden="true">+</span>
@@ -1495,29 +1593,10 @@ function AdminSlotSection(props: {
             </header>
             {slotBookings.map((booking) => (
               <div className={`admin-reservation-row ${booking.status === "cancelled" ? "cancelled" : ""}`} key={booking.id}>
-                <select
-                  value={booking.status}
-                  onChange={(event) =>
-                    props.onUpdateReservation(booking.id, {
-                      status: event.target.value as Booking["status"],
-                      cancelReason: event.target.value === "cancelled" ? booking.cancelReason || "관리자 취소" : "",
-                    })
-                  }
-                >
-                  <option value="confirmed">예약 완료</option>
-                  <option value="cancelled">예약 취소</option>
-                </select>
-                <input
-                  value={booking.patientName}
-                  aria-label="환자 이름"
-                  onChange={(event) => props.onUpdateReservation(booking.id, { patientName: event.target.value })}
-                />
-                <select value={booking.treatment} onChange={(event) => props.onUpdateReservation(booking.id, { treatment: event.target.value })}>
-                  {props.treatmentLabels.map((label) => (
-                    <option key={label} value={label}>{label}</option>
-                  ))}
-                </select>
-                {booking.status === "cancelled" && <span>{booking.cancelReason || "관리자 취소"}</span>}
+                <AdminStatusSelect booking={booking} onUpdate={(updates) => props.onUpdateReservation(booking.id, updates)} />
+                <span className="admin-patient-name">{booking.patientName}</span>
+                <span className="admin-treatment-value">{booking.treatment}</span>
+                {booking.status === "cancelled" && <span className="admin-cancel-reason">{booking.cancelReason || "관리자 취소"}</span>}
               </div>
             ))}
           </article>
@@ -1531,6 +1610,7 @@ function AdminCalendarPanel(props: {
   selectedDate: Date;
   viewDate: Date;
   openDays: number;
+  daySettings: DaySetting[];
   daySetting?: DaySetting;
   onSelectDate: (date: Date) => void;
   onMoveMonth: (offset: number) => void;
@@ -1538,8 +1618,9 @@ function AdminCalendarPanel(props: {
 }) {
   const days = useMemo(() => makeCalendarDays(props.viewDate), [props.viewDate]);
   const dateKey = toDateKey(props.selectedDate);
+  const defaultOpen = isDefaultOpenBookingDate(props.selectedDate, props.openDays);
   const isClosed = Boolean(props.daySetting?.isClosed);
-  const isOpen = props.daySetting?.isOpen ?? isSelectableBookingDate(props.selectedDate, props.openDays);
+  const isOpen = props.daySetting?.isOpen ?? defaultOpen;
 
   return (
     <aside className="admin-side-panel">
@@ -1555,35 +1636,39 @@ function AdminCalendarPanel(props: {
         </div>
         <div className="admin-calendar-grid weekdays">{["월", "화", "수", "목", "금", "토", "일"].map((day) => <span key={day}>{day}</span>)}</div>
         <div className="admin-calendar-grid">
-          {days.map((date, index) => (
-            <TapButton
-              key={date ? date.toISOString() : `admin-empty-${index}`}
-              className={date && sameDay(date, props.selectedDate) ? "picked" : ""}
-              disabled={!date}
-              onClick={() => date && props.onSelectDate(date)}
-            >
-              {date?.getDate()}
-            </TapButton>
-          ))}
+          {days.map((date, index) => {
+            const isPicked = date ? sameDay(date, props.selectedDate) : false;
+            const dayStatus = date ? getAdminCalendarDayStatus(date, props.openDays, props.daySettings) : "open";
+            return (
+              <TapButton
+                key={date ? date.toISOString() : `admin-empty-${index}`}
+                className={[isPicked ? "picked" : "", dayStatus === "closed" ? "closed" : "", dayStatus === "unopened" ? "unopened" : ""].filter(Boolean).join(" ")}
+                disabled={!date}
+                onClick={() => date && props.onSelectDate(date)}
+              >
+                {date?.getDate()}
+              </TapButton>
+            );
+          })}
         </div>
       </div>
       <div className="admin-divider" />
-      <label className="admin-toggle-row">
+      <div className="admin-toggle-row">
         <span>오늘 휴무일로 설정</span>
-        <input
-          type="checkbox"
+        <AdminSwitch
+          label="오늘 휴무일로 설정"
           checked={isClosed}
-          onChange={(event) => props.onSaveDaySetting({ date: dateKey, isClosed: event.target.checked, isOpen: event.target.checked ? false : isOpen })}
+          onChange={(checked) => props.onSaveDaySetting({ date: dateKey, isClosed: checked, isOpen: checked ? false : defaultOpen })}
         />
-      </label>
-      <label className="admin-toggle-row">
+      </div>
+      <div className="admin-toggle-row">
         <span>오늘 예약 오픈</span>
-        <input
-          type="checkbox"
+        <AdminSwitch
+          label="오늘 예약 오픈"
           checked={isOpen && !isClosed}
-          onChange={(event) => props.onSaveDaySetting({ date: dateKey, isClosed: event.target.checked ? false : isClosed, isOpen: event.target.checked })}
+          onChange={(checked) => props.onSaveDaySetting({ date: dateKey, isClosed: checked ? false : isClosed, isOpen: checked })}
         />
-      </label>
+      </div>
     </aside>
   );
 }
@@ -1785,8 +1870,8 @@ function AdminClinicEditModal({
   const [draft, setDraft] = useState(initialSettings);
 
   return (
-    <motion.div className="admin-modal-dim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={spring} onClick={onClose}>
-      <motion.section className="admin-modal admin-edit-modal" initial={{ y: 16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 16, opacity: 0 }} transition={screenSpring} onClick={(event) => event.stopPropagation()}>
+    <motion.div className="admin-modal-dim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={overlaySpring} onClick={onClose}>
+      <motion.section className="admin-modal admin-edit-modal" initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} transition={overlaySpring} onClick={(event) => event.stopPropagation()}>
         <h1>병원 정보</h1>
         <label>
           <span>병원 이름</span>
@@ -1806,8 +1891,8 @@ function AdminTreatmentAddModal({ onClose, onSave }: { onClose: () => void; onSa
   const [label, setLabel] = useState("");
 
   return (
-    <motion.div className="admin-modal-dim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={spring} onClick={onClose}>
-      <motion.section className="admin-modal admin-edit-modal" initial={{ y: 16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 16, opacity: 0 }} transition={screenSpring} onClick={(event) => event.stopPropagation()}>
+    <motion.div className="admin-modal-dim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={overlaySpring} onClick={onClose}>
+      <motion.section className="admin-modal admin-edit-modal" initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} transition={overlaySpring} onClick={(event) => event.stopPropagation()}>
         <h1>진료 과목 추가</h1>
         <label>
           <span>진료 과목</span>
@@ -1831,8 +1916,8 @@ function AdminSlotsEditModal({
   const [draftSlots, setDraftSlots] = useState(slots);
 
   return (
-    <motion.div className="admin-modal-dim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={spring} onClick={onClose}>
-      <motion.section className="admin-modal admin-edit-modal" initial={{ y: 16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 16, opacity: 0 }} transition={screenSpring} onClick={(event) => event.stopPropagation()}>
+    <motion.div className="admin-modal-dim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={overlaySpring} onClick={onClose}>
+      <motion.section className="admin-modal admin-edit-modal" initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} transition={overlaySpring} onClick={(event) => event.stopPropagation()}>
         <h1>예약 시간</h1>
         <div className="admin-slot-edit-list">
           {draftSlots.map((slot, index) => (
@@ -1884,30 +1969,38 @@ function AdminAddReservationModal(props: {
   const waitMinutes = getWaitMinutesForNextReservation(props.slot, props.selectedDate, props.bookings, props.waitRules);
 
   return (
-    <motion.div className="admin-modal-dim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={spring} onClick={props.onClose}>
+    <motion.div className="admin-modal-dim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={overlaySpring} onClick={props.onClose}>
       <motion.section
-        className="admin-modal"
-        initial={{ y: 16, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 16, opacity: 0 }}
-        transition={screenSpring}
+        className="admin-modal admin-add-modal"
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        transition={overlaySpring}
         onClick={(event) => event.stopPropagation()}
       >
-        <h1>진료 추가하기</h1>
-        <label>
-          <span>이름</span>
-          <input value={patientName} onChange={(event) => setPatientName(event.target.value)} placeholder="이름 입력" autoFocus />
-        </label>
-        <section>
-          <span>진료 과목</span>
-          <div className="admin-treatment-segment">
-            {props.treatmentLabels.map((label) => (
-              <TapButton className={treatment === label ? "selected" : ""} key={label} onClick={() => setTreatment(label)}>
-                {label}
-              </TapButton>
-            ))}
+        <div className="admin-add-modal-fields">
+          <h1>진료 추가하기</h1>
+          <div className="admin-add-modal-form">
+            <label>
+              <span>이름</span>
+              <input value={patientName} onChange={(event) => setPatientName(event.target.value)} placeholder="이름 입력" autoFocus />
+            </label>
+            <section>
+              <span>진료 과목</span>
+              <div className="admin-treatment-segment">
+                {props.treatmentLabels.map((label) => {
+                  const selected = treatment === label;
+                  return (
+                    <TapButton className={selected ? "selected" : ""} key={label} onClick={() => setTreatment(label)}>
+                      {label}
+                      <img className="svg-icon" src={selected ? adminRadioSelectedIcon : adminRadioEmptyIcon} alt="" />
+                    </TapButton>
+                  );
+                })}
+              </div>
+            </section>
           </div>
-        </section>
+        </div>
         <TapButton
           className="admin-primary-button"
           disabled={!canCreate}
@@ -1920,6 +2013,7 @@ function AdminAddReservationModal(props: {
               treatment,
               waitMinutes,
               status: "confirmed",
+              createdAt: new Date().toISOString(),
             })
           }
         >
@@ -1932,8 +2026,9 @@ function AdminAddReservationModal(props: {
 
 function applyBookingsToSlots(slots: Slot[], selectedDate: Date, bookings: Booking[], forceClosed = false) {
   const dateKey = toDateKey(selectedDate);
+  const visibleSlots = getVisibleSlotsForDate(slots, selectedDate);
 
-  return slots.map((slot) => {
+  return visibleSlots.map((slot) => {
     const confirmedCount = bookings.filter(
       (item) => item.status === "confirmed" && item.date === dateKey && item.time === slot.time,
     ).length;
@@ -1945,6 +2040,11 @@ function applyBookingsToSlots(slots: Slot[], selectedDate: Date, bookings: Booki
       closed: forceClosed || slot.closed || remaining <= 0,
     };
   });
+}
+
+function getVisibleSlotsForDate(slots: Slot[], selectedDate: Date) {
+  if (!isSaturday(selectedDate)) return slots;
+  return slots.filter((slot) => Number(slot.time.split(":")[0]) < 13);
 }
 
 function toReservationRow(booking: Booking) {
@@ -1970,7 +2070,14 @@ function fromReservationRow(row: ReservationRow): Booking {
     waitMinutes: row.wait_minutes,
     status: row.status,
     cancelReason: row.cancel_reason ?? "",
+    createdAt: row.created_at,
   };
+}
+
+function compareBookingsByCreatedAt(a: Booking, b: Booking) {
+  const aTime = a.createdAt ? Date.parse(a.createdAt) : 0;
+  const bTime = b.createdAt ? Date.parse(b.createdAt) : 0;
+  return aTime - bTime || a.id.localeCompare(b.id);
 }
 
 function fromTimeBlockRow(row: TimeBlockRow): Slot {
@@ -2153,6 +2260,10 @@ function isSelectableBookingDate(date: Date, openDays: number) {
   return time >= today.getTime() && time <= lastOpenDate.getTime();
 }
 
+function isDefaultOpenBookingDate(date: Date, openDays: number) {
+  return isSelectableBookingDate(date, openDays) && date.getDay() !== 0;
+}
+
 function toPhoneHref(phone: string) {
   return `tel:${phone.replace(/[^\d+]/g, "")}`;
 }
@@ -2181,6 +2292,22 @@ function getDaySetting(daySettings: DaySetting[], date: Date) {
   return daySettings.find((setting) => setting.date === dateKey);
 }
 
+function isAdminOpenDate(date: Date, openDays: number, daySettings: DaySetting[]) {
+  const daySetting = getDaySetting(daySettings, date);
+  if (daySetting?.isClosed) return false;
+  return daySetting?.isOpen ?? isDefaultOpenBookingDate(date, openDays);
+}
+
+function getAdminCalendarDayStatus(date: Date, openDays: number, daySettings: DaySetting[]) {
+  const daySetting = getDaySetting(daySettings, date);
+  if (daySetting?.isClosed) return "closed";
+  if (daySetting?.isOpen) return "open";
+  if (date.getDay() === 0) return "closed";
+  if (daySetting?.isOpen === false) return "unopened";
+  if (!isSelectableBookingDate(date, openDays)) return "unopened";
+  return "open";
+}
+
 function toTimeInputValue(time: string) {
   const [hours, minutes = "00"] = time.split(":");
   return `${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}`;
@@ -2198,6 +2325,10 @@ function getToday() {
 
 function isPastDate(date: Date) {
   return startOfDay(date).getTime() < getToday().getTime();
+}
+
+function isSaturday(date: Date) {
+  return date.getDay() === 6;
 }
 
 function startOfDay(date: Date) {
