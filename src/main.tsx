@@ -888,13 +888,17 @@ function ScreenMotion({
   );
 }
 
-function TapButton(props: React.ComponentProps<typeof motion.button>) {
-  const { children, disabled, transition, ...rest } = props;
+type TapButtonProps = React.ComponentProps<typeof motion.button> & {
+  disableTapMotion?: boolean;
+};
+
+function TapButton(props: TapButtonProps) {
+  const { children, disabled, transition, disableTapMotion, ...rest } = props;
 
   return (
     <motion.button
       animate={{ scale: 1 }}
-      whileTap={disabled ? undefined : { scale: 0.98, transition: tapSpring }}
+      whileTap={disabled || disableTapMotion ? undefined : { scale: 0.98, transition: tapSpring }}
       transition={transition ?? tapReleaseSpring}
       disabled={disabled}
       {...rest}
@@ -1703,6 +1707,8 @@ function AdminCalendarPanel(props: {
                 key={date ? date.toISOString() : `admin-empty-${index}`}
                 className={[isPicked ? "picked" : "", dayStatus === "closed" ? "closed" : "", dayStatus === "unopened" ? "unopened" : ""].filter(Boolean).join(" ")}
                 disabled={!date}
+                disableTapMotion
+                transition={{ duration: 0 }}
                 onClick={() => date && props.onSelectDate(date)}
               >
                 {date?.getDate()}
