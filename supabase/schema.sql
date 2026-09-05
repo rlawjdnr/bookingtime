@@ -88,7 +88,7 @@ where id not in ('0930', '1015', '1100', '1145', '1400', '1510', '1620', '1730')
 
 insert into public.treatment_options (id, label, is_open, sort_order)
 values
-  ('none', '없음', true, 0),
+  ('none', '기타', true, 0),
   ('acupuncture', '침 치료', true, 10),
   ('herbal', '한약 처방', true, 20)
 on conflict (id) do update

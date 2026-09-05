@@ -149,6 +149,7 @@ type AppointmentStore = {
 };
 
 const activeBookingStorageKey = "hospital-reservation.activeBooking";
+const otherTreatmentLabel = "기타";
 
 const fallbackClinic = {
   name: "이목구비 김한의원",
@@ -169,7 +170,7 @@ const initialSlots: Slot[] = [
 ];
 
 const fallbackTreatments: TreatmentOption[] = [
-  { id: "none", label: "없음", isOpen: true, sortOrder: 0 },
+  { id: "none", label: otherTreatmentLabel, isOpen: true, sortOrder: 0 },
   { id: "acupuncture", label: "침 치료", isOpen: true, sortOrder: 10 },
   { id: "herbal", label: "한약 처방", isOpen: true, sortOrder: 20 },
 ];
@@ -392,7 +393,7 @@ class SyncReadyAppointmentStore implements AppointmentStore {
       const { error } = await supabase.from("treatment_options").upsert(
         options.map((option, index) => ({
           id: option.id,
-          label: option.label,
+          label: normalizeTreatmentLabel(option.label),
           is_open: option.isOpen,
           sort_order: index * 10,
         })),
@@ -493,7 +494,7 @@ function App() {
   const [selectedSlotId, setSelectedSlotId] = useState(restoredBooking ? getSlotIdByTime(restoredBooking.time) : "1400");
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [patientName, setPatientName] = useState(restoredBooking?.patientName ?? "");
-  const [treatment, setTreatment] = useState<Treatment>(restoredBooking?.treatment ?? "없음");
+  const [treatment, setTreatment] = useState<Treatment>(normalizeTreatmentLabel(restoredBooking?.treatment ?? otherTreatmentLabel));
   const [booking, setBooking] = useState<Booking | null>(restoredBooking);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [baseSlots, setBaseSlots] = useState<Slot[]>(initialSlots);
@@ -2070,7 +2071,7 @@ function AdminAddReservationModal(props: {
   onCreate: (booking: Booking) => void;
 }) {
   const [patientName, setPatientName] = useState("");
-  const [treatment, setTreatment] = useState<Treatment>(props.treatmentLabels[0] ?? "없음");
+  const [treatment, setTreatment] = useState<Treatment>(props.treatmentLabels[0] ?? otherTreatmentLabel);
   const canCreate = patientName.trim().length > 0;
   const waitMinutes = getWaitMinutesForNextReservation(props.slot, props.selectedDate, props.bookings, props.waitRules);
 
@@ -2159,7 +2160,7 @@ function toReservationRow(booking: Booking) {
     patient_name: booking.patientName,
     appointment_date: booking.date,
     appointment_time: booking.time,
-    treatment: booking.treatment,
+    treatment: normalizeTreatmentLabel(booking.treatment),
     wait_minutes: booking.waitMinutes,
     status: booking.status,
     cancel_reason: booking.cancelReason,
@@ -2172,7 +2173,7 @@ function fromReservationRow(row: ReservationRow): Booking {
     patientName: row.patient_name,
     date: row.appointment_date,
     time: row.appointment_time,
-    treatment: row.treatment,
+    treatment: normalizeTreatmentLabel(row.treatment),
     waitMinutes: row.wait_minutes,
     status: row.status,
     cancelReason: row.cancel_reason ?? "",
@@ -2223,10 +2224,14 @@ function fromDaySettingRow(row: DaySettingRow): DaySetting {
 function fromTreatmentOptionRow(row: TreatmentOptionRow): TreatmentOption {
   return {
     id: row.id,
-    label: row.label,
+    label: normalizeTreatmentLabel(row.label),
     isOpen: row.is_open,
     sortOrder: row.sort_order,
   };
+}
+
+function normalizeTreatmentLabel(label: string) {
+  return label === "없음" ? otherTreatmentLabel : label;
 }
 
 function getWaitMinutesForNextReservation(slot: Slot, selectedDate: Date, bookings: Booking[], waitRules: WaitRule[]) {
@@ -2277,7 +2282,7 @@ function loadActiveBooking() {
       return null;
     }
 
-    return booking;
+    return { ...booking, treatment: normalizeTreatmentLabel(booking.treatment) };
   } catch {
     clearActiveBooking();
     return null;
