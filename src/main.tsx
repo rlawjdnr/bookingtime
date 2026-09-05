@@ -22,6 +22,7 @@ import snackbarCheckIcon from "./assets/figma/snackbar-check.svg";
 import treatmentIcon from "./assets/figma/treatment-fill.svg";
 import timeCalendarIcon from "./assets/figma/time-calendar-fill.svg";
 import waitIcon from "./assets/figma/wait-fill.svg";
+import adminAddIcon from "./assets/figma/admin-add.svg";
 import adminMinusIcon from "./assets/figma/admin-minus.svg";
 import adminPlusIcon from "./assets/figma/admin-plus.svg";
 import adminChipCloseIcon from "./assets/figma/admin-chip-close.svg";
@@ -1643,7 +1644,7 @@ function AdminSlotSection(props: {
                 <em className={confirmedCount === 0 ? "empty" : undefined}>{confirmedCount}</em>
               </span>
               <TapButton className="admin-add-button" onClick={() => props.onAdd(slot)}>
-                <span aria-hidden="true">+</span>
+                <img className="svg-icon" src={adminAddIcon} alt="" />
                 추가
               </TapButton>
             </header>
@@ -2398,13 +2399,14 @@ function getWaitIntervalForSlot(slotId: string, waitRules: WaitRule[]) {
 }
 
 async function verifyAdminPassword(password: string) {
-  if (import.meta.env.DEV) return password === "3359799@";
+  const normalizedPassword = password.trim();
+  if (import.meta.env.DEV) return normalizedPassword === "3359799@";
 
   try {
     const response = await fetch("/api/admin-login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
+      body: JSON.stringify({ password: normalizedPassword }),
     });
 
     if (!response.ok) return false;

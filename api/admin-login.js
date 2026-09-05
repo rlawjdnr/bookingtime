@@ -7,7 +7,7 @@ module.exports = async function handler(request, response) {
   }
 
   const body = await readBody(request);
-  const password = typeof body.password === "string" ? body.password : "";
+  const password = typeof body.password === "string" ? body.password.trim() : "";
   sendJson(response, password === ADMIN_PASSWORD ? 200 : 401, {
     ok: password === ADMIN_PASSWORD,
   });
