@@ -1039,7 +1039,7 @@ function AdminStatusSelect(props: {
   );
 }
 
-function AdminSwitch(props: { checked: boolean; onChange: (checked: boolean) => void; label: string }) {
+function AdminSwitch(props: { checked: boolean; onChange: (checked: boolean) => void; label: string; disableMotion?: boolean }) {
   return (
     <TapButton
       className={`admin-switch ${props.checked ? "checked" : ""}`}
@@ -1048,7 +1048,7 @@ function AdminSwitch(props: { checked: boolean; onChange: (checked: boolean) => 
       aria-label={props.label}
       onClick={() => props.onChange(!props.checked)}
     >
-      <motion.span layout transition={overlaySpring} />
+      <motion.span layout transition={props.disableMotion ? { duration: 0 } : overlaySpring} />
     </TapButton>
   );
 }
@@ -1479,6 +1479,7 @@ function AdminApp() {
   const [treatmentOptions, setTreatmentOptions] = useState<TreatmentOption[]>(fallbackTreatments);
   const [editingSlot, setEditingSlot] = useState<Slot | null>(null);
   const [toast, setToast] = useState("");
+  const [isDateSwitching, setIsDateSwitching] = useState(false);
 
   const loadAdminData = () => {
     void Promise.all([
@@ -1575,9 +1576,12 @@ function AdminApp() {
             openDays={clinicSettings.openDays}
             daySettings={daySettings}
             daySetting={selectedDaySetting}
+            disableSwitchMotion={isDateSwitching}
             onSelectDate={(date) => {
+              setIsDateSwitching(true);
               setSelectedDate(date);
               setViewDate(new Date(date.getFullYear(), date.getMonth(), 1));
+              window.requestAnimationFrame(() => setIsDateSwitching(false));
             }}
             onMoveMonth={(offset) => setViewDate((date) => new Date(date.getFullYear(), date.getMonth() + offset, 1))}
             onSaveDaySetting={(setting) =>
@@ -1733,6 +1737,7 @@ function AdminCalendarPanel(props: {
   openDays: number;
   daySettings: DaySetting[];
   daySetting?: DaySetting;
+  disableSwitchMotion?: boolean;
   onSelectDate: (date: Date) => void;
   onMoveMonth: (offset: number) => void;
   onSaveDaySetting: (setting: DaySetting) => void;
@@ -1782,6 +1787,7 @@ function AdminCalendarPanel(props: {
         <AdminSwitch
           label="진료일"
           checked={isClinicDay}
+          disableMotion={props.disableSwitchMotion}
           onChange={(checked) =>
             props.onSaveDaySetting({
               date: dateKey,
@@ -1796,6 +1802,7 @@ function AdminCalendarPanel(props: {
         <AdminSwitch
           label="예약 오픈"
           checked={isClinicDay && isOpen}
+          disableMotion={props.disableSwitchMotion}
           onChange={(checked) => props.onSaveDaySetting({ date: dateKey, isClosed: checked ? false : !isClinicDay, isOpen: checked })}
         />
       </div>
