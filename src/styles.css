@@ -1143,6 +1143,11 @@ textarea.selected {
   width: 324px;
 }
 
+.admin-calendar .admin-calendar-grid:not(.weekdays) {
+  min-height: 260px;
+  align-content: start;
+}
+
 .admin-month-control {
   display: flex;
   align-items: center;
