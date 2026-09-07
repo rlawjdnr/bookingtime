@@ -498,8 +498,10 @@ const appointmentStore = new SyncReadyAppointmentStore();
 
 function useMobileViewportHeight() {
   useLayoutEffect(() => {
+    const pendingTimers: number[] = [];
     const setAppHeight = () => {
-      const height = window.visualViewport?.height ?? window.innerHeight;
+      const viewportHeight = window.visualViewport?.height ?? 0;
+      const height = Math.max(window.innerHeight, viewportHeight);
       document.documentElement.style.setProperty("--app-height", `${height}px`);
     };
 
@@ -514,21 +516,29 @@ function useMobileViewportHeight() {
       setAppHeight();
       resetScroll();
     });
-    const timeoutId = window.setTimeout(setAppHeight, 350);
+    [100, 350, 700, 1200].forEach((delay) => {
+      pendingTimers.push(window.setTimeout(setAppHeight, delay));
+    });
     const viewport = window.visualViewport;
 
     viewport?.addEventListener("resize", setAppHeight);
     viewport?.addEventListener("scroll", setAppHeight);
     window.addEventListener("resize", setAppHeight);
     window.addEventListener("orientationchange", setAppHeight);
+    window.addEventListener("load", setAppHeight);
+    window.addEventListener("pageshow", setAppHeight);
+    document.addEventListener("visibilitychange", setAppHeight);
 
     return () => {
       window.cancelAnimationFrame(animationFrameId);
-      window.clearTimeout(timeoutId);
+      pendingTimers.forEach((timer) => window.clearTimeout(timer));
       viewport?.removeEventListener("resize", setAppHeight);
       viewport?.removeEventListener("scroll", setAppHeight);
       window.removeEventListener("resize", setAppHeight);
       window.removeEventListener("orientationchange", setAppHeight);
+      window.removeEventListener("load", setAppHeight);
+      window.removeEventListener("pageshow", setAppHeight);
+      document.removeEventListener("visibilitychange", setAppHeight);
     };
   }, []);
 }
