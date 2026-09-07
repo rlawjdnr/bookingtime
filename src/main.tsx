@@ -1042,13 +1042,13 @@ function AdminStatusSelect(props: {
 function AdminSwitch(props: { checked: boolean; onChange: (checked: boolean) => void; label: string; disableMotion?: boolean }) {
   return (
     <TapButton
-      className={`admin-switch ${props.checked ? "checked" : ""}`}
+      className={["admin-switch", props.checked ? "checked" : "", props.disableMotion ? "no-motion" : ""].filter(Boolean).join(" ")}
       role="switch"
       aria-checked={props.checked}
       aria-label={props.label}
       onClick={() => props.onChange(!props.checked)}
     >
-      <motion.span layout transition={props.disableMotion ? { duration: 0 } : overlaySpring} />
+      <span />
     </TapButton>
   );
 }

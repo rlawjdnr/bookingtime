@@ -1143,11 +1143,6 @@ textarea.selected {
   width: 324px;
 }
 
-.admin-calendar .admin-calendar-grid:not(.weekdays) {
-  min-height: 260px;
-  align-content: start;
-}
-
 .admin-month-control {
   display: flex;
   align-items: center;
@@ -1228,33 +1223,44 @@ textarea.selected {
 }
 
 .admin-switch {
+  position: relative;
   width: 34px;
   height: 20px;
   padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
   border: 0;
   border-radius: 999px;
   background: #d1d3d8;
   overflow: hidden;
+  transition: background 0.18s ease;
 }
 
 .admin-switch.checked {
-  justify-content: flex-end;
   background: var(--text);
 }
 
 .admin-switch span {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 20px;
   height: 20px;
   border: 2px solid #d1d3d8;
   border-radius: 999px;
   background: #fff;
+  transform: translateX(0);
+  transition:
+    transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 0.18s ease;
 }
 
 .admin-switch.checked span {
   border-color: var(--text);
+  transform: translateX(14px);
+}
+
+.admin-switch.no-motion,
+.admin-switch.no-motion span {
+  transition: none;
 }
 
 .admin-settings {
