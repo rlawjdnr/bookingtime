@@ -1527,8 +1527,9 @@ textarea.selected {
 
 .admin-treatment-segment {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 8px;
+  width: 100%;
 }
 
 .admin-treatment-segment button {
@@ -1543,7 +1544,9 @@ textarea.selected {
   color: var(--text);
   font-size: 16px;
   font-weight: 500;
-  white-space: nowrap;
+  text-align: left;
+  white-space: normal;
+  word-break: keep-all;
 }
 
 .admin-treatment-segment button.selected {
