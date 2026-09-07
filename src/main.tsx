@@ -496,7 +496,46 @@ class SyncReadyAppointmentStore implements AppointmentStore {
 
 const appointmentStore = new SyncReadyAppointmentStore();
 
+function useMobileViewportHeight() {
+  useLayoutEffect(() => {
+    const setAppHeight = () => {
+      const height = window.visualViewport?.height ?? window.innerHeight;
+      document.documentElement.style.setProperty("--app-height", `${height}px`);
+    };
+
+    const resetScroll = () => {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    };
+
+    setAppHeight();
+    resetScroll();
+
+    const animationFrameId = window.requestAnimationFrame(() => {
+      setAppHeight();
+      resetScroll();
+    });
+    const timeoutId = window.setTimeout(setAppHeight, 350);
+    const viewport = window.visualViewport;
+
+    viewport?.addEventListener("resize", setAppHeight);
+    viewport?.addEventListener("scroll", setAppHeight);
+    window.addEventListener("resize", setAppHeight);
+    window.addEventListener("orientationchange", setAppHeight);
+
+    return () => {
+      window.cancelAnimationFrame(animationFrameId);
+      window.clearTimeout(timeoutId);
+      viewport?.removeEventListener("resize", setAppHeight);
+      viewport?.removeEventListener("scroll", setAppHeight);
+      window.removeEventListener("resize", setAppHeight);
+      window.removeEventListener("orientationchange", setAppHeight);
+    };
+  }, []);
+}
+
 function App() {
+  useMobileViewportHeight();
+
   const restoredBooking = useMemo(() => loadActiveBooking(), []);
   const stackIdRef = useRef(1);
   const stackMotionLockRef = useRef<number | null>(null);

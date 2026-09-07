@@ -1,6 +1,7 @@
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css");
 
 :root {
+  --app-height: 100dvh;
   --background: #ffffff;
   --text: #1a1c20;
   --muted: #555d6d;
@@ -54,15 +55,21 @@ a {
 }
 
 .app-shell {
-  min-height: 100dvh;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: var(--app-height);
+  min-height: var(--app-height);
   display: grid;
   place-items: center;
+  overflow: hidden;
+  background: var(--background);
 }
 
 .phone-frame {
   width: 100%;
-  min-height: 100dvh;
-  height: 100dvh;
+  min-height: var(--app-height);
+  height: var(--app-height);
   background: var(--background);
   position: relative;
   overflow: hidden;
