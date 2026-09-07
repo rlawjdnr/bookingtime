@@ -45,6 +45,7 @@ type Slot = {
   time: string;
   remaining: number;
   closed?: boolean;
+  dayGroup?: "weekday" | "thursday" | "saturday";
 };
 
 type Booking = {
@@ -159,15 +160,28 @@ const fallbackClinic = {
 };
 
 const initialSlots: Slot[] = [
-  { id: "0930", time: "9:30", remaining: 5 },
-  { id: "1015", time: "10:15", remaining: 5 },
-  { id: "1100", time: "11:00", remaining: 1 },
-  { id: "1145", time: "11:45", remaining: 5 },
-  { id: "1400", time: "14:00", remaining: 5 },
-  { id: "1510", time: "15:10", remaining: 5 },
-  { id: "1620", time: "16:20", remaining: 5 },
-  { id: "1730", time: "17:30", remaining: 5 },
+  { id: "weekday-0930", time: "9:30", remaining: 5, dayGroup: "weekday" },
+  { id: "weekday-1010", time: "10:10", remaining: 5, dayGroup: "weekday" },
+  { id: "weekday-1045", time: "10:45", remaining: 5, dayGroup: "weekday" },
+  { id: "weekday-1120", time: "11:20", remaining: 5, dayGroup: "weekday" },
+  { id: "weekday-1400", time: "14:00", remaining: 5, dayGroup: "weekday" },
+  { id: "weekday-1450", time: "14:50", remaining: 5, dayGroup: "weekday" },
+  { id: "weekday-1530", time: "15:30", remaining: 5, dayGroup: "weekday" },
+  { id: "weekday-1630", time: "16:30", remaining: 5, dayGroup: "weekday" },
+  { id: "weekday-1710", time: "17:10", remaining: 5, dayGroup: "weekday" },
+  { id: "thursday-1400", time: "14:00", remaining: 5, dayGroup: "thursday" },
+  { id: "thursday-1440", time: "14:40", remaining: 5, dayGroup: "thursday" },
+  { id: "thursday-1520", time: "15:20", remaining: 5, dayGroup: "thursday" },
+  { id: "thursday-1600", time: "16:00", remaining: 5, dayGroup: "thursday" },
+  { id: "thursday-1640", time: "16:40", remaining: 4, dayGroup: "thursday" },
+  { id: "thursday-1720", time: "17:20", remaining: 4, dayGroup: "thursday" },
+  { id: "saturday-0930", time: "9:30", remaining: 5, dayGroup: "saturday" },
+  { id: "saturday-1010", time: "10:10", remaining: 5, dayGroup: "saturday" },
+  { id: "saturday-1045", time: "10:45", remaining: 5, dayGroup: "saturday" },
+  { id: "saturday-1120", time: "11:20", remaining: 5, dayGroup: "saturday" },
+  { id: "saturday-1210", time: "12:10", remaining: 5, dayGroup: "saturday" },
 ];
+const defaultSlotId = "weekday-1400";
 
 const fallbackTreatments: TreatmentOption[] = [
   { id: "none", label: otherTreatmentLabel, isOpen: true, sortOrder: 0 },
@@ -282,7 +296,7 @@ class SyncReadyAppointmentStore implements AppointmentStore {
         .eq("is_open", true)
         .order("sort_order", { ascending: true });
       if (error) throw error;
-      if (data?.length) return data.map(fromTimeBlockRow);
+      if (data?.length) return mergeConfiguredSlots(data.map(fromTimeBlockRow));
     }
 
     return initialSlots;
@@ -491,7 +505,9 @@ function App() {
   ]);
   const [direction, setDirection] = useState(1);
   const [selectedDate, setSelectedDate] = useState(restoredBooking ? parseBookingDate(restoredBooking.date) : getToday());
-  const [selectedSlotId, setSelectedSlotId] = useState(restoredBooking ? getSlotIdByTime(restoredBooking.time) : "1400");
+  const [selectedSlotId, setSelectedSlotId] = useState(
+    restoredBooking ? getSlotIdByTime(restoredBooking.time, parseBookingDate(restoredBooking.date)) : defaultSlotId,
+  );
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [patientName, setPatientName] = useState(restoredBooking?.patientName ?? "");
   const [treatment, setTreatment] = useState<Treatment>(normalizeTreatmentLabel(restoredBooking?.treatment ?? otherTreatmentLabel));
@@ -517,10 +533,11 @@ function App() {
   const selectedSlot = slots.find((slot) => slot.id === selectedSlotId) ?? slots.find((slot) => !slot.closed) ?? initialSlots[0];
 
   useEffect(() => {
-    if (!selectedSlot.closed) return;
+    const selectedSlotExists = slots.some((slot) => slot.id === selectedSlotId);
+    if (selectedSlotExists && !selectedSlot.closed) return;
     const firstOpenSlot = slots.find((slot) => !slot.closed);
     if (firstOpenSlot) setSelectedSlotId(firstOpenSlot.id);
-  }, [selectedSlot.closed, slots]);
+  }, [selectedSlot.closed, selectedSlotId, slots]);
 
   useEffect(() => {
     let isMounted = true;
@@ -1528,13 +1545,6 @@ function AdminApp() {
           onSaveClinic={(settings) =>
             appointmentStore.saveClinicSettings(settings).then(() => setToast("설정을 저장했어요")).catch((error) => setToast(getReservationErrorMessage(error)))
           }
-          onSaveCapacity={(capacity) =>
-            Promise.all(
-              baseSlots.map((slot, index) =>
-                appointmentStore.saveSlot({ ...slot, remaining: capacity, closed: false }, (index + 1) * 10),
-              ),
-            ).then(() => setToast("예약 가능 인원을 저장했어요")).catch((error) => setToast(getReservationErrorMessage(error)))
-          }
           onSaveWaitInterval={(minutes) =>
             appointmentStore.saveWaitInterval(baseSlots, minutes).then(() => setToast("대기 시간 규칙을 저장했어요")).catch((error) => setToast(getReservationErrorMessage(error)))
           }
@@ -1750,18 +1760,15 @@ function AdminSettingsPanel(props: {
   treatmentOptions: TreatmentOption[];
   waitRules: WaitRule[];
   onSaveClinic: (settings: ClinicSettings) => void;
-  onSaveCapacity: (capacity: number) => void;
   onSaveWaitInterval: (minutes: number) => void;
   onSaveTreatments: (options: TreatmentOption[]) => void;
 }) {
   const [clinicDraft, setClinicDraft] = useState(props.clinicSettings);
-  const [capacity, setCapacity] = useState(getCommonCapacity(props.slots));
   const [waitInterval, setWaitInterval] = useState(getWaitInterval(props.waitRules));
   const [isClinicEditOpen, setIsClinicEditOpen] = useState(false);
   const [isTreatmentAddOpen, setIsTreatmentAddOpen] = useState(false);
 
   useEffect(() => setClinicDraft(props.clinicSettings), [props.clinicSettings]);
-  useEffect(() => setCapacity(getCommonCapacity(props.slots)), [props.slots]);
   useEffect(() => setWaitInterval(getWaitInterval(props.waitRules)), [props.waitRules]);
 
   const visibleTreatments = props.treatmentOptions.filter((option) => option.isOpen);
@@ -1790,24 +1797,6 @@ function AdminSettingsPanel(props: {
         </article>
         <article className="admin-setting-card">
           <h2>예약 시간</h2>
-          <AdminSettingValueRow
-            label="시간 당 예약 가능 인원"
-            action={
-              <AdminStepper
-                value={`${capacity}명`}
-                onDecrease={() => {
-                  const next = Math.max(1, capacity - 1);
-                  setCapacity(next);
-                  props.onSaveCapacity(next);
-                }}
-                onIncrease={() => {
-                  const next = capacity + 1;
-                  setCapacity(next);
-                  props.onSaveCapacity(next);
-                }}
-              />
-            }
-          />
           <AdminSettingValueRow
             label="순번 별 예상 대기 시간"
             action={
@@ -2156,8 +2145,27 @@ function applyBookingsToSlots(slots: Slot[], selectedDate: Date, bookings: Booki
 }
 
 function getVisibleSlotsForDate(slots: Slot[], selectedDate: Date) {
-  if (!isSaturday(selectedDate)) return slots;
-  return slots.filter((slot) => Number(slot.time.split(":")[0]) < 13);
+  const dayGroup = getSlotDayGroup(selectedDate);
+  return slots.filter((slot) => (slot.dayGroup ?? "weekday") === dayGroup);
+}
+
+function getSlotDayGroup(date: Date): NonNullable<Slot["dayGroup"]> {
+  if (date.getDay() === 4) return "thursday";
+  if (date.getDay() === 6) return "saturday";
+  return "weekday";
+}
+
+function mergeConfiguredSlots(remoteSlots: Slot[]) {
+  const remoteById = new Map(remoteSlots.map((slot) => [slot.id, slot]));
+  return initialSlots.map((slot) => {
+    const remoteSlot = remoteById.get(slot.id);
+    if (!remoteSlot) return slot;
+    return {
+      ...slot,
+      remaining: remoteSlot.remaining,
+      closed: remoteSlot.closed,
+    };
+  });
 }
 
 function toReservationRow(booking: Booking) {
@@ -2199,7 +2207,15 @@ function fromTimeBlockRow(row: TimeBlockRow): Slot {
     time: row.time_label,
     remaining: row.capacity,
     closed: !row.is_open || row.capacity <= 0,
+    dayGroup: getDayGroupFromSlotId(row.id),
   };
+}
+
+function getDayGroupFromSlotId(id: string): Slot["dayGroup"] {
+  if (id.startsWith("thursday-")) return "thursday";
+  if (id.startsWith("saturday-")) return "saturday";
+  if (id.startsWith("weekday-")) return "weekday";
+  return undefined;
 }
 
 function fromWaitRuleRow(row: WaitRuleRow): WaitRule {
@@ -2341,8 +2357,8 @@ function toDateKey(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
-function getSlotIdByTime(time: string) {
-  return initialSlots.find((slot) => slot.time === time)?.id ?? "1400";
+function getSlotIdByTime(time: string, date = getToday()) {
+  return getVisibleSlotsForDate(initialSlots, date).find((slot) => slot.time === time)?.id ?? defaultSlotId;
 }
 
 function formatMonthDayWeek(date: Date) {
@@ -2382,11 +2398,6 @@ function isDefaultClinicDay(date: Date) {
 
 function toPhoneHref(phone: string) {
   return `tel:${phone.replace(/[^\d+]/g, "")}`;
-}
-
-function getCommonCapacity(slots: Slot[]) {
-  if (!slots.length) return 5;
-  return slots[0].remaining;
 }
 
 function getWaitInterval(waitRules: WaitRule[]) {

@@ -66,14 +66,26 @@ set clinic_name = excluded.clinic_name,
 
 insert into public.appointment_time_blocks (id, time_label, capacity, is_open, sort_order)
 values
-  ('0930', '9:30', 5, true, 10),
-  ('1015', '10:15', 5, true, 20),
-  ('1100', '11:00', 1, true, 30),
-  ('1145', '11:45', 5, true, 40),
-  ('1400', '14:00', 5, true, 50),
-  ('1510', '15:10', 5, true, 60),
-  ('1620', '16:20', 5, true, 70),
-  ('1730', '17:30', 5, true, 80)
+  ('weekday-0930', '9:30', 5, true, 10),
+  ('weekday-1010', '10:10', 5, true, 20),
+  ('weekday-1045', '10:45', 5, true, 30),
+  ('weekday-1120', '11:20', 5, true, 40),
+  ('weekday-1400', '14:00', 5, true, 50),
+  ('weekday-1450', '14:50', 5, true, 60),
+  ('weekday-1530', '15:30', 5, true, 70),
+  ('weekday-1630', '16:30', 5, true, 80),
+  ('weekday-1710', '17:10', 5, true, 90),
+  ('thursday-1400', '14:00', 5, true, 110),
+  ('thursday-1440', '14:40', 5, true, 120),
+  ('thursday-1520', '15:20', 5, true, 130),
+  ('thursday-1600', '16:00', 5, true, 140),
+  ('thursday-1640', '16:40', 4, true, 150),
+  ('thursday-1720', '17:20', 4, true, 160),
+  ('saturday-0930', '9:30', 5, true, 210),
+  ('saturday-1010', '10:10', 5, true, 220),
+  ('saturday-1045', '10:45', 5, true, 230),
+  ('saturday-1120', '11:20', 5, true, 240),
+  ('saturday-1210', '12:10', 5, true, 250)
 on conflict (id) do update
 set time_label = excluded.time_label,
     capacity = excluded.capacity,
@@ -84,7 +96,13 @@ set time_label = excluded.time_label,
 update public.appointment_time_blocks
 set is_open = false,
     updated_at = now()
-where id not in ('0930', '1015', '1100', '1145', '1400', '1510', '1620', '1730');
+where id not in (
+  'weekday-0930', 'weekday-1010', 'weekday-1045', 'weekday-1120',
+  'weekday-1400', 'weekday-1450', 'weekday-1530', 'weekday-1630', 'weekday-1710',
+  'thursday-1400', 'thursday-1440', 'thursday-1520',
+  'thursday-1600', 'thursday-1640', 'thursday-1720',
+  'saturday-0930', 'saturday-1010', 'saturday-1045', 'saturday-1120', 'saturday-1210'
+);
 
 insert into public.treatment_options (id, label, is_open, sort_order)
 values
