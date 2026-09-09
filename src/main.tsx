@@ -1220,7 +1220,7 @@ function Header({
             <img className="svg-icon" src={upcomingBookingCount > 0 ? myBookingsCalendarIcon : myBookingsCalendarEmptyIcon} alt="" />
           </span>
           <span className="my-bookings-label">
-            <strong>{upcomingBookingCount > 0 ? `내 예약 ${upcomingBookingCount}건` : "내 예약"}</strong>
+            <strong>{upcomingBookingCount > 0 ? `내 진료 ${upcomingBookingCount}건` : "내 진료"}</strong>
             <span className="my-bookings-chevron-icon">
               <img className="svg-icon" src={upcomingBookingCount > 0 ? myBookingsChevronIcon : myBookingsChevronEmptyIcon} alt="" />
             </span>
