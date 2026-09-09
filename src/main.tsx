@@ -1475,14 +1475,13 @@ function MyBookingCard({
 }) {
   const dimmed = booking.status === "cancelled";
   const showWaitMinutes = !isBookingDatePassed(booking);
+  const dateTag = getRelativeDateLabel(parseBookingDate(booking.date));
   return (
     <article className={`my-booking-card ${dimmed ? "dimmed" : ""}`}>
       <div className="my-booking-main">
         <div>
           <p className="my-booking-date">
-            {getRelativeDateLabel(parseBookingDate(booking.date)) && (
-              <span>{getRelativeDateLabel(parseBookingDate(booking.date))}</span>
-            )}
+            {!dimmed && dateTag && <span>{dateTag}</span>}
             {formatShortDate(parseBookingDate(booking.date))} {booking.time}
           </p>
           <p>{booking.patientName} · {booking.treatment}</p>
