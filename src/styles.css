@@ -626,7 +626,16 @@ textarea::placeholder {
   padding: 0 16px calc(103px + env(safe-area-inset-bottom));
 }
 
-.my-bookings-content h1 {
+.my-bookings-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  margin: 0 -16px;
+  padding: 0 16px;
+  background: var(--background);
+}
+
+.my-bookings-sticky h1 {
   margin: 10px 0;
   font-size: 20px;
   line-height: 1.32;
