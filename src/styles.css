@@ -596,7 +596,7 @@ textarea::placeholder {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 160px;
+  bottom: calc(99px + env(safe-area-inset-bottom));
   height: 122px;
   padding: 10px 16px;
   display: flex;
