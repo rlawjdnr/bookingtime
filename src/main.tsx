@@ -1342,8 +1342,8 @@ function MyBookingsScreen({
   onCancel: (booking: Booking) => void;
 }) {
   const [tab, setTab] = useState<"upcoming" | "history">("upcoming");
-  const upcoming = bookings.filter(isUpcomingBooking).sort(compareBookingsByAppointmentTime);
-  const history = bookings.filter(isPastOrCancelledStoredBooking).sort(compareBookingsByAppointmentTime).reverse();
+  const upcoming = bookings.filter(isScheduledStoredBooking).sort(compareBookingsByAppointmentTime);
+  const history = bookings.filter(isPastStoredBooking).sort(compareBookingsByAppointmentTime).reverse();
   const visibleBookings = tab === "upcoming" ? upcoming : history;
 
   return (
@@ -1395,6 +1395,7 @@ function MyBookingsScreen({
 
 function MyBookingCard({ booking, isUpcoming, onCancel }: { booking: Booking; isUpcoming: boolean; onCancel: () => void }) {
   const dimmed = booking.status === "cancelled";
+  const showWaitMinutes = !isBookingDatePassed(booking);
   return (
     <article className={`my-booking-card ${dimmed ? "dimmed" : ""}`}>
       <div className="my-booking-main">
@@ -1406,7 +1407,7 @@ function MyBookingCard({ booking, isUpcoming, onCancel }: { booking: Booking; is
             {formatShortDate(parseBookingDate(booking.date))} {booking.time}
           </p>
           <p>{booking.patientName} · {booking.treatment}</p>
-          {isUpcoming && <p>예상 대기 <strong className="my-booking-wait-minutes">{booking.waitMinutes}분</strong></p>}
+          {showWaitMinutes && <p>예상 대기 <strong className="my-booking-wait-minutes">{booking.waitMinutes}분</strong></p>}
         </div>
         <strong>{booking.status === "cancelled" ? "예약 취소" : isUpcoming ? "예약 완료" : "진료 완료"}</strong>
       </div>
@@ -2597,8 +2598,12 @@ function isUpcomingBooking(booking: Booking) {
   return booking.status === "confirmed" && !isBookingDatePassed(booking);
 }
 
-function isPastOrCancelledStoredBooking(booking: Booking) {
-  return booking.status === "cancelled" || (booking.status === "confirmed" && isBookingDatePassed(booking));
+function isScheduledStoredBooking(booking: Booking) {
+  return !isBookingDatePassed(booking);
+}
+
+function isPastStoredBooking(booking: Booking) {
+  return isBookingDatePassed(booking);
 }
 
 function isVisibleStoredBooking(booking: Booking) {
