@@ -715,6 +715,10 @@ textarea::placeholder {
   font-weight: 600;
 }
 
+.my-booking-main .my-booking-wait-minutes {
+  color: inherit;
+}
+
 .my-booking-cancel,
 .my-booking-disabled {
   width: 100%;

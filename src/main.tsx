@@ -1397,7 +1397,7 @@ function MyBookingCard({ booking, isUpcoming, onCancel }: { booking: Booking; is
             {formatShortDate(parseBookingDate(booking.date))} {booking.time}
           </p>
           <p>{booking.patientName} · {booking.treatment}</p>
-          {isUpcoming && <p>예상 대기 <strong>{booking.waitMinutes}분</strong></p>}
+          {isUpcoming && <p>예상 대기 <strong className="my-booking-wait-minutes">{booking.waitMinutes}분</strong></p>}
         </div>
         <strong>{booking.status === "cancelled" ? "예약 취소" : isUpcoming ? "예약 완료" : "진료 완료"}</strong>
       </div>
