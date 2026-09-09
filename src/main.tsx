@@ -1410,23 +1410,23 @@ function MyBookingsScreen({
   return (
     <>
       <Header clinicSettings={clinicSettings} back={onBack} compact hideTitle />
-      <div className="my-bookings-content">
-        <div className="my-bookings-sticky">
-          <h1>내 예약</h1>
-          <div className="my-bookings-tabs" role="tablist">
-            <motion.div
-              className="my-bookings-tab-indicator"
-              animate={{ x: tab === "upcoming" ? "0%" : "100%" }}
-              transition={screenSpring}
-            />
-            <TapButton className={tab === "upcoming" ? "active" : ""} onClick={() => setTab("upcoming")}>
-              진료 예정
-            </TapButton>
-            <TapButton className={tab === "history" ? "active" : ""} onClick={() => setTab("history")}>
-              진료 완료
-            </TapButton>
-          </div>
+      <div className="my-bookings-sticky">
+        <h1>내 예약</h1>
+        <div className="my-bookings-tabs" role="tablist">
+          <motion.div
+            className="my-bookings-tab-indicator"
+            animate={{ x: tab === "upcoming" ? "0%" : "100%" }}
+            transition={screenSpring}
+          />
+          <TapButton className={tab === "upcoming" ? "active" : ""} onClick={() => setTab("upcoming")}>
+            진료 예정
+          </TapButton>
+          <TapButton className={tab === "history" ? "active" : ""} onClick={() => setTab("history")}>
+            진료 완료
+          </TapButton>
         </div>
+      </div>
+      <div className="my-bookings-content">
         <div className="my-bookings-list">
           {visibleBookings.length ? (
             visibleBookings.map((item) => (
