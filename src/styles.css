@@ -447,6 +447,10 @@ a {
   padding: 12px 16px 32px;
 }
 
+.my-bookings-cta {
+  border-top: 0.8px solid #eeeff1;
+}
+
 .primary-button,
 .danger-button,
 .light-button {

@@ -1444,7 +1444,7 @@ function MyBookingsScreen({
           )}
         </div>
       </div>
-      <div className="bottom-cta">
+      <div className="bottom-cta my-bookings-cta">
         <a className="light-button phone-button" href={toPhoneHref(clinicSettings.phone)}>
           <span className="phone-button-icon">
             <img className="svg-icon" src={phoneFillIcon} alt="" />
