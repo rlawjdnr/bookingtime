@@ -611,6 +611,26 @@ textarea::placeholder {
   margin-top: 2px;
 }
 
+.complete-clinic-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  color: #555d6d;
+  font-size: 14px;
+  line-height: normal;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.complete-clinic-icon {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
 .complete-message h1 {
   margin: 0;
   text-align: center;

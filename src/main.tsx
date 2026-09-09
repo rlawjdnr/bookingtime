@@ -1363,6 +1363,12 @@ function CompleteScreen({ clinicSettings, booking, onConfirm }: { clinicSettings
     <>
       <Header clinicSettings={clinicSettings} complete />
       <section className="complete-message">
+        <div className="complete-clinic-label">
+          <span className="complete-clinic-icon">
+            <img className="svg-icon hospital-icon" src={hospitalIcon} alt="" />
+          </span>
+          <span>{clinicSettings.name}에서</span>
+        </div>
         <img className="svg-icon complete-icon" src={completeIcon} alt="" />
         <h1>
           {`${booking.patientName}님`}
