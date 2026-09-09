@@ -1260,15 +1260,25 @@ function TimeScreen(props: {
         onOpenMyBookings={props.onOpenMyBookings}
       />
       <div className="content">
-        <h1 className="screen-title">언제 진료를 원하시나요?</h1>
-        <TapButton className="date-select" onClick={props.onOpenCalendar}>
-          <span>
-            <img className="svg-icon calendar-icon" src={calendarIcon} alt="" />
-            {relativeDateLabel && <strong>{relativeDateLabel}</strong>}
-            <span className="date-select-value">{formatMonthDayWeek(props.selectedDate)}</span>
-          </span>
-          <img className="svg-icon chevron" src={chevronDownIcon} alt="" />
-        </TapButton>
+        <section className="home-date-block">
+          <div className="home-clinic-label">
+            <span className="home-clinic-icon">
+              <img className="svg-icon hospital-icon" src={hospitalIcon} alt="" />
+            </span>
+            <span>김한의원에서</span>
+          </div>
+          <div className="home-date-control">
+            <h1 className="screen-title">언제 진료를 원하시나요?</h1>
+            <TapButton className="date-select" onClick={props.onOpenCalendar}>
+              <span>
+                <img className="svg-icon calendar-icon" src={calendarIcon} alt="" />
+                {relativeDateLabel && <strong>{relativeDateLabel}</strong>}
+                <span className="date-select-value">{formatMonthDayWeek(props.selectedDate)}</span>
+              </span>
+              <img className="svg-icon chevron" src={chevronDownIcon} alt="" />
+            </TapButton>
+          </div>
+        </section>
         <SlotGroup title="오전" slots={morning} selectedDate={props.selectedDate} selectedId={props.selectedSlotId} onSelect={props.onSelectSlot} />
         <SlotGroup title="오후" slots={afternoon} selectedDate={props.selectedDate} selectedId={props.selectedSlotId} onSelect={props.onSelectSlot} />
       </div>
@@ -1363,12 +1373,6 @@ function CompleteScreen({ clinicSettings, booking, onConfirm }: { clinicSettings
     <>
       <Header clinicSettings={clinicSettings} complete />
       <section className="complete-message">
-        <div className="complete-clinic-label">
-          <span className="complete-clinic-icon">
-            <img className="svg-icon hospital-icon" src={hospitalIcon} alt="" />
-          </span>
-          <span>{clinicSettings.name}에서</span>
-        </div>
         <img className="svg-icon complete-icon" src={completeIcon} alt="" />
         <h1>
           {`${booking.patientName}님`}
