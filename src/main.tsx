@@ -2647,7 +2647,7 @@ function isVisibleStoredBooking(booking: Booking) {
 }
 
 function isBookingDatePassed(booking: Booking) {
-  return startOfDay(getAppointmentDateTime(booking)).getTime() < getToday().getTime();
+  return getAppointmentDateTime(booking).getTime() <= getCurrentMinute().getTime();
 }
 
 function compareBookingsByAppointmentTime(a: Booking, b: Booking) {
