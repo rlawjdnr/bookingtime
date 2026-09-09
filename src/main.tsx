@@ -209,6 +209,7 @@ const screenVariants = {
   center: { x: "0%" },
   covered: { x: "-50%" },
   exit: (latestDirection: number) => ({ x: latestDirection > 0 ? "-50%" : "100%" }),
+  removed: { x: "-50%", opacity: 0, transition: { duration: 0 } },
 };
 
 class SyncReadyAppointmentStore implements AppointmentStore {
@@ -1064,7 +1065,7 @@ function ScreenMotion({
       variants={screenVariants}
       initial="enter"
       animate={isTop ? "center" : "covered"}
-      exit="exit"
+      exit={isTop ? "exit" : "removed"}
       transition={mode === "instant" ? { duration: 0 } : screenSpring}
       style={{ zIndex: index + 1, pointerEvents: isTop ? "auto" : "none" }}
     >
