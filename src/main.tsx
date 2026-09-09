@@ -31,7 +31,9 @@ import adminLogoutIcon from "./assets/figma/admin-logout.svg";
 import adminRadioEmptyIcon from "./assets/figma/admin-radio-empty.svg";
 import adminRadioSelectedIcon from "./assets/figma/admin-radio-selected.svg";
 import myBookingsCalendarIcon from "./assets/figma/my-bookings-calendar.svg";
+import myBookingsCalendarEmptyIcon from "./assets/figma/my-bookings-calendar-empty.svg";
 import myBookingsChevronIcon from "./assets/figma/my-bookings-chevron.svg";
+import myBookingsChevronEmptyIcon from "./assets/figma/my-bookings-chevron-empty.svg";
 import phoneFillIcon from "./assets/figma/phone-fill.svg";
 
 const ADMIN_SESSION_KEY = "bookingtime-admin-authenticated";
@@ -1129,15 +1131,15 @@ function Header({
         <TapButton className="icon-button" onClick={back} aria-label="뒤로가기">
           <img className="svg-icon back-icon" src={backIcon} alt="" />
         </TapButton>
-      ) : upcomingBookingCount > 0 && onOpenMyBookings ? (
-        <TapButton className="my-bookings-link" onClick={onOpenMyBookings}>
+      ) : onOpenMyBookings ? (
+        <TapButton className={`my-bookings-link ${upcomingBookingCount === 0 ? "empty" : ""}`} onClick={onOpenMyBookings}>
           <span className="my-bookings-calendar-icon">
-            <img className="svg-icon" src={myBookingsCalendarIcon} alt="" />
+            <img className="svg-icon" src={upcomingBookingCount > 0 ? myBookingsCalendarIcon : myBookingsCalendarEmptyIcon} alt="" />
           </span>
           <span className="my-bookings-label">
-            <strong>내 예약 {upcomingBookingCount}건</strong>
+            <strong>{upcomingBookingCount > 0 ? `내 예약 ${upcomingBookingCount}건` : "내 예약"}</strong>
             <span className="my-bookings-chevron-icon">
-              <img className="svg-icon" src={myBookingsChevronIcon} alt="" />
+              <img className="svg-icon" src={upcomingBookingCount > 0 ? myBookingsChevronIcon : myBookingsChevronEmptyIcon} alt="" />
             </span>
           </span>
         </TapButton>
@@ -1148,8 +1150,7 @@ function Header({
         </div>
       )}
       {back && <strong className="header-title">{clinicSettings.name}</strong>}
-      {!back && upcomingBookingCount === 0 && <span className="clinic-status">{clinicSettings.status}</span>}
-      {!back && upcomingBookingCount > 0 && <span className="header-spacer" />}
+      {!back && <span className={upcomingBookingCount === 0 ? "clinic-status" : "header-spacer"}>{upcomingBookingCount === 0 ? clinicSettings.status : ""}</span>}
       {back && <span className="header-spacer" />}
     </header>
   );

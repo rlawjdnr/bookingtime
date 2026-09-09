@@ -175,6 +175,10 @@ a {
   line-height: normal;
 }
 
+.my-bookings-link.empty {
+  color: #868b94;
+}
+
 .my-bookings-calendar-icon,
 .my-bookings-chevron-icon {
   display: grid;
