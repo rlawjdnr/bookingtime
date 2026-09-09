@@ -2496,7 +2496,7 @@ function loadActiveBooking() {
     if (!raw) return null;
 
     const booking = JSON.parse(raw) as Booking;
-    if (!isValidStoredBooking(booking) || isBookingExpired(booking)) {
+    if (!isValidStoredBooking(booking) || !isVisibleStoredBooking(booking)) {
       clearActiveBooking();
       return null;
     }
@@ -2574,27 +2574,26 @@ function isValidStoredBooking(booking: Partial<Booking>) {
       booking.date &&
       booking.time &&
       booking.treatment &&
-      booking.status === "confirmed",
+      (booking.status === "confirmed" || booking.status === "cancelled"),
   );
 }
 
-function isBookingExpired(booking: Booking) {
-  const expiresAt = getAppointmentDateTime(booking).getTime() + 60 * 60 * 1000;
-  return Date.now() >= expiresAt;
-}
-
 function isUpcomingBooking(booking: Booking) {
-  return booking.status === "confirmed" && !isBookingExpired(booking);
+  return booking.status === "confirmed" && !isBookingDatePassed(booking);
 }
 
 function isPastOrCancelledStoredBooking(booking: Booking) {
-  return booking.status === "cancelled" || (booking.status === "confirmed" && isBookingExpired(booking));
+  return booking.status === "cancelled" || (booking.status === "confirmed" && isBookingDatePassed(booking));
 }
 
 function isVisibleStoredBooking(booking: Booking) {
-  const appointmentTime = getAppointmentDateTime(booking).getTime();
+  const appointmentTime = startOfDay(getAppointmentDateTime(booking)).getTime();
   const historyStartsAt = Date.now() - 30 * 24 * 60 * 60 * 1000;
   return isUpcomingBooking(booking) || appointmentTime >= historyStartsAt;
+}
+
+function isBookingDatePassed(booking: Booking) {
+  return startOfDay(getAppointmentDateTime(booking)).getTime() < getToday().getTime();
 }
 
 function compareBookingsByAppointmentTime(a: Booking, b: Booking) {
