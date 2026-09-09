@@ -507,13 +507,19 @@ const appointmentStore = new SyncReadyAppointmentStore();
 function useMobileViewportHeight() {
   useLayoutEffect(() => {
     const pendingTimers: number[] = [];
-    const setAppHeight = () => {
-      const viewportHeight = window.visualViewport?.height ?? 0;
-      const keyboardLikelyOpen = isTextInputFocused() && viewportHeight > 0 && viewportHeight < window.innerHeight - 120;
-      if (keyboardLikelyOpen) return;
+    let stableHeight = window.visualViewport?.height || window.innerHeight;
+    let ignoreViewportShrinkUntil = 0;
 
-      const height = viewportHeight || window.innerHeight;
-      document.documentElement.style.setProperty("--app-height", `${height}px`);
+    const setAppHeight = () => {
+      const viewportHeight = window.visualViewport?.height || window.innerHeight;
+      const isShrunkByKeyboard = viewportHeight < stableHeight - 120;
+      if (isTextInputFocused() || Date.now() < ignoreViewportShrinkUntil || isShrunkByKeyboard) {
+        document.documentElement.style.setProperty("--app-height", `${stableHeight}px`);
+        return;
+      }
+
+      stableHeight = Math.max(stableHeight, viewportHeight);
+      document.documentElement.style.setProperty("--app-height", `${stableHeight}px`);
     };
 
     const resetScroll = () => {
@@ -521,9 +527,15 @@ function useMobileViewportHeight() {
     };
 
     const refreshAfterKeyboard = () => {
+      ignoreViewportShrinkUntil = Date.now() + 700;
       [80, 220, 420].forEach((delay) => {
         pendingTimers.push(window.setTimeout(setAppHeight, delay));
       });
+    };
+
+    const resetStableHeight = () => {
+      stableHeight = window.visualViewport?.height || window.innerHeight;
+      setAppHeight();
     };
 
     setAppHeight();
@@ -541,10 +553,11 @@ function useMobileViewportHeight() {
     viewport?.addEventListener("resize", setAppHeight);
     viewport?.addEventListener("scroll", setAppHeight);
     window.addEventListener("resize", setAppHeight);
-    window.addEventListener("orientationchange", setAppHeight);
+    window.addEventListener("orientationchange", resetStableHeight);
     window.addEventListener("load", setAppHeight);
     window.addEventListener("pageshow", setAppHeight);
     document.addEventListener("visibilitychange", setAppHeight);
+    document.addEventListener("focusin", refreshAfterKeyboard);
     document.addEventListener("focusout", refreshAfterKeyboard);
 
     return () => {
@@ -553,10 +566,11 @@ function useMobileViewportHeight() {
       viewport?.removeEventListener("resize", setAppHeight);
       viewport?.removeEventListener("scroll", setAppHeight);
       window.removeEventListener("resize", setAppHeight);
-      window.removeEventListener("orientationchange", setAppHeight);
+      window.removeEventListener("orientationchange", resetStableHeight);
       window.removeEventListener("load", setAppHeight);
       window.removeEventListener("pageshow", setAppHeight);
       document.removeEventListener("visibilitychange", setAppHeight);
+      document.removeEventListener("focusin", refreshAfterKeyboard);
       document.removeEventListener("focusout", refreshAfterKeyboard);
     };
   }, []);
