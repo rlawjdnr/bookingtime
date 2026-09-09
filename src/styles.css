@@ -913,9 +913,16 @@ textarea.selected {
   right: 0;
   bottom: 0;
   height: 338px;
-  padding: 29px 16px 32px;
+  padding: 29px 16px 0;
   background: #fff;
   border-radius: 20px 20px 0 0;
+  overflow: hidden;
+}
+
+.confirm-sheet-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .confirm-sheet h1 {
@@ -926,16 +933,62 @@ textarea.selected {
   line-height: 1.32;
 }
 
-.confirm-sheet .summary {
-  margin-top: 14px;
-  padding: 12px 18px;
+.confirm-sheet h1 span {
+  display: block;
+}
+
+.confirm-summary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0;
+}
+
+.confirm-summary-line {
+  width: 3px;
+  align-self: stretch;
+  border-radius: 2px;
+  background: #eeeff1;
+  flex: 0 0 3px;
+}
+
+.confirm-summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.confirm-summary-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text);
+  font-size: 15px;
+  line-height: normal;
+}
+
+.confirm-summary-row span {
+  width: 88px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 400;
+}
+
+.confirm-summary-row strong {
+  font-size: 15px;
+  line-height: normal;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .confirm-actions {
   position: absolute;
-  left: 16px;
-  right: 16px;
-  bottom: 32px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 12px 16px 32px;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;

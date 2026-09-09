@@ -205,6 +205,37 @@ const snackbarSpring = { type: "spring" as const, stiffness: 800, damping: 55 };
 const overlaySpring = { type: "spring" as const, stiffness: 800, damping: 55 };
 const tapSpring = { type: "spring" as const, stiffness: 1000, damping: 55 };
 const tapReleaseSpring = { type: "spring" as const, stiffness: 800, damping: 55 };
+const confirmSheetItemSpring = { type: "spring" as const, stiffness: 480, damping: 50 };
+const confirmSheetFade = { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] as const };
+const confirmSheetItems = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      opacity: confirmSheetFade,
+      staggerChildren: 0.03,
+    },
+  },
+  exit: {
+    opacity: 0,
+    transition: confirmSheetFade,
+  },
+};
+const confirmSheetItem = {
+  hidden: { y: 300, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      y: confirmSheetItemSpring,
+      opacity: confirmSheetFade,
+    },
+  },
+  exit: {
+    opacity: 0,
+    transition: confirmSheetFade,
+  },
+};
 const calendarWeekdays = ["일", "월", "화", "수", "목", "금", "토"];
 const screenVariants = {
   enter: (latestDirection: number) => ({ x: latestDirection > 0 ? "100%" : "-50%" }),
@@ -1018,31 +1049,55 @@ function ConfirmBookingSheet({
   onClose: () => void;
   onConfirm: () => void;
 }) {
+  const summaryRows: [string, string, string][] = [
+    ["예약 시간", appointmentLabel, timeCalendarIcon],
+    ["대기 시간", `${waitMinutes}분`, waitIcon],
+    ["진료 과목", treatment, treatmentIcon],
+  ];
+
   return (
-    <motion.div className="sheet-dim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={spring} onClick={onClose}>
+    <motion.div className="sheet-dim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={confirmSheetFade} onClick={onClose}>
       <motion.section
         className="confirm-sheet"
-        initial={{ y: 338 }}
-        animate={{ y: 0 }}
-        exit={{ y: 338 }}
-        transition={spring}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        variants={confirmSheetItems}
         onClick={(event) => event.stopPropagation()}
       >
-        <h1>
-          {patientName}님 예약하기 전에
-          <br />
-          마지막으로 확인해주세요
-        </h1>
-        <SummaryCard
-          rows={[
-            ["예약 시간", appointmentLabel, timeCalendarIcon],
-            ["대기 시간", `${waitMinutes}분`, waitIcon],
-            ["진료 과목", treatment, treatmentIcon],
-          ]}
-        />
+        <div className="confirm-sheet-content">
+          <h1>
+            <motion.span variants={confirmSheetItem}>{patientName}님 예약하기 전에</motion.span>
+            <motion.span variants={confirmSheetItem}>마지막으로 확인해주세요</motion.span>
+          </h1>
+          <div className="confirm-summary">
+            <motion.div
+              className="confirm-summary-line"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={confirmSheetFade}
+            />
+            <div className="confirm-summary-list">
+              {summaryRows.map(([label, value, icon]) => (
+                <motion.div className="confirm-summary-row" key={label} variants={confirmSheetItem}>
+                  <span>
+                    <img className="svg-icon summary-icon" src={icon} alt="" />
+                    {label}
+                  </span>
+                  <strong>{value}</strong>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </div>
         <div className="confirm-actions">
-          <TapButton className="light-button" onClick={onClose}>취소</TapButton>
-          <TapButton className="primary-button" onClick={onConfirm}>진료 예약하기</TapButton>
+          <motion.div variants={confirmSheetItem}>
+            <TapButton className="light-button" onClick={onClose}>취소</TapButton>
+          </motion.div>
+          <motion.div variants={confirmSheetItem}>
+            <TapButton className="primary-button" onClick={onConfirm}>진료 예약하기</TapButton>
+          </motion.div>
         </div>
       </motion.section>
     </motion.div>
