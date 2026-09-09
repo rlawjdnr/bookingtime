@@ -201,6 +201,7 @@ const snackbarSpring = { type: "spring" as const, stiffness: 480, damping: 50 };
 const overlaySpring = { type: "spring" as const, stiffness: 800, damping: 55 };
 const tapSpring = { type: "spring" as const, stiffness: 1000, damping: 55 };
 const tapReleaseSpring = { type: "spring" as const, stiffness: 800, damping: 55 };
+const calendarWeekdays = ["일", "월", "화", "수", "목", "금", "토"];
 const screenVariants = {
   enter: (latestDirection: number) => ({ x: latestDirection > 0 ? "100%" : "-50%" }),
   center: { x: "0%" },
@@ -1516,7 +1517,7 @@ function CalendarSheet(props: {
             <img src={monthNextIcon} alt="" className="svg-icon month-arrow" />
           </TapButton>
         </div>
-        <div className="calendar-grid weekdays">{["월", "화", "수", "목", "금", "토", "일"].map((day) => <span key={day}>{day}</span>)}</div>
+        <div className="calendar-grid weekdays">{calendarWeekdays.map((day) => <span key={day}>{day}</span>)}</div>
         <div className="calendar-grid">
           {days.map((date, index) => {
             const dayStatus = date ? getAdminCalendarDayStatus(date, props.openDays, props.daySettings) : "open";
@@ -1921,7 +1922,7 @@ function AdminCalendarPanel(props: {
             <img className="svg-icon month-arrow" src={monthNextIcon} alt="" />
           </TapButton>
         </div>
-        <div className="admin-calendar-grid weekdays">{["월", "화", "수", "목", "금", "토", "일"].map((day) => <span key={day}>{day}</span>)}</div>
+        <div className="admin-calendar-grid weekdays">{calendarWeekdays.map((day) => <span key={day}>{day}</span>)}</div>
         <div className="admin-calendar-grid">
           {days.map((date, index) => {
             const isPicked = date ? sameDay(date, props.selectedDate) : false;
@@ -2500,8 +2501,7 @@ function isMissingOptionalTableError(error: unknown) {
 function makeCalendarDays(date: Date) {
   const first = new Date(date.getFullYear(), date.getMonth(), 1);
   const last = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-  const mondayIndex = (first.getDay() + 6) % 7;
-  const days: (Date | null)[] = Array.from({ length: mondayIndex }, () => null);
+  const days: (Date | null)[] = Array.from({ length: first.getDay() }, () => null);
   for (let day = 1; day <= last.getDate(); day += 1) {
     days.push(new Date(date.getFullYear(), date.getMonth(), day));
   }
