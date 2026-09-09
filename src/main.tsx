@@ -509,12 +509,21 @@ function useMobileViewportHeight() {
     const pendingTimers: number[] = [];
     const setAppHeight = () => {
       const viewportHeight = window.visualViewport?.height ?? 0;
+      const keyboardLikelyOpen = isTextInputFocused() && viewportHeight > 0 && viewportHeight < window.innerHeight - 120;
+      if (keyboardLikelyOpen) return;
+
       const height = viewportHeight || window.innerHeight;
       document.documentElement.style.setProperty("--app-height", `${height}px`);
     };
 
     const resetScroll = () => {
       window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    };
+
+    const refreshAfterKeyboard = () => {
+      [80, 220, 420].forEach((delay) => {
+        pendingTimers.push(window.setTimeout(setAppHeight, delay));
+      });
     };
 
     setAppHeight();
@@ -536,6 +545,7 @@ function useMobileViewportHeight() {
     window.addEventListener("load", setAppHeight);
     window.addEventListener("pageshow", setAppHeight);
     document.addEventListener("visibilitychange", setAppHeight);
+    document.addEventListener("focusout", refreshAfterKeyboard);
 
     return () => {
       window.cancelAnimationFrame(animationFrameId);
@@ -547,8 +557,19 @@ function useMobileViewportHeight() {
       window.removeEventListener("load", setAppHeight);
       window.removeEventListener("pageshow", setAppHeight);
       document.removeEventListener("visibilitychange", setAppHeight);
+      document.removeEventListener("focusout", refreshAfterKeyboard);
     };
   }, []);
+}
+
+function isTextInputFocused() {
+  const activeElement = document.activeElement;
+  return (
+    activeElement instanceof HTMLInputElement ||
+    activeElement instanceof HTMLTextAreaElement ||
+    activeElement instanceof HTMLSelectElement ||
+    Boolean(activeElement?.getAttribute("contenteditable"))
+  );
 }
 
 function useCurrentMinute() {
