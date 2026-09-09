@@ -905,6 +905,9 @@ function App() {
                       setBooking(targetBooking);
                       setIsCancelOpen(true);
                     }}
+                    onDelete={(targetBooking) => {
+                      setStoredBookings(removeStoredBooking(targetBooking.id));
+                    }}
                   />
                 )}
               </ScreenMotion>
@@ -1398,11 +1401,13 @@ function MyBookingsScreen({
   bookings,
   onBack,
   onCancel,
+  onDelete,
 }: {
   clinicSettings: ClinicSettings;
   bookings: Booking[];
   onBack: () => void;
   onCancel: (booking: Booking) => void;
+  onDelete: (booking: Booking) => void;
 }) {
   const [tab, setTab] = useState<"upcoming" | "history">("upcoming");
   const upcoming = bookings.filter(isScheduledStoredBooking).sort(compareBookingsByAppointmentTime);
@@ -1437,6 +1442,7 @@ function MyBookingsScreen({
                 key={item.id}
                 isUpcoming={tab === "upcoming" && item.status === "confirmed"}
                 onCancel={() => onCancel(item)}
+                onDelete={() => onDelete(item)}
               />
             ))
           ) : (
@@ -1458,7 +1464,17 @@ function MyBookingsScreen({
   );
 }
 
-function MyBookingCard({ booking, isUpcoming, onCancel }: { booking: Booking; isUpcoming: boolean; onCancel: () => void }) {
+function MyBookingCard({
+  booking,
+  isUpcoming,
+  onCancel,
+  onDelete,
+}: {
+  booking: Booking;
+  isUpcoming: boolean;
+  onCancel: () => void;
+  onDelete: () => void;
+}) {
   const dimmed = booking.status === "cancelled";
   const showWaitMinutes = !isBookingDatePassed(booking);
   return (
@@ -1478,9 +1494,9 @@ function MyBookingCard({ booking, isUpcoming, onCancel }: { booking: Booking; is
       </div>
       {isUpcoming ? (
         <TapButton className="my-booking-cancel" onClick={onCancel}>예약 취소</TapButton>
-      ) : dimmed ? (
-        <button className="my-booking-disabled" type="button" disabled>취소했어요</button>
-      ) : null}
+      ) : (
+        <TapButton className="my-booking-delete" onClick={onDelete}>목록에서 삭제</TapButton>
+      )}
     </article>
   );
 }
@@ -2635,6 +2651,12 @@ function updateStoredBooking(id: string, updates: Partial<Booking>) {
   const nextBookings = loadStoredBookings()
     .map((booking) => (booking.id === id ? normalizeStoredBooking({ ...booking, ...updates }) : booking))
     .filter(isVisibleStoredBooking);
+  window.localStorage.setItem(storedBookingsStorageKey, JSON.stringify(nextBookings));
+  return nextBookings;
+}
+
+function removeStoredBooking(id: string) {
+  const nextBookings = loadStoredBookings().filter((booking) => booking.id !== id);
   window.localStorage.setItem(storedBookingsStorageKey, JSON.stringify(nextBookings));
   return nextBookings;
 }

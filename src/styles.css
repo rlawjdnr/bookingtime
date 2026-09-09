@@ -750,7 +750,7 @@ textarea::placeholder {
 }
 
 .my-booking-cancel,
-.my-booking-disabled {
+.my-booking-delete {
   width: 100%;
   min-height: 38px;
   border-radius: 8px;
@@ -766,10 +766,9 @@ textarea::placeholder {
   color: var(--danger);
 }
 
-.my-booking-disabled {
-  border: 0;
+.my-booking-delete {
   background: var(--surface);
-  color: var(--disabled);
+  color: var(--text);
 }
 
 .my-booking-card.dimmed .my-booking-date,
