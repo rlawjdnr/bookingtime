@@ -2549,8 +2549,10 @@ function getWaitMinutesForNextReservation(slot: Slot, selectedDate: Date, bookin
   const dateKey = toDateKey(selectedDate);
   const reservationOrder =
     bookings.filter((item) => item.status === "confirmed" && item.date === dateKey && item.time === slot.time).length + 1;
+  const slotRule = waitRules.find((rule) => rule.timeBlockId === slot.id && rule.reservationOrder === reservationOrder);
 
-  return reservationOrder * getWaitIntervalForSlot(slot.id, waitRules);
+  if (slotRule) return slotRule.waitMinutes;
+  return reservationOrder * getFallbackWaitInterval(slot.id, waitRules);
 }
 
 function getReservationErrorMessage(error: unknown) {
@@ -2777,7 +2779,11 @@ function toPhoneHref(phone: string) {
 function getWaitInterval(waitRules: WaitRule[]) {
   const firstSlotId = waitRules[0]?.timeBlockId;
   if (!firstSlotId) return 15;
-  return getWaitIntervalForSlot(firstSlotId, waitRules);
+  return getFallbackWaitInterval(firstSlotId, waitRules);
+}
+
+function getFallbackWaitInterval(slotId: string, waitRules: WaitRule[]) {
+  return getWaitIntervalForSlot(slotId, waitRules) || getFirstWaitInterval(waitRules) || 15;
 }
 
 function getWaitIntervalForSlot(slotId: string, waitRules: WaitRule[]) {
@@ -2791,7 +2797,24 @@ function getWaitIntervalForSlot(slotId: string, waitRules: WaitRule[]) {
   if (intervalFromDifference > 0) return intervalFromDifference;
   if (firstRule && firstRule.waitMinutes > 0) return firstRule.waitMinutes;
   if (secondRule && secondRule.waitMinutes > 0) return secondRule.waitMinutes;
-  return 15;
+  return 0;
+}
+
+function getFirstWaitInterval(waitRules: WaitRule[]) {
+  const rulesBySlot = new Map<string, WaitRule[]>();
+
+  waitRules.forEach((rule) => {
+    const nextRules = rulesBySlot.get(rule.timeBlockId) ?? [];
+    nextRules.push(rule);
+    rulesBySlot.set(rule.timeBlockId, nextRules);
+  });
+
+  for (const [slotId] of rulesBySlot) {
+    const interval = getWaitIntervalForSlot(slotId, waitRules);
+    if (interval > 0) return interval;
+  }
+
+  return 0;
 }
 
 async function verifyAdminPassword(password: string) {
