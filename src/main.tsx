@@ -199,7 +199,8 @@ const fallbackTreatments: TreatmentOption[] = [
 const cancelReasons = ["시간 변경", "단순 변심"];
 const spring = { type: "spring" as const, stiffness: 420, damping: 36, mass: 0.9 };
 const screenSpring = { type: "spring" as const, stiffness: 480, damping: 50 };
-const snackbarSpring = { type: "spring" as const, stiffness: 480, damping: 50 };
+const tabSpring = { type: "spring" as const, stiffness: 800, damping: 55 };
+const snackbarSpring = { type: "spring" as const, stiffness: 800, damping: 55 };
 const overlaySpring = { type: "spring" as const, stiffness: 800, damping: 55 };
 const tapSpring = { type: "spring" as const, stiffness: 1000, damping: 55 };
 const tapReleaseSpring = { type: "spring" as const, stiffness: 800, damping: 55 };
@@ -1414,7 +1415,7 @@ function MyBookingsScreen({
           <motion.div
             className="my-bookings-tab-indicator"
             animate={{ x: tab === "upcoming" ? "0%" : "100%" }}
-            transition={screenSpring}
+            transition={tabSpring}
           />
           <TapButton className={tab === "upcoming" ? "active" : ""} onClick={() => setTab("upcoming")}>
             진료 예정
