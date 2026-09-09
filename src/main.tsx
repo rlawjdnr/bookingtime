@@ -40,6 +40,7 @@ const ADMIN_SESSION_KEY = "bookingtime-admin-authenticated";
 
 type Route = "time" | "details" | "complete" | "myBookings";
 type Treatment = string;
+type ScreenTransitionMode = "slide" | "instant" | "fade";
 type StackEntry = {
   id: number;
   route: Route;
@@ -203,6 +204,7 @@ const overlaySpring = { type: "spring" as const, stiffness: 800, damping: 55 };
 const tapSpring = { type: "spring" as const, stiffness: 1000, damping: 55 };
 const tapReleaseSpring = { type: "spring" as const, stiffness: 800, damping: 55 };
 const calendarWeekdays = ["일", "월", "화", "수", "목", "금", "토"];
+const fadeOutTransition = { duration: 0.2, ease: "easeOut" as const };
 const screenVariants = {
   enter: (latestDirection: number) => ({ x: latestDirection > 0 ? "100%" : "-50%" }),
   center: { x: "0%" },
@@ -633,7 +635,7 @@ function App() {
   const [toast, setToast] = useState("");
   const [isCancelOpen, setIsCancelOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-  const [skipStackMotion, setSkipStackMotion] = useState(false);
+  const [screenTransitionMode, setScreenTransitionMode] = useState<ScreenTransitionMode>("slide");
   const [isCancelling, setIsCancelling] = useState(false);
 
   const slots = useMemo(() => {
@@ -693,10 +695,10 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!skipStackMotion) return;
-    const frame = window.requestAnimationFrame(() => setSkipStackMotion(false));
-    return () => window.cancelAnimationFrame(frame);
-  }, [skipStackMotion]);
+    if (screenTransitionMode === "slide") return;
+    const timer = window.setTimeout(() => setScreenTransitionMode("slide"), screenTransitionMode === "fade" ? 220 : 0);
+    return () => window.clearTimeout(timer);
+  }, [screenTransitionMode]);
 
   useEffect(() => {
     return () => {
@@ -784,7 +786,7 @@ function App() {
       setStoredBookings(updateStoredBooking(booking.id, { status: "cancelled", cancelReason: reason }));
       const wasCompleting = stack[stack.length - 1]?.route === "complete";
       if (wasCompleting) {
-        setSkipStackMotion(true);
+        setScreenTransitionMode("instant");
         setDirection(-1);
         resetStack("time");
       }
@@ -812,7 +814,7 @@ function App() {
     setStoredBookings(updateStoredBooking(booking.id, { status: "cancelled", cancelReason: remoteBooking.cancelReason }));
     setBooking(null);
     if (stack[stack.length - 1]?.route === "complete") {
-      setSkipStackMotion(true);
+      setScreenTransitionMode("instant");
       resetStack("time");
     }
     setToast("예약이 취소됐어요");
@@ -842,7 +844,7 @@ function App() {
             const isTop = index === stack.length - 1;
 
             return (
-              <ScreenMotion key={id} direction={direction} index={index} isTop={isTop} instant={skipStackMotion}>
+              <ScreenMotion key={id} direction={direction} index={index} isTop={isTop} mode={screenTransitionMode}>
                 {route === "time" && (
                   <TimeScreen
                     clinicSettings={clinicSettings}
@@ -887,7 +889,7 @@ function App() {
                     booking={booking}
                     onConfirm={() => {
                       setBooking(null);
-                      setSkipStackMotion(true);
+                      setScreenTransitionMode("fade");
                       setDirection(-1);
                       setTreatment(treatmentOptions.find((option) => option.isOpen)?.label ?? otherTreatmentLabel);
                       resetStack("time");
@@ -1044,30 +1046,40 @@ function ScreenMotion({
   direction,
   index,
   isTop,
-  instant,
+  mode,
 }: {
   children: React.ReactNode;
   direction: number;
   index: number;
   isTop: boolean;
-  instant?: boolean;
+  mode: ScreenTransitionMode;
 }) {
+  const variants =
+    mode === "fade"
+      ? {
+          enter: { x: "0%", opacity: 0 },
+          center: { x: "0%", opacity: 1 },
+          covered: { x: "0%", opacity: 0 },
+          exit: { x: "0%", opacity: 0 },
+        }
+      : screenVariants;
+
   return (
     <motion.section
       className="screen"
       custom={direction}
-      variants={screenVariants}
+      variants={variants}
       initial="enter"
       animate={isTop ? "center" : "covered"}
       exit="exit"
-      transition={instant ? { duration: 0 } : screenSpring}
+      transition={mode === "instant" ? { duration: 0 } : mode === "fade" ? fadeOutTransition : screenSpring}
       style={{ zIndex: index + 1, pointerEvents: isTop ? "auto" : "none" }}
     >
       {children}
       <motion.div
         className="screen-dim"
         animate={{ opacity: isTop ? 0 : 0.12 }}
-        transition={screenSpring}
+        transition={mode === "instant" ? { duration: 0 } : mode === "fade" ? fadeOutTransition : screenSpring}
       />
     </motion.section>
   );
