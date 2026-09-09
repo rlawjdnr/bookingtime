@@ -430,9 +430,10 @@ a {
 
 .bottom-cta.in-sheet {
   position: relative;
+  margin-top: 12px;
   margin-right: -16px;
   margin-left: -16px;
-  padding: 12px 16px 24px;
+  padding: 12px 16px 26px;
 }
 
 .primary-button,
