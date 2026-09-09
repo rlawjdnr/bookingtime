@@ -417,10 +417,11 @@ a {
 
 .bottom-cta,
 .bottom-stack {
-  position: relative;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 10;
-  flex: 0 0 auto;
-  margin-top: auto;
   padding: 12px 16px calc(26px + env(safe-area-inset-bottom));
   background: var(--background);
 }

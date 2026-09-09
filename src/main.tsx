@@ -1296,29 +1296,6 @@ function DetailsScreen(props: {
 }) {
   const nameInputRef = useRef<HTMLInputElement>(null);
 
-  useLayoutEffect(() => {
-    focusNameInput();
-    const frame = window.requestAnimationFrame(focusNameInput);
-    const timer = window.setTimeout(focusNameInput, 120);
-    return () => {
-      window.cancelAnimationFrame(frame);
-      window.clearTimeout(timer);
-    };
-  }, []);
-
-  function focusNameInput() {
-    const input = nameInputRef.current;
-    if (!input) return;
-    input.focus({ preventScroll: true });
-    const cursorPosition = input.value.length;
-    input.setSelectionRange(cursorPosition, cursorPosition);
-  }
-
-  useEffect(() => {
-    const timer = window.setTimeout(focusNameInput, 360);
-    return () => window.clearTimeout(timer);
-  }, []);
-
   return (
     <>
       <Header clinicSettings={props.clinicSettings} back={props.onBack} compact />
@@ -1331,7 +1308,6 @@ function DetailsScreen(props: {
             value={props.name}
             onChange={(event) => props.onNameChange(event.target.value)}
             placeholder="이름 입력"
-            autoFocus
           />
         </label>
         <section className="field-block">
