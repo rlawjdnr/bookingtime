@@ -148,7 +148,8 @@ a {
 
 .clinic-title,
 .summary-row span,
-.date-select span {
+.date-select span,
+.my-bookings-link {
   display: flex;
   align-items: center;
 }
@@ -165,6 +166,28 @@ a {
 .clinic-status {
   color: var(--muted);
   font-size: 15px;
+}
+
+.my-bookings-link {
+  gap: 2px;
+  color: #079171;
+  font-size: 17px;
+  line-height: normal;
+}
+
+.my-bookings-link img:first-child {
+  width: 22px;
+  height: 22px;
+  margin-right: 4px;
+}
+
+.my-bookings-link strong {
+  font-weight: 600;
+}
+
+.my-bookings-link .chevron {
+  width: 24px;
+  height: 24px;
 }
 
 .icon-18,
@@ -556,6 +579,158 @@ textarea::placeholder {
 .bottom-stack {
   display: grid;
   gap: 10px;
+}
+
+.my-bookings-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0 16px 20px;
+}
+
+.my-bookings-content h1 {
+  margin: 10px 0;
+  font-size: 20px;
+  line-height: 1.32;
+  font-weight: 600;
+}
+
+.my-bookings-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0 -16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.my-bookings-tabs button {
+  position: relative;
+  height: 42.5px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.32;
+  font-weight: 500;
+}
+
+.my-bookings-tabs button.active {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.my-bookings-tabs button.active::after {
+  position: absolute;
+  right: 8px;
+  bottom: -1px;
+  left: 8px;
+  height: 1.5px;
+  background: var(--text);
+  content: "";
+}
+
+.my-bookings-list {
+  display: grid;
+  gap: 4px;
+  padding-top: 12px;
+}
+
+.my-booking-card {
+  display: grid;
+  gap: 16px;
+  padding: 16px 0;
+}
+
+.my-booking-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.my-booking-main p,
+.my-booking-main strong {
+  margin: 0;
+}
+
+.my-booking-date {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: normal;
+}
+
+.my-booking-date span {
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: var(--muted);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.my-booking-main div > p:not(.my-booking-date) {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: normal;
+  font-weight: 500;
+}
+
+.my-booking-main div > p:nth-child(2) {
+  margin-top: 10px;
+}
+
+.my-booking-main strong {
+  flex: 0 0 auto;
+  color: var(--text);
+  font-size: 15px;
+  line-height: normal;
+  font-weight: 600;
+}
+
+.my-booking-cancel,
+.my-booking-disabled {
+  width: 100%;
+  min-height: 38px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+  line-height: 1.47;
+  font-weight: 600;
+}
+
+.my-booking-cancel {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.my-booking-disabled {
+  border: 0;
+  background: var(--surface);
+  color: var(--disabled);
+}
+
+.my-booking-card.dimmed .my-booking-date,
+.my-booking-card.dimmed .my-booking-main div > p,
+.my-booking-card.dimmed .my-booking-main strong {
+  color: #868b94;
+}
+
+.my-bookings-empty {
+  margin: 48px 0 0;
+  color: var(--muted);
+  text-align: center;
+  font-size: 15px;
+}
+
+.phone-button {
+  background: var(--surface);
+  color: var(--text);
 }
 
 .cancel-content {

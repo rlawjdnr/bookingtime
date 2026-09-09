@@ -30,10 +30,12 @@ import adminDropdownIcon from "./assets/figma/admin-dropdown.svg";
 import adminLogoutIcon from "./assets/figma/admin-logout.svg";
 import adminRadioEmptyIcon from "./assets/figma/admin-radio-empty.svg";
 import adminRadioSelectedIcon from "./assets/figma/admin-radio-selected.svg";
+import myBookingsCalendarIcon from "./assets/figma/my-bookings-calendar.svg";
+import myBookingsChevronIcon from "./assets/figma/my-bookings-chevron.svg";
 
 const ADMIN_SESSION_KEY = "bookingtime-admin-authenticated";
 
-type Route = "time" | "details" | "complete";
+type Route = "time" | "details" | "complete" | "myBookings";
 type Treatment = string;
 type StackEntry = {
   id: number;
@@ -150,6 +152,7 @@ type AppointmentStore = {
 };
 
 const activeBookingStorageKey = "hospital-reservation.activeBooking";
+const storedBookingsStorageKey = "hospital-reservation.bookings";
 const otherTreatmentLabel = "기타";
 
 const fallbackClinic = {
@@ -546,21 +549,20 @@ function useMobileViewportHeight() {
 function App() {
   useMobileViewportHeight();
 
-  const restoredBooking = useMemo(() => loadActiveBooking(), []);
+  const storedBookingsOnLoad = useMemo(() => loadStoredBookings(), []);
   const stackIdRef = useRef(1);
   const stackMotionLockRef = useRef<number | null>(null);
   const [stack, setStack] = useState<StackEntry[]>([
-    { id: 0, route: restoredBooking ? "complete" : "time" },
+    { id: 0, route: "time" },
   ]);
   const [direction, setDirection] = useState(1);
-  const [selectedDate, setSelectedDate] = useState(restoredBooking ? parseBookingDate(restoredBooking.date) : getToday());
-  const [selectedSlotId, setSelectedSlotId] = useState(
-    restoredBooking ? getSlotIdByTime(restoredBooking.time, parseBookingDate(restoredBooking.date)) : defaultSlotId,
-  );
+  const [selectedDate, setSelectedDate] = useState(getToday());
+  const [selectedSlotId, setSelectedSlotId] = useState(defaultSlotId);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [patientName, setPatientName] = useState(restoredBooking?.patientName ?? "");
-  const [treatment, setTreatment] = useState<Treatment>(normalizeTreatmentLabel(restoredBooking?.treatment ?? otherTreatmentLabel));
-  const [booking, setBooking] = useState<Booking | null>(restoredBooking);
+  const [patientName, setPatientName] = useState("");
+  const [treatment, setTreatment] = useState<Treatment>(otherTreatmentLabel);
+  const [booking, setBooking] = useState<Booking | null>(null);
+  const [storedBookings, setStoredBookings] = useState<Booking[]>(storedBookingsOnLoad);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [baseSlots, setBaseSlots] = useState<Slot[]>(initialSlots);
   const [waitRules, setWaitRules] = useState<WaitRule[]>([]);
@@ -677,6 +679,7 @@ function App() {
   const waitMinutes = getWaitMinutesForNextReservation(selectedSlot, selectedDate, bookings, waitRules);
   const canContinue = Boolean(selectedSlot && !selectedSlot.closed);
   const canBook = patientName.trim().length > 0;
+  const upcomingStoredBookings = storedBookings.filter(isUpcomingBooking);
 
   const submitBooking = async () => {
     if (!canBook) return;
@@ -692,7 +695,7 @@ function App() {
     };
     try {
       await appointmentStore.create(nextBooking);
-      saveActiveBooking(nextBooking);
+      setStoredBookings(saveStoredBooking(nextBooking));
       setBooking(nextBooking);
       push("complete");
     } catch (error) {
@@ -706,10 +709,13 @@ function App() {
     setIsCancelling(true);
     try {
       await appointmentStore.cancel(booking.id, reason);
-      clearActiveBooking();
-      setSkipStackMotion(true);
-      setDirection(-1);
-      resetStack("time");
+      setStoredBookings(updateStoredBooking(booking.id, { status: "cancelled", cancelReason: reason }));
+      const wasCompleting = stack[stack.length - 1]?.route === "complete";
+      if (wasCompleting) {
+        setSkipStackMotion(true);
+        setDirection(-1);
+        resetStack("time");
+      }
       window.setTimeout(() => {
         setIsCancelOpen(false);
         setIsCancelling(false);
@@ -731,12 +737,30 @@ function App() {
     if (!booking) return;
     const remoteBooking = bookings.find((item) => item.id === booking.id);
     if (!remoteBooking || remoteBooking.status !== "cancelled") return;
-    clearActiveBooking();
+    setStoredBookings(updateStoredBooking(booking.id, { status: "cancelled", cancelReason: remoteBooking.cancelReason }));
     setBooking(null);
-    setSkipStackMotion(true);
-    resetStack("time");
+    if (stack[stack.length - 1]?.route === "complete") {
+      setSkipStackMotion(true);
+      resetStack("time");
+    }
     setToast("예약이 취소됐어요");
-  }, [booking, bookings]);
+  }, [booking, bookings, stack]);
+
+  useEffect(() => {
+    setStoredBookings((currentBookings) => {
+      let hasChanged = false;
+      const nextBookings = currentBookings.map((currentBooking) => {
+        const remoteBooking = bookings.find((item) => item.id === currentBooking.id);
+        if (!remoteBooking || remoteBooking.status === currentBooking.status) return currentBooking;
+        hasChanged = true;
+        return { ...currentBooking, status: remoteBooking.status, cancelReason: remoteBooking.cancelReason };
+      });
+
+      if (!hasChanged) return currentBookings;
+      window.localStorage.setItem(storedBookingsStorageKey, JSON.stringify(nextBookings));
+      return nextBookings;
+    });
+  }, [bookings]);
 
   return (
     <main className="app-shell">
@@ -753,7 +777,9 @@ function App() {
                     selectedDate={selectedDate}
                     selectedSlotId={selectedSlotId}
                     slots={slots}
+                    upcomingBookingCount={upcomingStoredBookings.length}
                     onOpenCalendar={() => setIsCalendarOpen(true)}
+                    onOpenMyBookings={() => push("myBookings")}
                     onSelectSlot={(slot) => {
                       if (slot.closed) {
                         setToast("접수가 마감된 시간이에요");
@@ -784,7 +810,27 @@ function App() {
                   />
                 )}
                 {route === "complete" && booking && (
-                  <CompleteScreen clinicSettings={clinicSettings} booking={booking} onCancel={() => setIsCancelOpen(true)} />
+                  <CompleteScreen
+                    clinicSettings={clinicSettings}
+                    booking={booking}
+                    onConfirm={() => {
+                      setBooking(null);
+                      setPatientName("");
+                      setTreatment(treatmentOptions.find((option) => option.isOpen)?.label ?? otherTreatmentLabel);
+                      resetStack("time");
+                    }}
+                  />
+                )}
+                {route === "myBookings" && (
+                  <MyBookingsScreen
+                    clinicSettings={clinicSettings}
+                    bookings={storedBookings}
+                    onBack={back}
+                    onCancel={(targetBooking) => {
+                      setBooking(targetBooking);
+                      setIsCancelOpen(true);
+                    }}
+                  />
                 )}
               </ScreenMotion>
             );
@@ -1058,11 +1104,15 @@ function Header({
   back,
   compact = false,
   complete = false,
+  upcomingBookingCount = 0,
+  onOpenMyBookings,
 }: {
   clinicSettings: ClinicSettings;
   back?: () => void;
   compact?: boolean;
   complete?: boolean;
+  upcomingBookingCount?: number;
+  onOpenMyBookings?: () => void;
 }) {
   if (complete) {
     return (
@@ -1078,6 +1128,12 @@ function Header({
         <TapButton className="icon-button" onClick={back} aria-label="뒤로가기">
           <img className="svg-icon back-icon" src={backIcon} alt="" />
         </TapButton>
+      ) : upcomingBookingCount > 0 && onOpenMyBookings ? (
+        <TapButton className="my-bookings-link" onClick={onOpenMyBookings}>
+          <img className="svg-icon" src={myBookingsCalendarIcon} alt="" />
+          <strong>내 예약 {upcomingBookingCount}건</strong>
+          <img className="svg-icon chevron" src={myBookingsChevronIcon} alt="" />
+        </TapButton>
       ) : (
         <div className="clinic-title">
           <span className="icon-18"><img className="svg-icon hospital-icon" src={hospitalIcon} alt="" /></span>
@@ -1085,7 +1141,8 @@ function Header({
         </div>
       )}
       {back && <strong className="header-title">{clinicSettings.name}</strong>}
-      {!back && <span className="clinic-status">{clinicSettings.status}</span>}
+      {!back && upcomingBookingCount === 0 && <span className="clinic-status">{clinicSettings.status}</span>}
+      {!back && upcomingBookingCount > 0 && <span className="header-spacer" />}
       {back && <span className="header-spacer" />}
     </header>
   );
@@ -1096,7 +1153,9 @@ function TimeScreen(props: {
   selectedDate: Date;
   selectedSlotId: string;
   slots: Slot[];
+  upcomingBookingCount: number;
   onOpenCalendar: () => void;
+  onOpenMyBookings: () => void;
   onSelectSlot: (slot: Slot) => void;
   onNext: () => void;
 }) {
@@ -1108,7 +1167,11 @@ function TimeScreen(props: {
 
   return (
     <>
-      <Header clinicSettings={props.clinicSettings} />
+      <Header
+        clinicSettings={props.clinicSettings}
+        upcomingBookingCount={props.upcomingBookingCount}
+        onOpenMyBookings={props.onOpenMyBookings}
+      />
       <div className="content">
         <h1 className="screen-title">언제 진료를 원하시나요?</h1>
         <TapButton className="date-select" onClick={props.onOpenCalendar}>
@@ -1230,7 +1293,7 @@ function DetailsScreen(props: {
   );
 }
 
-function CompleteScreen({ clinicSettings, booking, onCancel }: { clinicSettings: ClinicSettings; booking: Booking; onCancel: () => void }) {
+function CompleteScreen({ clinicSettings, booking, onConfirm }: { clinicSettings: ClinicSettings; booking: Booking; onConfirm: () => void }) {
   return (
     <>
       <Header clinicSettings={clinicSettings} complete />
@@ -1255,11 +1318,89 @@ function CompleteScreen({ clinicSettings, booking, onCancel }: { clinicSettings:
           hideIcons
         />
       </div>
-      <div className="bottom-stack">
-        <TapButton className="danger-button" onClick={onCancel}>예약 취소하기</TapButton>
-        <a className="light-button" href={toPhoneHref(clinicSettings.phone)}>전화 문의</a>
+      <BottomCTA onClick={onConfirm}>확인</BottomCTA>
+    </>
+  );
+}
+
+function MyBookingsScreen({
+  clinicSettings,
+  bookings,
+  onBack,
+  onCancel,
+}: {
+  clinicSettings: ClinicSettings;
+  bookings: Booking[];
+  onBack: () => void;
+  onCancel: (booking: Booking) => void;
+}) {
+  const [tab, setTab] = useState<"upcoming" | "history">("upcoming");
+  const upcoming = bookings.filter(isUpcomingBooking).sort(compareBookingsByAppointmentTime);
+  const history = bookings.filter(isPastOrCancelledStoredBooking).sort(compareBookingsByAppointmentTime).reverse();
+  const visibleBookings = tab === "upcoming" ? upcoming : history;
+
+  return (
+    <>
+      <Header clinicSettings={clinicSettings} back={onBack} compact />
+      <div className="my-bookings-content">
+        <h1>내 예약</h1>
+        <div className="my-bookings-tabs" role="tablist">
+          <TapButton className={tab === "upcoming" ? "active" : ""} onClick={() => setTab("upcoming")}>
+            진료 예정
+          </TapButton>
+          <TapButton className={tab === "history" ? "active" : ""} onClick={() => setTab("history")}>
+            진료 완료
+          </TapButton>
+        </div>
+        <div className="my-bookings-list">
+          {visibleBookings.length ? (
+            visibleBookings.map((item) => (
+              <MyBookingCard
+                booking={item}
+                key={item.id}
+                isUpcoming={tab === "upcoming" && item.status === "confirmed"}
+                onCancel={() => onCancel(item)}
+              />
+            ))
+          ) : (
+            <p className="my-bookings-empty">
+              {tab === "upcoming" ? "예정된 예약이 없어요" : "최근 30일 동안의 예약 기록이 없어요"}
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="bottom-cta">
+        <a className="light-button phone-button" href={toPhoneHref(clinicSettings.phone)}>
+          전화 문의
+        </a>
       </div>
     </>
+  );
+}
+
+function MyBookingCard({ booking, isUpcoming, onCancel }: { booking: Booking; isUpcoming: boolean; onCancel: () => void }) {
+  const dimmed = booking.status === "cancelled";
+  return (
+    <article className={`my-booking-card ${dimmed ? "dimmed" : ""}`}>
+      <div className="my-booking-main">
+        <div>
+          <p className="my-booking-date">
+            {getRelativeDateLabel(parseBookingDate(booking.date)) && (
+              <span>{getRelativeDateLabel(parseBookingDate(booking.date))}</span>
+            )}
+            {formatShortDate(parseBookingDate(booking.date))} {booking.time}
+          </p>
+          <p>{booking.patientName} · {booking.treatment}</p>
+          {isUpcoming && <p>예상 대기 <strong>{booking.waitMinutes}분</strong></p>}
+        </div>
+        <strong>{booking.status === "cancelled" ? "예약 취소" : isUpcoming ? "예약 완료" : "진료 완료"}</strong>
+      </div>
+      {isUpcoming ? (
+        <TapButton className="my-booking-cancel" onClick={onCancel}>예약 취소</TapButton>
+      ) : dimmed ? (
+        <button className="my-booking-disabled" type="button" disabled>취소했어요</button>
+      ) : null}
+    </article>
   );
 }
 
@@ -2367,6 +2508,57 @@ function loadActiveBooking() {
   }
 }
 
+function loadStoredBookings() {
+  const bookings: Booking[] = [];
+
+  try {
+    const rawBookings = window.localStorage.getItem(storedBookingsStorageKey);
+    if (rawBookings) {
+      const parsed = JSON.parse(rawBookings);
+      if (Array.isArray(parsed)) {
+        bookings.push(...parsed.filter(isValidStoredBooking).map(normalizeStoredBooking));
+      }
+    }
+
+    const legacyBooking = loadActiveBooking();
+    if (legacyBooking) bookings.push(legacyBooking);
+  } catch {
+    window.localStorage.removeItem(storedBookingsStorageKey);
+  }
+
+  const deduped = dedupeBookings(bookings).filter(isVisibleStoredBooking);
+  window.localStorage.setItem(storedBookingsStorageKey, JSON.stringify(deduped));
+  clearActiveBooking();
+  return deduped;
+}
+
+function saveStoredBooking(booking: Booking) {
+  const nextBookings = dedupeBookings([normalizeStoredBooking(booking), ...loadStoredBookings()]).filter(isVisibleStoredBooking);
+  window.localStorage.setItem(storedBookingsStorageKey, JSON.stringify(nextBookings));
+  return nextBookings;
+}
+
+function updateStoredBooking(id: string, updates: Partial<Booking>) {
+  const nextBookings = loadStoredBookings()
+    .map((booking) => (booking.id === id ? normalizeStoredBooking({ ...booking, ...updates }) : booking))
+    .filter(isVisibleStoredBooking);
+  window.localStorage.setItem(storedBookingsStorageKey, JSON.stringify(nextBookings));
+  return nextBookings;
+}
+
+function normalizeStoredBooking(booking: Booking) {
+  return { ...booking, treatment: normalizeTreatmentLabel(booking.treatment) };
+}
+
+function dedupeBookings(bookings: Booking[]) {
+  const seen = new Set<string>();
+  return bookings.filter((booking) => {
+    if (seen.has(booking.id)) return false;
+    seen.add(booking.id);
+    return true;
+  });
+}
+
 function saveActiveBooking(booking: Booking) {
   window.localStorage.setItem(activeBookingStorageKey, JSON.stringify(booking));
 }
@@ -2389,6 +2581,24 @@ function isValidStoredBooking(booking: Partial<Booking>) {
 function isBookingExpired(booking: Booking) {
   const expiresAt = getAppointmentDateTime(booking).getTime() + 60 * 60 * 1000;
   return Date.now() >= expiresAt;
+}
+
+function isUpcomingBooking(booking: Booking) {
+  return booking.status === "confirmed" && !isBookingExpired(booking);
+}
+
+function isPastOrCancelledStoredBooking(booking: Booking) {
+  return booking.status === "cancelled" || (booking.status === "confirmed" && isBookingExpired(booking));
+}
+
+function isVisibleStoredBooking(booking: Booking) {
+  const appointmentTime = getAppointmentDateTime(booking).getTime();
+  const historyStartsAt = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  return isUpcomingBooking(booking) || appointmentTime >= historyStartsAt;
+}
+
+function compareBookingsByAppointmentTime(a: Booking, b: Booking) {
+  return getAppointmentDateTime(a).getTime() - getAppointmentDateTime(b).getTime();
 }
 
 function getAppointmentDateTime(booking: Pick<Booking, "date" | "time">) {
