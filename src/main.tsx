@@ -1263,7 +1263,7 @@ function TimeScreen(props: {
           <span>
             <img className="svg-icon calendar-icon" src={calendarIcon} alt="" />
             {relativeDateLabel && <strong>{relativeDateLabel}</strong>}
-            <span>{formatMonthDayWeek(props.selectedDate)}</span>
+            <span className="date-select-value">{formatMonthDayWeek(props.selectedDate)}</span>
           </span>
           <img className="svg-icon chevron" src={chevronDownIcon} alt="" />
         </TapButton>

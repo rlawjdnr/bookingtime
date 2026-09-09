@@ -354,6 +354,10 @@ a {
   font-weight: 600;
 }
 
+.date-select-value {
+  font-weight: 500;
+}
+
 .date-select .chevron {
   margin-right: 6px;
 }
