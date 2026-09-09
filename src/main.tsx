@@ -1560,9 +1560,9 @@ function CalendarSheet(props: {
     <motion.div className="sheet-dim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={spring} onClick={props.onClose}>
       <motion.section
         className="calendar-sheet"
-        initial={{ y: 525 }}
+        initial={{ y: "100%" }}
         animate={{ y: 0 }}
-        exit={{ y: 525 }}
+        exit={{ y: "100%" }}
         transition={spring}
         onClick={(event) => event.stopPropagation()}
       >
