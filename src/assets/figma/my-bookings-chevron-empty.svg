@@ -1,5 +1,5 @@
-<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="7.4" height="12.4" viewBox="0 0 7.4 12.4" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g id="Weight=Fill">
-<path id="Vector" fill-rule="evenodd" clip-rule="evenodd" d="M0.349715 12.0468C-0.117945 11.5772 -0.116365 10.8174 0.353235 10.3497L4.50603 6.2141L0.383365 2.04363C-0.0825645 1.57231 -0.0781851 0.81253 0.393135 0.3466C0.864445 -0.11932 1.62423 -0.11495 2.09012 0.35637L7.05343 5.3771C7.51813 5.8471 7.51513 6.6045 7.04673 7.071L2.04673 12.0503C1.57717 12.5179 0.817365 12.5164 0.349715 12.0468Z" fill="#868B94"/>
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="7" height="12" viewBox="0 0 7 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Weight=Line">
+<path id="Vector" fill-rule="evenodd" clip-rule="evenodd" d="M0.17557 0.194533C-0.0668204 0.445223 -0.0570143 0.842016 0.19748 1.08079L5.44091 6.00036L0.197512 10.9192C-0.0570012 11.158 -0.0668398 11.5547 0.175538 11.8055C0.41791 12.0561 0.820715 12.0659 1.07522 11.8271L6.80247 6.45434C6.9286 6.33599 7 6.17193 7 6.00036C7 5.82885 6.92866 5.66474 6.80254 5.54645L1.07525 0.172943C0.82076 -0.0658297 0.417961 -0.0561634 0.17557 0.194533Z" fill="#868B94"/>
 </g>
 </svg>

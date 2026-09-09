@@ -199,7 +199,6 @@ a {
 .my-bookings-calendar-icon {
   width: 22px;
   height: 22px;
-  transform: translateX(-1.4px);
 }
 
 .my-bookings-calendar-icon img {
@@ -214,7 +213,7 @@ a {
 .my-bookings-label {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 0;
 }
 
 .my-bookings-chevron-icon {
@@ -223,8 +222,8 @@ a {
 }
 
 .my-bookings-chevron-icon img {
-  width: 7.4px;
-  height: 12.4px;
+  width: 7px;
+  height: 12px;
 }
 
 .icon-18,
