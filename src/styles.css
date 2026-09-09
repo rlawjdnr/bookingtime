@@ -377,6 +377,16 @@ a {
   gap: 8px;
 }
 
+.slot-empty {
+  height: 100px;
+  display: grid;
+  place-items: center;
+  color: #868b94;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: normal;
+}
+
 .slot-card {
   height: 62px;
   padding: 12px;

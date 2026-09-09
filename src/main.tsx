@@ -1267,8 +1267,8 @@ function TimeScreen(props: {
           </span>
           <img className="svg-icon chevron" src={chevronDownIcon} alt="" />
         </TapButton>
-        <SlotGroup title="오전" slots={morning} selectedId={props.selectedSlotId} onSelect={props.onSelectSlot} />
-        <SlotGroup title="오후" slots={afternoon} selectedId={props.selectedSlotId} onSelect={props.onSelectSlot} />
+        <SlotGroup title="오전" slots={morning} selectedDate={props.selectedDate} selectedId={props.selectedSlotId} onSelect={props.onSelectSlot} />
+        <SlotGroup title="오후" slots={afternoon} selectedDate={props.selectedDate} selectedId={props.selectedSlotId} onSelect={props.onSelectSlot} />
       </div>
       <BottomCTA disabled={!selectedSlot || selectedSlot.closed} onClick={props.onNext}>
         {selectedSlot && !selectedSlot.closed ? `${selectedSlot.time} 진료 예약하기` : "원하는 시간을 선택해주세요"}
@@ -1277,27 +1277,29 @@ function TimeScreen(props: {
   );
 }
 
-function SlotGroup(props: { title: string; slots: Slot[]; selectedId: string; onSelect: (slot: Slot) => void }) {
-  if (!props.slots.length) return null;
-
+function SlotGroup(props: { title: string; slots: Slot[]; selectedDate: Date; selectedId: string; onSelect: (slot: Slot) => void }) {
   return (
     <section className="slot-section">
       <p>{props.title}</p>
-      <div className="slot-grid">
-        {props.slots.map((slot) => {
-          const selected = slot.id === props.selectedId;
-          return (
-            <TapButton
-              className={`slot-card ${selected ? "selected" : ""} ${slot.closed ? "closed" : ""}`}
-              key={slot.id}
-              onClick={() => props.onSelect(slot)}
-            >
-              <strong>{slot.time}</strong>
-              <span>{slot.closed ? "접수 마감" : `${slot.remaining}명 남음`}</span>
-            </TapButton>
-          );
-        })}
-      </div>
+      {props.slots.length ? (
+        <div className="slot-grid">
+          {props.slots.map((slot) => {
+            const selected = slot.id === props.selectedId;
+            return (
+              <TapButton
+                className={`slot-card ${selected ? "selected" : ""} ${slot.closed ? "closed" : ""}`}
+                key={slot.id}
+                onClick={() => props.onSelect(slot)}
+              >
+                <strong>{slot.time}</strong>
+                <span>{slot.closed ? "접수 마감" : `${slot.remaining}명 남음`}</span>
+              </TapButton>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="slot-empty">{getEmptySlotSectionMessage(props.selectedDate, props.title)}</div>
+      )}
     </section>
   );
 }
@@ -2754,6 +2756,11 @@ function formatMonthDayWeek(date: Date) {
 
 function formatShortDate(date: Date) {
   return formatMonthDayWeek(date);
+}
+
+function getEmptySlotSectionMessage(date: Date, title: string) {
+  const weekdays = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
+  return `${weekdays[date.getDay()]}은 ${title} 진료가 없어요`;
 }
 
 function getRelativeDateLabel(date: Date) {
