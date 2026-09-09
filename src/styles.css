@@ -186,6 +186,7 @@ a {
 .my-bookings-calendar-icon {
   width: 22px;
   height: 22px;
+  transform: translateX(-1.4px);
 }
 
 .my-bookings-calendar-icon img {
