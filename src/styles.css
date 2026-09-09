@@ -169,25 +169,48 @@ a {
 }
 
 .my-bookings-link {
-  gap: 2px;
+  gap: 6px;
   color: #079171;
   font-size: 17px;
   line-height: normal;
 }
 
-.my-bookings-link img:first-child {
+.my-bookings-calendar-icon,
+.my-bookings-chevron-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+
+.my-bookings-calendar-icon {
   width: 22px;
   height: 22px;
-  margin-right: 4px;
+}
+
+.my-bookings-calendar-icon img {
+  width: 19.25px;
+  height: 19.89px;
 }
 
 .my-bookings-link strong {
   font-weight: 600;
 }
 
-.my-bookings-link .chevron {
+.my-bookings-label {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.my-bookings-chevron-icon {
   width: 24px;
   height: 24px;
+}
+
+.my-bookings-chevron-icon img {
+  width: 7.4px;
+  height: 12.4px;
 }
 
 .icon-18,

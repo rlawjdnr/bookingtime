@@ -1130,9 +1130,15 @@ function Header({
         </TapButton>
       ) : upcomingBookingCount > 0 && onOpenMyBookings ? (
         <TapButton className="my-bookings-link" onClick={onOpenMyBookings}>
-          <img className="svg-icon" src={myBookingsCalendarIcon} alt="" />
-          <strong>내 예약 {upcomingBookingCount}건</strong>
-          <img className="svg-icon chevron" src={myBookingsChevronIcon} alt="" />
+          <span className="my-bookings-calendar-icon">
+            <img className="svg-icon" src={myBookingsCalendarIcon} alt="" />
+          </span>
+          <span className="my-bookings-label">
+            <strong>내 예약 {upcomingBookingCount}건</strong>
+            <span className="my-bookings-chevron-icon">
+              <img className="svg-icon" src={myBookingsChevronIcon} alt="" />
+            </span>
+          </span>
         </TapButton>
       ) : (
         <div className="clinic-title">
