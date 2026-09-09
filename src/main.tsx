@@ -1416,7 +1416,7 @@ function MyBookingsScreen({
     <>
       <Header clinicSettings={clinicSettings} back={onBack} compact hideTitle />
       <div className="my-bookings-sticky">
-        <h1>내 예약</h1>
+        <h1>내 진료</h1>
         <div className="my-bookings-tabs" role="tablist">
           <motion.div
             className="my-bookings-tab-indicator"
