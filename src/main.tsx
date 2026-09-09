@@ -550,9 +550,30 @@ function useMobileViewportHeight() {
   }, []);
 }
 
+function useCurrentMinute() {
+  const [now, setNow] = useState(() => getCurrentMinute());
+
+  useEffect(() => {
+    const updateNow = () => setNow(getCurrentMinute());
+    const intervalId = window.setInterval(updateNow, 30 * 1000);
+
+    window.addEventListener("focus", updateNow);
+    document.addEventListener("visibilitychange", updateNow);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", updateNow);
+      document.removeEventListener("visibilitychange", updateNow);
+    };
+  }, []);
+
+  return now;
+}
+
 function App() {
   useMobileViewportHeight();
 
+  const now = useCurrentMinute();
   const storedBookingsOnLoad = useMemo(() => loadStoredBookings(), []);
   const stackIdRef = useRef(1);
   const stackMotionLockRef = useRef<number | null>(null);
@@ -583,8 +604,8 @@ function App() {
     const daySetting = getDaySetting(daySettings, selectedDate);
     const dayOpen = daySetting?.isOpen ?? isDefaultOpenBookingDate(selectedDate, clinicSettings.openDays);
     const dayClosed = Boolean(daySetting?.isClosed) || !dayOpen;
-    return applyBookingsToSlots(baseSlots, selectedDate, bookings, dayClosed);
-  }, [baseSlots, bookings, clinicSettings.openDays, daySettings, selectedDate]);
+    return applyBookingsToSlots(baseSlots, selectedDate, bookings, dayClosed, now);
+  }, [baseSlots, bookings, clinicSettings.openDays, daySettings, now, selectedDate]);
   const selectedSlot = slots.find((slot) => slot.id === selectedSlotId) ?? slots.find((slot) => !slot.closed) ?? initialSlots[0];
 
   useEffect(() => {
@@ -682,10 +703,15 @@ function App() {
   const appointmentLabel = `${formatShortDate(selectedDate)} ${selectedSlot.time}`;
   const waitMinutes = getWaitMinutesForNextReservation(selectedSlot, selectedDate, bookings, waitRules);
   const canContinue = Boolean(selectedSlot && !selectedSlot.closed);
-  const canBook = patientName.trim().length > 0;
+  const canBook = patientName.trim().length > 0 && !selectedSlot.closed;
   const upcomingStoredBookings = storedBookings.filter(isUpcomingBooking);
 
   const submitBooking = async () => {
+    if (selectedSlot.closed) {
+      setIsConfirmOpen(false);
+      setToast("접수가 마감된 시간이에요");
+      return;
+    }
     if (!canBook) return;
     const nextBooking: Booking = {
       id: crypto.randomUUID(),
@@ -1298,7 +1324,7 @@ function DetailsScreen(props: {
         </section>
       </div>
       <BottomCTA disabled={!props.canBook} onClick={props.onSubmit}>
-        {props.canBook ? "진료 예약하기" : "이름을 입력해주세요"}
+        {props.name.trim() && !props.canBook ? "접수가 마감된 시간이에요" : props.canBook ? "진료 예약하기" : "이름을 입력해주세요"}
       </BottomCTA>
     </>
   );
@@ -1627,6 +1653,7 @@ function AdminApp() {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(
     () => sessionStorage.getItem(ADMIN_SESSION_KEY) === "true",
   );
+  const now = useCurrentMinute();
   const [activeTab, setActiveTab] = useState<"reservations" | "settings">(
     window.location.pathname.startsWith("/admin/settings") ? "settings" : "reservations",
   );
@@ -1675,7 +1702,7 @@ function AdminApp() {
   const selectedDaySetting = getDaySetting(daySettings, selectedDate);
   const selectedDayOpen = selectedDaySetting?.isOpen ?? isDefaultOpenBookingDate(selectedDate, clinicSettings.openDays);
   const selectedDayClosed = Boolean(selectedDaySetting?.isClosed) || !selectedDayOpen;
-  const displaySlots = applyBookingsToSlots(baseSlots, selectedDate, bookings, selectedDayClosed);
+  const displaySlots = applyBookingsToSlots(baseSlots, selectedDate, bookings, selectedDayClosed, now);
 
   if (!isAdminAuthenticated) {
     return (
@@ -2343,7 +2370,7 @@ function AdminAddReservationModal(props: {
   );
 }
 
-function applyBookingsToSlots(slots: Slot[], selectedDate: Date, bookings: Booking[], forceClosed = false) {
+function applyBookingsToSlots(slots: Slot[], selectedDate: Date, bookings: Booking[], forceClosed = false, now = new Date()) {
   const dateKey = toDateKey(selectedDate);
   const visibleSlots = getVisibleSlotsForDate(slots, selectedDate);
 
@@ -2356,9 +2383,13 @@ function applyBookingsToSlots(slots: Slot[], selectedDate: Date, bookings: Booki
     return {
       ...slot,
       remaining,
-      closed: forceClosed || slot.closed || remaining <= 0,
+      closed: forceClosed || slot.closed || remaining <= 0 || isPastSlotTime(selectedDate, slot.time, now),
     };
   });
+}
+
+function isPastSlotTime(date: Date, time: string, now = new Date()) {
+  return getAppointmentDateTime({ date: toDateKey(date), time }).getTime() <= now.getTime();
 }
 
 function getVisibleSlotsForDate(slots: Slot[], selectedDate: Date) {
@@ -2773,6 +2804,12 @@ function formatTimeInputValue(time: string) {
 function getToday() {
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
+function getCurrentMinute() {
+  const now = new Date();
+  now.setSeconds(0, 0);
+  return now;
 }
 
 function isPastDate(date: Date) {
