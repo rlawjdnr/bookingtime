@@ -749,6 +749,7 @@ function App() {
   const canContinue = Boolean(selectedSlot && !selectedSlot.closed);
   const canBook = patientName.trim().length > 0 && !selectedSlot.closed;
   const upcomingStoredBookings = storedBookings.filter(isUpcomingBooking);
+  const clinicStatus = getClinicStatus(now, baseSlots, daySettings);
 
   const submitBooking = async () => {
     if (selectedSlot.closed) {
@@ -849,6 +850,7 @@ function App() {
                 {route === "time" && (
                   <TimeScreen
                     clinicSettings={clinicSettings}
+                    clinicStatus={clinicStatus}
                     selectedDate={selectedDate}
                     selectedSlotId={selectedSlotId}
                     slots={slots}
@@ -1181,6 +1183,7 @@ function AdminSwitch(props: { checked: boolean; onChange: (checked: boolean) => 
 
 function Header({
   clinicSettings,
+  clinicStatus,
   back,
   compact = false,
   complete = false,
@@ -1189,6 +1192,7 @@ function Header({
   onOpenMyBookings,
 }: {
   clinicSettings: ClinicSettings;
+  clinicStatus?: string;
   back?: () => void;
   compact?: boolean;
   complete?: boolean;
@@ -1229,7 +1233,7 @@ function Header({
         </div>
       )}
       {back && !hideTitle && <strong className="header-title">{clinicSettings.name}</strong>}
-      {!back && <span className={upcomingBookingCount === 0 ? "clinic-status" : "header-spacer"}>{upcomingBookingCount === 0 ? clinicSettings.status : ""}</span>}
+      {!back && <span className={upcomingBookingCount === 0 ? "clinic-status" : "header-spacer"}>{upcomingBookingCount === 0 ? clinicStatus ?? clinicSettings.status : ""}</span>}
       {back && <span className="header-spacer" />}
     </header>
   );
@@ -1237,6 +1241,7 @@ function Header({
 
 function TimeScreen(props: {
   clinicSettings: ClinicSettings;
+  clinicStatus: string;
   selectedDate: Date;
   selectedSlotId: string;
   slots: Slot[];
@@ -1256,6 +1261,7 @@ function TimeScreen(props: {
     <>
       <Header
         clinicSettings={props.clinicSettings}
+        clinicStatus={props.clinicStatus}
         upcomingBookingCount={props.upcomingBookingCount}
         onOpenMyBookings={props.onOpenMyBookings}
       />
@@ -2454,6 +2460,31 @@ function getSlotDayGroup(date: Date): NonNullable<Slot["dayGroup"]> {
   if (date.getDay() === 4) return "thursday";
   if (date.getDay() === 6) return "saturday";
   return "weekday";
+}
+
+function getClinicStatus(now: Date, slots: Slot[], daySettings: DaySetting[]) {
+  const today = startOfDay(now);
+  const todaySetting = getDaySetting(daySettings, today);
+
+  if (today.getDay() === 0 || todaySetting?.isClosed) return "휴무일";
+
+  const todaySlots = getVisibleSlotsForDate(slots, today)
+    .filter((slot) => !slot.closed)
+    .sort((a, b) => getAppointmentDateTime({ date: toDateKey(today), time: a.time }).getTime() - getAppointmentDateTime({ date: toDateKey(today), time: b.time }).getTime());
+
+  const firstSlot = todaySlots[0];
+  const lastSlot = todaySlots[todaySlots.length - 1];
+
+  if (!firstSlot || !lastSlot) return "휴무일";
+
+  const firstClinicTime = getAppointmentDateTime({ date: toDateKey(today), time: firstSlot.time });
+  const lastClinicTime = getAppointmentDateTime({ date: toDateKey(today), time: lastSlot.time });
+  const clinicEndsAt = new Date(lastClinicTime);
+  clinicEndsAt.setMinutes(clinicEndsAt.getMinutes() + 45);
+
+  if (now.getTime() < firstClinicTime.getTime()) return "진료 전";
+  if (now.getTime() <= clinicEndsAt.getTime()) return "진료중";
+  return "진료 종료";
 }
 
 function mergeConfiguredSlots(remoteSlots: Slot[]) {
