@@ -1107,6 +1107,7 @@ function Header({
   back,
   compact = false,
   complete = false,
+  hideTitle = false,
   upcomingBookingCount = 0,
   onOpenMyBookings,
 }: {
@@ -1114,6 +1115,7 @@ function Header({
   back?: () => void;
   compact?: boolean;
   complete?: boolean;
+  hideTitle?: boolean;
   upcomingBookingCount?: number;
   onOpenMyBookings?: () => void;
 }) {
@@ -1149,7 +1151,7 @@ function Header({
           <strong>{clinicSettings.name}</strong>
         </div>
       )}
-      {back && <strong className="header-title">{clinicSettings.name}</strong>}
+      {back && !hideTitle && <strong className="header-title">{clinicSettings.name}</strong>}
       {!back && <span className={upcomingBookingCount === 0 ? "clinic-status" : "header-spacer"}>{upcomingBookingCount === 0 ? clinicSettings.status : ""}</span>}
       {back && <span className="header-spacer" />}
     </header>
@@ -1349,7 +1351,7 @@ function MyBookingsScreen({
 
   return (
     <>
-      <Header clinicSettings={clinicSettings} back={onBack} compact />
+      <Header clinicSettings={clinicSettings} back={onBack} compact hideTitle />
       <div className="my-bookings-content">
         <h1>내 예약</h1>
         <div className="my-bookings-tabs" role="tablist">
