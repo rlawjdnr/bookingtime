@@ -941,7 +941,9 @@ function App() {
             <CalendarSheet
               openDays={clinicSettings.openDays}
               daySettings={daySettings}
+              slots={baseSlots}
               selectedDate={selectedDate}
+              now={now}
               onClose={() => setIsCalendarOpen(false)}
               onBlockedDate={(message) => setToast(message)}
               onSelect={(date) => {
@@ -1545,13 +1547,17 @@ function CancelScreen({
 function CalendarSheet(props: {
   openDays: number;
   daySettings: DaySetting[];
+  slots: Slot[];
   selectedDate: Date;
+  now: Date;
   onClose: () => void;
   onBlockedDate: (message: string) => void;
   onSelect: (date: Date) => void;
 }) {
-  const isDateOpen = (date: Date) => isAdminOpenDate(date, props.openDays, props.daySettings);
-  const safeSelectedDate = isDateOpen(props.selectedDate) ? props.selectedDate : getToday();
+  const isDateOpen = (date: Date) => isMobileOpenDate(date, props.openDays, props.daySettings, props.slots, props.now);
+  const safeSelectedDate = isDateOpen(props.selectedDate)
+    ? props.selectedDate
+    : findNextMobileOpenDate(props.openDays, props.daySettings, props.slots, props.now) ?? props.selectedDate;
   const [viewDate, setViewDate] = useState(new Date(safeSelectedDate));
   const [focusedDate, setFocusedDate] = useState(new Date(safeSelectedDate));
   const days = useMemo(() => makeCalendarDays(viewDate), [viewDate]);
@@ -1579,8 +1585,8 @@ function CalendarSheet(props: {
         <div className="calendar-grid weekdays">{calendarWeekdays.map((day) => <span key={day}>{day}</span>)}</div>
         <div className="calendar-grid">
           {days.map((date, index) => {
-            const dayStatus = date ? getAdminCalendarDayStatus(date, props.openDays, props.daySettings) : "open";
-            const isPicked = date && sameDay(date, focusedDate);
+            const dayStatus = date ? getMobileCalendarDayStatus(date, props.openDays, props.daySettings, props.slots, props.now) : "open";
+            const isPicked = date && dayStatus === "open" && sameDay(date, focusedDate);
 
             return (
               <TapButton
@@ -1625,7 +1631,9 @@ function CalendarSheet(props: {
       nextMonth.getMonth(),
       Math.min(focusedDate.getDate(), lastDay),
     );
-    const nextFocusedDate = isDateOpen(preferredDate) ? preferredDate : getToday();
+    const nextFocusedDate = isDateOpen(preferredDate)
+      ? preferredDate
+      : makeCalendarDays(nextMonth).filter((date): date is Date => Boolean(date)).find(isDateOpen) ?? focusedDate;
 
     setViewDate(nextMonth);
     setFocusedDate(nextFocusedDate);
@@ -2826,6 +2834,10 @@ function isAdminOpenDate(date: Date, openDays: number, daySettings: DaySetting[]
   return daySetting?.isOpen ?? isDefaultOpenBookingDate(date, openDays);
 }
 
+function isMobileOpenDate(date: Date, openDays: number, daySettings: DaySetting[], slots: Slot[], now: Date) {
+  return isAdminOpenDate(date, openDays, daySettings) && hasFutureBookableSlot(date, slots, now);
+}
+
 function getAdminCalendarDayStatus(date: Date, openDays: number, daySettings: DaySetting[]) {
   const daySetting = getDaySetting(daySettings, date);
   const defaultClinicDay = isDefaultClinicDay(date);
@@ -2836,6 +2848,29 @@ function getAdminCalendarDayStatus(date: Date, openDays: number, daySettings: Da
   if (daySetting?.isOpen === false) return "unopened";
   if (!isSelectableBookingDate(date, openDays)) return "unopened";
   return "open";
+}
+
+function getMobileCalendarDayStatus(date: Date, openDays: number, daySettings: DaySetting[], slots: Slot[], now: Date) {
+  const dayStatus = getAdminCalendarDayStatus(date, openDays, daySettings);
+  if (dayStatus !== "open") return dayStatus;
+  return hasFutureBookableSlot(date, slots, now) ? "open" : "unopened";
+}
+
+function hasFutureBookableSlot(date: Date, slots: Slot[], now: Date) {
+  return getVisibleSlotsForDate(slots, date).some((slot) => !slot.closed && !isPastSlotTime(date, slot.time, now));
+}
+
+function findNextMobileOpenDate(openDays: number, daySettings: DaySetting[], slots: Slot[], now: Date) {
+  const today = getToday();
+  const totalDays = Math.max(1, openDays);
+
+  for (let offset = 0; offset < totalDays; offset += 1) {
+    const date = new Date(today);
+    date.setDate(today.getDate() + offset);
+    if (isMobileOpenDate(date, openDays, daySettings, slots, now)) return date;
+  }
+
+  return null;
 }
 
 function toTimeInputValue(time: string) {
