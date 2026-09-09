@@ -156,6 +156,7 @@ type AppointmentStore = {
 
 const activeBookingStorageKey = "hospital-reservation.activeBooking";
 const storedBookingsStorageKey = "hospital-reservation.bookings";
+const storedPatientNameStorageKey = "hospital-reservation.patientName";
 const otherTreatmentLabel = "기타";
 
 const fallbackClinic = {
@@ -584,7 +585,7 @@ function App() {
   const [selectedDate, setSelectedDate] = useState(getToday());
   const [selectedSlotId, setSelectedSlotId] = useState(defaultSlotId);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [patientName, setPatientName] = useState("");
+  const [patientName, setPatientName] = useState(loadStoredPatientName);
   const [treatment, setTreatment] = useState<Treatment>(otherTreatmentLabel);
   const [booking, setBooking] = useState<Booking | null>(null);
   const [storedBookings, setStoredBookings] = useState<Booking[]>(storedBookingsOnLoad);
@@ -700,6 +701,11 @@ function App() {
     }, 560);
   }
 
+  const handlePatientNameChange = (name: string) => {
+    setPatientName(name);
+    saveStoredPatientName(name);
+  };
+
   const appointmentLabel = `${formatShortDate(selectedDate)} ${selectedSlot.time}`;
   const waitMinutes = getWaitMinutesForNextReservation(selectedSlot, selectedDate, bookings, waitRules);
   const canContinue = Boolean(selectedSlot && !selectedSlot.closed);
@@ -725,6 +731,7 @@ function App() {
     };
     try {
       await appointmentStore.create(nextBooking);
+      saveStoredPatientName(nextBooking.patientName);
       setStoredBookings(saveStoredBooking(nextBooking));
       setBooking(nextBooking);
       push("complete");
@@ -834,7 +841,7 @@ function App() {
                     name={patientName}
                     treatment={treatment}
                     onBack={back}
-                    onNameChange={setPatientName}
+                    onNameChange={handlePatientNameChange}
                     onTreatmentChange={setTreatment}
                     onSubmit={() => setIsConfirmOpen(true)}
                   />
@@ -845,7 +852,6 @@ function App() {
                     booking={booking}
                     onConfirm={() => {
                       setBooking(null);
-                      setPatientName("");
                       setTreatment(treatmentOptions.find((option) => option.isOpen)?.label ?? otherTreatmentLabel);
                       resetStack("time");
                     }}
@@ -2615,6 +2621,20 @@ function saveActiveBooking(booking: Booking) {
 
 function clearActiveBooking() {
   window.localStorage.removeItem(activeBookingStorageKey);
+}
+
+function loadStoredPatientName() {
+  return window.localStorage.getItem(storedPatientNameStorageKey) ?? "";
+}
+
+function saveStoredPatientName(name: string) {
+  const normalizedName = name.trim();
+  if (normalizedName) {
+    window.localStorage.setItem(storedPatientNameStorageKey, normalizedName);
+    return;
+  }
+
+  window.localStorage.removeItem(storedPatientNameStorageKey);
 }
 
 function isValidStoredBooking(booking: Partial<Booking>) {
