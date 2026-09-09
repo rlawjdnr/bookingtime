@@ -509,7 +509,7 @@ function useMobileViewportHeight() {
     const pendingTimers: number[] = [];
     const setAppHeight = () => {
       const viewportHeight = window.visualViewport?.height ?? 0;
-      const height = Math.max(window.innerHeight, viewportHeight);
+      const height = viewportHeight || window.innerHeight;
       document.documentElement.style.setProperty("--app-height", `${height}px`);
     };
 
