@@ -32,6 +32,7 @@ import adminRadioEmptyIcon from "./assets/figma/admin-radio-empty.svg";
 import adminRadioSelectedIcon from "./assets/figma/admin-radio-selected.svg";
 import myBookingsCalendarIcon from "./assets/figma/my-bookings-calendar.svg";
 import myBookingsChevronIcon from "./assets/figma/my-bookings-chevron.svg";
+import phoneFillIcon from "./assets/figma/phone-fill.svg";
 
 const ADMIN_SESSION_KEY = "bookingtime-admin-authenticated";
 
@@ -1377,6 +1378,9 @@ function MyBookingsScreen({
       </div>
       <div className="bottom-cta">
         <a className="light-button phone-button" href={toPhoneHref(clinicSettings.phone)}>
+          <span className="phone-button-icon">
+            <img className="svg-icon" src={phoneFillIcon} alt="" />
+          </span>
           전화 문의
         </a>
       </div>

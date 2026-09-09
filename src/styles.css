@@ -756,8 +756,26 @@ textarea::placeholder {
 }
 
 .phone-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   background: var(--surface);
   color: var(--text);
+}
+
+.phone-button-icon {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 20px;
+  overflow: hidden;
+}
+
+.phone-button-icon img {
+  width: 17.44px;
+  height: 17.44px;
 }
 
 .cancel-content {
