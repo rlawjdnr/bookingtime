@@ -620,14 +620,34 @@ textarea::placeholder {
 }
 
 .my-bookings-tabs {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin: 0 -16px;
   border-bottom: 1px solid var(--line);
 }
 
+.my-bookings-tab-indicator {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 50%;
+  height: 1.5px;
+  padding: 0 8px;
+  pointer-events: none;
+}
+
+.my-bookings-tab-indicator::after {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--text);
+  content: "";
+}
+
 .my-bookings-tabs button {
   position: relative;
+  z-index: 1;
   height: 42.5px;
   display: grid;
   place-items: center;
@@ -640,16 +660,6 @@ textarea::placeholder {
 .my-bookings-tabs button.active {
   color: var(--text);
   font-weight: 600;
-}
-
-.my-bookings-tabs button.active::after {
-  position: absolute;
-  right: 8px;
-  bottom: -1px;
-  left: 8px;
-  height: 1.5px;
-  background: var(--text);
-  content: "";
 }
 
 .my-bookings-list {
