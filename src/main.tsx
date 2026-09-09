@@ -1607,6 +1607,10 @@ function CalendarSheet(props: {
                 onClick={() => {
                   if (!date) return;
 
+                  if (isPastCalendarDate(date, props.slots, props.now)) {
+                    return;
+                  }
+
                   if (dayStatus === "closed") {
                     props.onBlockedDate("진료하지 않는 날이에요");
                     return;
@@ -2899,6 +2903,17 @@ function getMobileCalendarDayStatus(date: Date, openDays: number, daySettings: D
 
 function hasFutureBookableSlot(date: Date, slots: Slot[], now: Date) {
   return getVisibleSlotsForDate(slots, date).some((slot) => !slot.closed && !isPastSlotTime(date, slot.time, now));
+}
+
+function isPastCalendarDate(date: Date, slots: Slot[], now: Date) {
+  const dateStart = startOfDay(date).getTime();
+  const todayStart = startOfDay(now).getTime();
+
+  if (dateStart < todayStart) return true;
+  if (dateStart > todayStart) return false;
+
+  const openSlots = getVisibleSlotsForDate(slots, date).filter((slot) => !slot.closed);
+  return openSlots.length > 0 && openSlots.every((slot) => isPastSlotTime(date, slot.time, now));
 }
 
 function findNextMobileOpenDate(openDays: number, daySettings: DaySetting[], slots: Slot[], now: Date) {
