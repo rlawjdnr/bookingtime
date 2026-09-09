@@ -23,6 +23,7 @@ import treatmentIcon from "./assets/figma/treatment-fill.svg";
 import timeCalendarIcon from "./assets/figma/time-calendar-fill.svg";
 import waitIcon from "./assets/figma/wait-fill.svg";
 import adminAddIcon from "./assets/figma/admin-add.svg";
+import adminHospitalIcon from "./assets/figma/admin-hospital.svg";
 import adminMinusIcon from "./assets/figma/admin-minus.svg";
 import adminPlusIcon from "./assets/figma/admin-plus.svg";
 import adminChipCloseIcon from "./assets/figma/admin-chip-close.svg";
@@ -1778,7 +1779,7 @@ function AdminApp() {
       <aside className="admin-sidebar">
         <div className="admin-sidebar-main">
           <div className="admin-logo">
-            <span className="icon-18"><img className="svg-icon hospital-icon" src={hospitalIcon} alt="" /></span>
+            <span className="icon-18"><img className="svg-icon admin-hospital-icon" src={adminHospitalIcon} alt="" /></span>
             <strong>{clinicSettings.name}</strong>
           </div>
           <nav className="admin-nav">
@@ -2230,7 +2231,7 @@ function AdminLoginScreen({ onLogin }: { onLogin: () => void }) {
         transition={overlaySpring}
       >
         <div className="admin-login-logo">
-          <span className="icon-18"><img className="svg-icon hospital-icon" src={hospitalIcon} alt="" /></span>
+          <span className="icon-18"><img className="svg-icon admin-hospital-icon" src={adminHospitalIcon} alt="" /></span>
           <strong>이목구비 김한의원</strong>
         </div>
         <h1>
