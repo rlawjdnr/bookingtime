@@ -887,6 +887,8 @@ function App() {
                     booking={booking}
                     onConfirm={() => {
                       setBooking(null);
+                      setSkipStackMotion(true);
+                      setDirection(-1);
                       setTreatment(treatmentOptions.find((option) => option.isOpen)?.label ?? otherTreatmentLabel);
                       resetStack("time");
                     }}
