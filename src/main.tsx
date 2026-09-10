@@ -207,13 +207,15 @@ const tapSpring = { type: "spring" as const, stiffness: 1000, damping: 55 };
 const tapReleaseSpring = { type: "spring" as const, stiffness: 800, damping: 55 };
 const confirmSheetItemSpring = { type: "spring" as const, stiffness: 480, damping: 50 };
 const confirmSheetFade = { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] as const };
+const confirmSheetStaggerDelay = 0.02;
+const confirmSheetLineDelay = confirmSheetStaggerDelay * 6;
 const confirmSheetItems = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: {
       opacity: confirmSheetFade,
-      staggerChildren: 0.03,
+      staggerChildren: confirmSheetStaggerDelay,
     },
   },
   exit: {
@@ -1076,7 +1078,7 @@ function ConfirmBookingSheet({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={confirmSheetFade}
+              transition={{ ...confirmSheetFade, delay: confirmSheetLineDelay }}
             />
             <div className="confirm-summary-list">
               {summaryRows.map(([label, value, icon]) => (
