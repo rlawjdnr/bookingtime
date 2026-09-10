@@ -13,6 +13,18 @@
   --danger-bg: #fdf0f0;
 }
 
+html {
+  font-size: 17px;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+@supports (font: -apple-system-body) {
+  html {
+    font: -apple-system-body;
+  }
+}
+
 * {
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
@@ -165,7 +177,7 @@ a {
 
 .clinic-title {
   gap: 6px;
-  font-size: 16px;
+  font-size: 0.9412rem;
 }
 
 .clinic-title strong {
@@ -174,13 +186,13 @@ a {
 
 .clinic-status {
   color: var(--muted);
-  font-size: 15px;
+  font-size: 0.8824rem;
 }
 
 .my-bookings-link {
   gap: 6px;
   color: #079171;
-  font-size: 17px;
+  font-size: 1rem;
   line-height: normal;
 }
 
@@ -308,12 +320,12 @@ a {
 }
 
 .header-title {
-  font-size: 17px;
+  font-size: 1rem;
   font-weight: 500;
 }
 
 .complete-header-title {
-  font-size: 16px;
+  font-size: 0.9412rem;
   font-weight: 500;
   line-height: normal;
 }
@@ -329,13 +341,13 @@ a {
 .content h1,
 .calendar-sheet h1 {
   margin: 0;
-  font-size: 20px;
+  font-size: 1.1765rem;
   line-height: 1.32;
   font-weight: 600;
 }
 
 .content h1.screen-title {
-  font-size: 18px;
+  font-size: 1.0588rem;
 }
 
 .date-select {
@@ -352,7 +364,7 @@ a {
 
 .date-select span {
   gap: 8px;
-  font-size: 16px;
+  font-size: 0.9412rem;
 }
 
 .date-select strong {
@@ -373,7 +385,7 @@ a {
 
 .slot-section p {
   margin: 0 0 10px;
-  font-size: 14px;
+  font-size: 0.8235rem;
 }
 
 .slot-grid {
@@ -387,7 +399,7 @@ a {
   display: grid;
   place-items: center;
   color: #868b94;
-  font-size: 14px;
+  font-size: 0.8235rem;
   font-weight: 500;
   line-height: normal;
 }
@@ -405,7 +417,7 @@ a {
 }
 
 .slot-card strong {
-  font-size: 15px;
+  font-size: 0.8824rem;
   line-height: 1.2;
   font-weight: 500;
 }
@@ -413,7 +425,7 @@ a {
 .slot-card span {
   margin-top: 1px;
   color: #2a3038;
-  font-size: 14px;
+  font-size: 0.8235rem;
 }
 
 .slot-card.selected {
@@ -464,7 +476,7 @@ a {
   border-radius: 12px;
   display: grid;
   place-items: center;
-  font-size: 17px;
+  font-size: 1rem;
   line-height: 1.47;
   text-decoration: none;
 }
@@ -515,7 +527,7 @@ a {
   align-items: center;
   justify-content: space-between;
   min-height: 30px;
-  font-size: 15px;
+  font-size: 0.8824rem;
 }
 
 .summary-row span {
@@ -524,7 +536,7 @@ a {
 }
 
 .summary-row strong {
-  font-size: 15px;
+  font-size: 0.8824rem;
   font-weight: 500;
 }
 
@@ -536,7 +548,7 @@ a {
 .field-block > span {
   display: block;
   margin-bottom: 10px;
-  font-size: 18px;
+  font-size: 1.0588rem;
   line-height: 1.32;
   font-weight: 600;
 }
@@ -593,7 +605,7 @@ textarea::placeholder {
 }
 
 .option-row strong {
-  font-size: 16px;
+  font-size: 0.9412rem;
   font-weight: 500;
 }
 
@@ -619,7 +631,7 @@ textarea::placeholder {
 .complete-message h1 {
   margin: 0;
   text-align: center;
-  font-size: 20px;
+  font-size: 1.1765rem;
   line-height: 1.32;
   font-weight: 600;
 }
@@ -657,7 +669,7 @@ textarea::placeholder {
 
 .my-bookings-sticky h1 {
   margin: 10px 0;
-  font-size: 20px;
+  font-size: 1.1765rem;
   line-height: 1.32;
   font-weight: 600;
 }
@@ -695,7 +707,7 @@ textarea::placeholder {
   display: grid;
   place-items: center;
   color: var(--muted);
-  font-size: 16px;
+  font-size: 0.9412rem;
   line-height: 1.32;
   font-weight: 500;
 }
@@ -734,7 +746,7 @@ textarea::placeholder {
   align-items: center;
   gap: 6px;
   color: var(--text);
-  font-size: 17px;
+  font-size: 1rem;
   font-weight: 600;
   line-height: normal;
 }
@@ -744,14 +756,14 @@ textarea::placeholder {
   border-radius: 4px;
   background: var(--muted);
   color: #fff;
-  font-size: 13px;
+  font-size: 0.7647rem;
   font-weight: 600;
 }
 
 .my-booking-main div > p:not(.my-booking-date) {
   margin-top: 4px;
   color: var(--muted);
-  font-size: 15px;
+  font-size: 0.8824rem;
   line-height: normal;
   font-weight: 500;
 }
@@ -763,7 +775,7 @@ textarea::placeholder {
 .my-booking-main strong {
   flex: 0 0 auto;
   color: var(--text);
-  font-size: 15px;
+  font-size: 0.8824rem;
   line-height: normal;
   font-weight: 600;
 }
@@ -779,7 +791,7 @@ textarea::placeholder {
   border-radius: 8px;
   display: grid;
   place-items: center;
-  font-size: 15px;
+  font-size: 0.8824rem;
   line-height: 1.47;
   font-weight: 600;
 }
@@ -804,7 +816,7 @@ textarea::placeholder {
   margin: 48px 0 0;
   color: var(--muted);
   text-align: center;
-  font-size: 15px;
+  font-size: 0.8824rem;
 }
 
 .phone-button {
@@ -864,7 +876,7 @@ textarea.selected {
   justify-content: space-between;
   overflow: hidden;
   color: #fff;
-  font-size: 14px;
+  font-size: 0.8235rem;
   font-weight: 400;
 }
 
@@ -946,7 +958,7 @@ textarea.selected {
 .confirm-sheet h1 {
   margin: 0;
   color: var(--text);
-  font-size: 20px;
+  font-size: 1.1765rem;
   font-weight: 600;
   line-height: 1.32;
 }
@@ -982,7 +994,7 @@ textarea.selected {
   align-items: center;
   gap: 12px;
   color: var(--text);
-  font-size: 15px;
+  font-size: 0.8824rem;
   line-height: normal;
 }
 
@@ -995,7 +1007,7 @@ textarea.selected {
 }
 
 .confirm-summary-row strong {
-  font-size: 15px;
+  font-size: 0.8824rem;
   line-height: normal;
   font-weight: 500;
   white-space: nowrap;
@@ -1032,7 +1044,7 @@ textarea.selected {
 }
 
 .month-control strong {
-  font-size: 17px;
+  font-size: 1rem;
   font-weight: 500;
 }
 
@@ -1053,7 +1065,7 @@ textarea.selected {
   height: 40px;
   display: grid;
   place-items: center;
-  font-size: 17px;
+  font-size: 1rem;
 }
 
 .calendar-grid button {
@@ -1066,7 +1078,7 @@ textarea.selected {
   display: grid;
   place-items: center;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 0.7647rem;
 }
 
 .calendar-grid button:disabled {
@@ -1142,7 +1154,7 @@ textarea.selected {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 16px;
+  font-size: 0.9412rem;
 }
 
 .admin-logo strong {
@@ -1160,7 +1172,7 @@ textarea.selected {
   padding: 0 12px;
   border-radius: 12px;
   text-align: left;
-  font-size: 15px;
+  font-size: 0.8824rem;
   font-weight: 500;
 }
 
@@ -1179,7 +1191,7 @@ textarea.selected {
   border-radius: 12px;
   color: var(--muted);
   text-align: left;
-  font-size: 15px;
+  font-size: 0.8824rem;
   font-weight: 500;
 }
 
@@ -1217,7 +1229,7 @@ textarea.selected {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 16px;
+  font-size: 0.9412rem;
 }
 
 .admin-login-logo strong {
@@ -1227,7 +1239,7 @@ textarea.selected {
 .admin-login-card h1 {
   margin: 0;
   color: var(--text);
-  font-size: 17px;
+  font-size: 1rem;
   font-weight: 600;
   line-height: 1.47;
 }
@@ -1245,7 +1257,7 @@ textarea.selected {
   border: 1px solid #eeeff1;
   border-radius: 12px;
   color: var(--text);
-  font-size: 16px;
+  font-size: 0.9412rem;
   font-weight: 500;
 }
 
@@ -1256,7 +1268,7 @@ textarea.selected {
 .admin-login-field p {
   margin: 0;
   color: var(--p0);
-  font-size: 16px;
+  font-size: 0.9412rem;
   font-weight: 500;
   line-height: 1;
 }
@@ -1267,7 +1279,7 @@ textarea.selected {
   border-radius: 10px;
   background: var(--text);
   color: #fff;
-  font-size: 17px;
+  font-size: 1rem;
   font-weight: 600;
   line-height: 1.47;
 }
@@ -1292,7 +1304,7 @@ textarea.selected {
 .admin-reservations h1,
 .admin-settings h1 {
   margin: 0 0 15px;
-  font-size: 17px;
+  font-size: 1rem;
   line-height: 1.47;
   font-weight: 600;
 }
@@ -1309,7 +1321,7 @@ textarea.selected {
 
 .admin-slot-section > p {
   margin: 0 0 2px;
-  font-size: 13px;
+  font-size: 0.7647rem;
   line-height: 1.47;
 }
 
@@ -1336,7 +1348,7 @@ textarea.selected {
 }
 
 .admin-time-card header strong {
-  font-size: 16px;
+  font-size: 0.9412rem;
   font-weight: 500;
 }
 
@@ -1348,7 +1360,7 @@ textarea.selected {
   color: #fff;
   display: grid;
   place-items: center;
-  font-size: 11px;
+  font-size: 0.6471rem;
   font-style: normal;
   font-weight: 600;
 }
@@ -1362,7 +1374,7 @@ textarea.selected {
   align-items: center;
   gap: 8px;
   height: 21px;
-  font-size: 14px;
+  font-size: 0.8235rem;
   font-weight: 600;
   line-height: 1;
 }
@@ -1380,7 +1392,7 @@ textarea.selected {
   align-items: center;
   min-height: 34px;
   padding: 4px 0;
-  font-size: 13px;
+  font-size: 0.7647rem;
 }
 
 .admin-time-card header + .admin-reservation-row {
@@ -1413,7 +1425,7 @@ textarea.selected {
   background: transparent;
   color: var(--text);
   text-align: left;
-  font-size: 13px;
+  font-size: 0.7647rem;
   line-height: normal;
 }
 
@@ -1462,7 +1474,7 @@ textarea.selected {
   border-radius: 4px;
   background: transparent;
   color: #000;
-  font-size: 13px;
+  font-size: 0.7647rem;
   font-weight: 500;
   line-height: normal;
   text-align: left;
@@ -1521,7 +1533,7 @@ textarea.selected {
 }
 
 .admin-month-control strong {
-  font-size: 17px;
+  font-size: 1rem;
   font-weight: 500;
 }
 
@@ -1543,13 +1555,13 @@ textarea.selected {
   height: 40px;
   display: grid;
   place-items: center;
-  font-size: 14px;
+  font-size: 0.8235rem;
   font-weight: 400;
 }
 
 .admin-calendar-grid span {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 0.7647rem;
 }
 
 .admin-calendar-grid button.closed {
@@ -1580,7 +1592,7 @@ textarea.selected {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 15px;
+  font-size: 0.8824rem;
   font-weight: 500;
 }
 
@@ -1645,7 +1657,7 @@ textarea.selected {
 
 .admin-setting-card h2 {
   margin: 0;
-  font-size: 14px;
+  font-size: 0.8235rem;
   font-weight: 600;
   line-height: 1.47;
 }
@@ -1657,7 +1669,7 @@ textarea.selected {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  font-size: 13px;
+  font-size: 0.7647rem;
 }
 
 .admin-setting-row > span {
@@ -1677,7 +1689,7 @@ textarea.selected {
 
 .admin-setting-row strong {
   color: #000;
-  font-size: 13px;
+  font-size: 0.7647rem;
   line-height: 1.47;
   font-weight: 500;
   white-space: nowrap;
@@ -1687,7 +1699,7 @@ textarea.selected {
   height: 34px;
   padding: 7px 8px;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 0.7647rem;
   font-weight: 500;
 }
 
@@ -1697,7 +1709,7 @@ textarea.selected {
 
 .admin-setting-card em {
   font-style: normal;
-  font-size: 13px;
+  font-size: 0.7647rem;
 }
 
 .admin-edit-chip,
@@ -1706,7 +1718,7 @@ textarea.selected {
   padding: 5px 8px;
   border-radius: 6px;
   background: var(--surface);
-  font-size: 13px;
+  font-size: 0.7647rem;
   font-weight: 500;
   line-height: 1;
 }
@@ -1731,7 +1743,7 @@ textarea.selected {
 }
 
 .admin-stepper strong {
-  font-size: 14px;
+  font-size: 0.8235rem;
   line-height: 1.5;
 }
 
@@ -1747,7 +1759,7 @@ textarea.selected {
   gap: 8px;
   align-items: center;
   min-height: 21px;
-  font-size: 14px;
+  font-size: 0.8235rem;
   line-height: 1.5;
   font-weight: 600;
 }
@@ -1771,7 +1783,7 @@ textarea.selected {
   display: flex;
   align-items: center;
   gap: 2px;
-  font-size: 13px;
+  font-size: 0.7647rem;
   font-weight: 500;
 }
 
@@ -1824,14 +1836,14 @@ textarea.selected {
 
 .admin-modal h1 {
   margin: 0 0 24px;
-  font-size: 20px;
+  font-size: 1.1765rem;
   font-weight: 600;
 }
 
 .admin-add-modal h1 {
   margin: 0;
   color: var(--text);
-  font-size: 17px;
+  font-size: 1rem;
   font-weight: 600;
   line-height: 1.47;
 }
@@ -1851,14 +1863,14 @@ textarea.selected {
 
 .admin-modal label > span,
 .admin-modal section > span {
-  font-size: 14px;
+  font-size: 0.8235rem;
   font-weight: 600;
 }
 
 .admin-add-modal label > span,
 .admin-add-modal section > span {
   color: var(--text);
-  font-size: 14px;
+  font-size: 0.8235rem;
   font-weight: 500;
   line-height: 1.32;
 }
@@ -1869,7 +1881,7 @@ textarea.selected {
   border: 1px solid #eeeff1;
   border-radius: 12px;
   color: var(--text);
-  font-size: 16px;
+  font-size: 0.9412rem;
   font-weight: 500;
 }
 
@@ -1889,7 +1901,7 @@ textarea.selected {
   gap: 10px;
   align-items: center;
   margin: 0;
-  font-size: 13px;
+  font-size: 0.7647rem;
 }
 
 .admin-slot-edit-list input[type="checkbox"] {
@@ -1915,7 +1927,7 @@ textarea.selected {
   border: 1px solid var(--line);
   border-radius: 12px;
   color: var(--text);
-  font-size: 16px;
+  font-size: 0.9412rem;
   font-weight: 500;
   text-align: left;
   white-space: normal;
@@ -1941,7 +1953,7 @@ textarea.selected {
   border-radius: 12px;
   background: var(--text);
   color: #fff;
-  font-size: 16px;
+  font-size: 0.9412rem;
   font-weight: 500;
 }
 
@@ -1951,7 +1963,7 @@ textarea.selected {
   margin-top: 60px;
   padding: 10px 24px;
   border-radius: 10px;
-  font-size: 17px;
+  font-size: 1rem;
   font-weight: 600;
   line-height: 1.47;
 }
