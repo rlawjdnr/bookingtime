@@ -244,7 +244,7 @@ const calendarSheetItems = {
     y: 0,
     transition: {
       ...spring,
-      staggerChildren: 0.02,
+      staggerChildren: 0.03,
     },
   },
   exit: {
