@@ -1056,7 +1056,7 @@ function ConfirmBookingSheet({
   ];
 
   return (
-    <motion.div className="sheet-dim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={confirmSheetFade} onClick={onClose}>
+    <motion.div className="sheet-dim confirm-sheet-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={confirmSheetFade} onClick={onClose}>
       <motion.section
         className="confirm-sheet"
         initial="hidden"
