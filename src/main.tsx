@@ -1683,58 +1683,61 @@ function CalendarSheet(props: {
             <img src={monthNextIcon} alt="" className="svg-icon month-arrow" />
           </TapButton>
         </motion.div>
-        <div className="calendar-grid weekdays">{calendarWeekdays.map((day) => <span key={day}>{day}</span>)}</div>
-        <div className="calendar-grid">
-          {days.map((date, index) => {
-            const dayStatus = date ? getMobileCalendarDayStatus(date, props.openDays, props.daySettings, props.slots, props.now) : "open";
-            const isPicked = date && dayStatus === "open" && sameDay(date, focusedDate);
+        <motion.div variants={calendarSheetItem}>
+          <div className="calendar-grid weekdays">{calendarWeekdays.map((day) => <span key={day}>{day}</span>)}</div>
+          <div className="calendar-grid">
+            {days.map((date, index) => {
+              const dayStatus = date ? getMobileCalendarDayStatus(date, props.openDays, props.daySettings, props.slots, props.now) : "open";
+              const isPicked = date && dayStatus === "open" && sameDay(date, focusedDate);
 
-            return (
-              <TapButton
-                key={date ? date.toISOString() : `empty-${index}`}
-                className={[
-                  isPicked ? "picked" : "",
-                  dayStatus === "closed" ? "closed" : "",
-                  dayStatus === "unopened" ? "unopened" : "",
-                ].filter(Boolean).join(" ")}
-                disabled={!date}
-                onClick={() => {
-                  if (!date) return;
+              return (
+                <TapButton
+                  key={date ? date.toISOString() : `empty-${index}`}
+                  className={[
+                    isPicked ? "picked" : "",
+                    dayStatus === "closed" ? "closed" : "",
+                    dayStatus === "unopened" ? "unopened" : "",
+                  ].filter(Boolean).join(" ")}
+                  disabled={!date}
+                  onClick={() => {
+                    if (!date) return;
 
-                  if (isPastCalendarDate(date, props.slots, props.now)) {
-                    return;
-                  }
+                    if (isPastCalendarDate(date, props.slots, props.now)) {
+                      return;
+                    }
 
-                  if (dayStatus === "closed") {
-                    props.onBlockedDate("진료하지 않는 날이에요");
-                    return;
-                  }
+                    if (dayStatus === "closed") {
+                      props.onBlockedDate("진료하지 않는 날이에요");
+                      return;
+                    }
 
-                  if (dayStatus === "unopened" || !isDateOpen(date)) {
-                    props.onBlockedDate("아직 예약이 열리지 않은 날이에요");
-                    return;
-                  }
+                    if (dayStatus === "unopened" || !isDateOpen(date)) {
+                      props.onBlockedDate("아직 예약이 열리지 않은 날이에요");
+                      return;
+                    }
 
-                  setFocusedDate(date);
-                }}
-              >
-                {date && (
-                  <>
-                    {isPicked && (
-                      <motion.span
-                        className="calendar-picked-circle"
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={calendarPickedSpring}
-                      />
-                    )}
-                    <span className="calendar-day-label">{date.getDate()}</span>
-                  </>
-                )}
-              </TapButton>
-            );
-          })}
-        </div>
+                    setFocusedDate(date);
+                  }}
+                >
+                  {date && (
+                    <>
+                      {isPicked && (
+                        <motion.span
+                          key={toDateKey(date)}
+                          className="calendar-picked-circle"
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={calendarPickedSpring}
+                        />
+                      )}
+                      <span className="calendar-day-label">{date.getDate()}</span>
+                    </>
+                  )}
+                </TapButton>
+              );
+            })}
+          </div>
+        </motion.div>
         <motion.div variants={calendarSheetItem}>
           <BottomCTA inSheet disabled={!isDateOpen(focusedDate)} onClick={() => props.onSelect(focusedDate)}>선택하기</BottomCTA>
         </motion.div>
