@@ -1,8 +1,8 @@
 {
   "name": "김한의원 관리자",
   "short_name": "김한의원 관리자",
-  "start_url": "/admin",
-  "scope": "/admin",
+  "start_url": "/admin/",
+  "scope": "/admin/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",
