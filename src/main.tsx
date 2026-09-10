@@ -38,6 +38,7 @@ import myBookingsChevronEmptyIcon from "./assets/figma/my-bookings-chevron-empty
 import phoneFillIcon from "./assets/figma/phone-fill.svg";
 
 const ADMIN_SESSION_KEY = "bookingtime-admin-authenticated";
+const ADMIN_SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
 
 type Route = "time" | "details" | "complete" | "myBookings";
 type Treatment = string;
@@ -1812,7 +1813,7 @@ function BottomCTA(props: { children: React.ReactNode; disabled?: boolean; varia
 
 function AdminApp() {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(
-    () => sessionStorage.getItem(ADMIN_SESSION_KEY) === "true",
+    () => isStoredAdminSessionValid(),
   );
   const now = useCurrentMinute();
   const [activeTab, setActiveTab] = useState<"reservations" | "settings">(
@@ -1869,7 +1870,7 @@ function AdminApp() {
     return (
       <AdminLoginScreen
         onLogin={() => {
-          sessionStorage.setItem(ADMIN_SESSION_KEY, "true");
+          saveAdminSession();
           setIsAdminAuthenticated(true);
         }}
       />
@@ -1896,7 +1897,7 @@ function AdminApp() {
         <TapButton
           className="admin-logout-button"
           onClick={() => {
-            sessionStorage.removeItem(ADMIN_SESSION_KEY);
+            clearAdminSession();
             setIsAdminAuthenticated(false);
           }}
         >
@@ -2823,6 +2824,46 @@ function saveStoredPatientName(name: string) {
   }
 
   window.localStorage.removeItem(storedPatientNameStorageKey);
+}
+
+function isStoredAdminSessionValid() {
+  const rawSession = window.localStorage.getItem(ADMIN_SESSION_KEY);
+
+  if (!rawSession) {
+    const legacySession = window.sessionStorage.getItem(ADMIN_SESSION_KEY) === "true";
+    if (legacySession) {
+      saveAdminSession();
+      return true;
+    }
+
+    return false;
+  }
+
+  try {
+    const session = JSON.parse(rawSession) as { expiresAt?: number };
+    if (!session.expiresAt || session.expiresAt <= Date.now()) {
+      clearAdminSession();
+      return false;
+    }
+
+    return true;
+  } catch {
+    clearAdminSession();
+    return false;
+  }
+}
+
+function saveAdminSession() {
+  window.localStorage.setItem(
+    ADMIN_SESSION_KEY,
+    JSON.stringify({ expiresAt: Date.now() + ADMIN_SESSION_DURATION_MS }),
+  );
+  window.sessionStorage.removeItem(ADMIN_SESSION_KEY);
+}
+
+function clearAdminSession() {
+  window.localStorage.removeItem(ADMIN_SESSION_KEY);
+  window.sessionStorage.removeItem(ADMIN_SESSION_KEY);
 }
 
 function isValidStoredBooking(booking: Partial<Booking>) {
