@@ -892,12 +892,21 @@ textarea.selected {
   z-index: 20;
 }
 
-.sheet-dim.gradient-sheet-backdrop,
 .sheet-dim.confirm-sheet-backdrop {
   background: linear-gradient(
     180deg,
     rgba(255, 255, 255, 0) 0%,
     #fff 48.149%,
+    #fff 100%
+  );
+  overflow: hidden;
+}
+
+.sheet-dim.gradient-sheet-backdrop {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0) 0%,
+    #fff 32%,
     #fff 100%
   );
   overflow: hidden;
