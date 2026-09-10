@@ -1661,6 +1661,7 @@ function CalendarSheet(props: {
     : findNextMobileOpenDate(props.openDays, props.daySettings, props.slots, props.now) ?? props.selectedDate;
   const [viewDate, setViewDate] = useState(new Date(safeSelectedDate));
   const [focusedDate, setFocusedDate] = useState(new Date(safeSelectedDate));
+  const initialFocusedDateKeyRef = useRef(toDateKey(safeSelectedDate));
   const days = useMemo(() => makeCalendarDays(viewDate), [viewDate]);
 
   return (
@@ -1689,6 +1690,7 @@ function CalendarSheet(props: {
             {days.map((date, index) => {
               const dayStatus = date ? getMobileCalendarDayStatus(date, props.openDays, props.daySettings, props.slots, props.now) : "open";
               const isPicked = date && dayStatus === "open" && sameDay(date, focusedDate);
+              const isInitialPickedDate = date && toDateKey(date) === initialFocusedDateKeyRef.current;
 
               return (
                 <TapButton
@@ -1723,9 +1725,8 @@ function CalendarSheet(props: {
                     <>
                       {isPicked && (
                         <motion.span
-                          key={toDateKey(date)}
                           className="calendar-picked-circle"
-                          initial={{ scale: 0 }}
+                          initial={isInitialPickedDate ? { scale: 0 } : { scale: 1 }}
                           animate={{ scale: 1 }}
                           transition={calendarPickedSpring}
                         />
