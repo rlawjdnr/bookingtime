@@ -11,6 +11,22 @@
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <title>김한의원</title>
+    <script>
+      (() => {
+        const isAdmin = location.pathname.startsWith("/admin");
+
+        if (!isAdmin) return;
+
+        const appTitle = "김한의원 관리자";
+        document.title = appTitle;
+
+        const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+        appleTitle?.setAttribute("content", appTitle);
+
+        const manifest = document.querySelector('link[rel="manifest"]');
+        manifest?.setAttribute("href", "/admin-manifest.webmanifest");
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
