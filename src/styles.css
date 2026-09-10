@@ -931,7 +931,7 @@ textarea.selected {
   left: 0;
   right: 0;
   bottom: 0;
-  height: 338px;
+  height: auto;
   padding: 29px 16px 0;
   background: transparent;
   overflow: hidden;
@@ -1002,10 +1002,7 @@ textarea.selected {
 }
 
 .confirm-actions {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  margin: 12px -16px 0;
   padding: 12px 16px 32px;
   display: grid;
   grid-template-columns: 1fr 1fr;
