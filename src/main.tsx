@@ -1634,7 +1634,7 @@ function CalendarSheet(props: {
   const days = useMemo(() => makeCalendarDays(viewDate), [viewDate]);
 
   return (
-    <motion.div className="sheet-dim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={spring} onClick={props.onClose}>
+    <motion.div className="sheet-dim gradient-sheet-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={confirmSheetFade} onClick={props.onClose}>
       <motion.section
         className="calendar-sheet"
         initial={{ y: "100%" }}

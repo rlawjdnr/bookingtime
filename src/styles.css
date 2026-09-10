@@ -892,6 +892,7 @@ textarea.selected {
   z-index: 20;
 }
 
+.sheet-dim.gradient-sheet-backdrop,
 .sheet-dim.confirm-sheet-backdrop {
   background: linear-gradient(
     180deg,
@@ -910,8 +911,7 @@ textarea.selected {
   height: auto;
   max-height: calc(100% - 24px);
   padding: 29px 16px 0;
-  background: #fff;
-  border-radius: 20px 20px 0 0;
+  background: transparent;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
