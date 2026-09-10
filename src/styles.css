@@ -1048,7 +1048,6 @@ textarea.selected {
   margin-top: 28px;
 }
 
-.calendar-grid span,
 .calendar-grid button {
   width: 40px;
   height: 40px;
@@ -1057,7 +1056,15 @@ textarea.selected {
   font-size: 17px;
 }
 
-.calendar-grid span {
+.calendar-grid button {
+  position: relative;
+}
+
+.calendar-grid.weekdays span {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
   color: var(--muted);
   font-size: 13px;
 }
@@ -1076,9 +1083,19 @@ textarea.selected {
 }
 
 .calendar-grid button.picked {
+  color: #fff;
+}
+
+.calendar-picked-circle {
+  position: absolute;
+  inset: 0;
   border-radius: 999px;
   background: var(--text);
-  color: #fff;
+}
+
+.calendar-day-label {
+  position: relative;
+  z-index: 1;
 }
 
 @media (min-width: 600px) {

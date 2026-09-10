@@ -238,6 +238,36 @@ const confirmSheetItem = {
     transition: confirmSheetFade,
   },
 };
+const calendarSheetItems = {
+  hidden: { y: "100%" },
+  visible: {
+    y: 0,
+    transition: {
+      ...spring,
+      staggerChildren: 0.02,
+    },
+  },
+  exit: {
+    y: "100%",
+    transition: spring,
+  },
+};
+const calendarSheetItem = {
+  hidden: { y: 300, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      y: screenSpring,
+      opacity: confirmSheetFade,
+    },
+  },
+  exit: {
+    opacity: 0,
+    transition: confirmSheetFade,
+  },
+};
+const calendarPickedSpring = { type: "spring" as const, stiffness: 100, damping: 15 };
 const calendarWeekdays = ["일", "월", "화", "수", "목", "금", "토"];
 const screenVariants = {
   enter: (latestDirection: number) => ({ x: latestDirection > 0 ? "100%" : "-50%" }),
@@ -1637,14 +1667,14 @@ function CalendarSheet(props: {
     <motion.div className="sheet-dim gradient-sheet-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={confirmSheetFade} onClick={props.onClose}>
       <motion.section
         className="calendar-sheet"
-        initial={{ y: "100%" }}
-        animate={{ y: 0 }}
-        exit={{ y: "100%" }}
-        transition={spring}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        variants={calendarSheetItems}
         onClick={(event) => event.stopPropagation()}
       >
-        <h1>언제 진료를 원하시나요?</h1>
-        <div className="month-control">
+        <motion.h1 variants={calendarSheetItem}>언제 진료를 원하시나요?</motion.h1>
+        <motion.div className="month-control" variants={calendarSheetItem}>
           <TapButton onClick={() => moveCalendarMonth(-1)} aria-label="이전 달">
             <img className="svg-icon month-arrow" src={monthPrevIcon} alt="" />
           </TapButton>
@@ -1652,7 +1682,7 @@ function CalendarSheet(props: {
           <TapButton onClick={() => moveCalendarMonth(1)} aria-label="다음 달">
             <img src={monthNextIcon} alt="" className="svg-icon month-arrow" />
           </TapButton>
-        </div>
+        </motion.div>
         <div className="calendar-grid weekdays">{calendarWeekdays.map((day) => <span key={day}>{day}</span>)}</div>
         <div className="calendar-grid">
           {days.map((date, index) => {
@@ -1688,12 +1718,26 @@ function CalendarSheet(props: {
                   setFocusedDate(date);
                 }}
               >
-                {date?.getDate()}
+                {date && (
+                  <>
+                    {isPicked && (
+                      <motion.span
+                        className="calendar-picked-circle"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={calendarPickedSpring}
+                      />
+                    )}
+                    <span className="calendar-day-label">{date.getDate()}</span>
+                  </>
+                )}
               </TapButton>
             );
           })}
         </div>
-        <BottomCTA inSheet disabled={!isDateOpen(focusedDate)} onClick={() => props.onSelect(focusedDate)}>선택하기</BottomCTA>
+        <motion.div variants={calendarSheetItem}>
+          <BottomCTA inSheet disabled={!isDateOpen(focusedDate)} onClick={() => props.onSelect(focusedDate)}>선택하기</BottomCTA>
+        </motion.div>
       </motion.section>
     </motion.div>
   );
