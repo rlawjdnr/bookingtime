@@ -1327,6 +1327,7 @@ textarea.selected {
 
 .admin-time-card {
   position: relative;
+  min-width: 0;
   min-height: 53px;
   padding: 16px;
   background: #fff;
@@ -1338,6 +1339,7 @@ textarea.selected {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  min-width: 0;
   height: 21px;
 }
 
@@ -1370,6 +1372,7 @@ textarea.selected {
 }
 
 .admin-add-button {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1390,6 +1393,7 @@ textarea.selected {
   display: flex;
   gap: 30px;
   align-items: center;
+  min-width: 0;
   min-height: 34px;
   padding: 4px 0;
   font-size: 0.7647rem;
@@ -1418,6 +1422,7 @@ textarea.selected {
 .admin-treatment-value,
 .admin-cancel-reason {
   width: 100px;
+  min-width: 0;
   min-height: 26px;
   display: flex;
   align-items: center;
@@ -1431,6 +1436,7 @@ textarea.selected {
 
 .admin-status-select {
   position: relative;
+  flex: 0 0 auto;
   min-height: 26px;
   overflow: visible;
 }
@@ -1494,17 +1500,26 @@ textarea.selected {
   height: 34px;
   padding: 0;
   font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .admin-treatment-value {
   justify-content: flex-start;
   padding: 0;
   font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .admin-cancel-reason {
   color: var(--disabled);
   font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .admin-side-panel {
@@ -2040,9 +2055,22 @@ textarea.selected {
   }
 
   .admin-reservation-row {
-    grid-template-columns: 88px 1fr;
+    display: grid;
+    grid-template-columns: auto minmax(0, 0.8fr) minmax(0, 1fr);
     gap: 8px;
     padding: 8px 0;
+  }
+
+  .admin-reservation-row.cancelled {
+    grid-template-columns: auto minmax(0, 0.8fr) minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .admin-status-select,
+  .admin-status-chip,
+  .admin-patient-name,
+  .admin-treatment-value,
+  .admin-cancel-reason {
+    width: auto;
   }
 
   .admin-setting-row {
