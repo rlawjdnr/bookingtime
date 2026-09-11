@@ -1833,6 +1833,14 @@ function AdminApp() {
   const [isDateSwitching, setIsDateSwitching] = useState(false);
   const [isAdminCalendarOpen, setIsAdminCalendarOpen] = useState(false);
 
+  useLayoutEffect(() => {
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    document.querySelector(".admin-shell")?.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [activeTab]);
+
   const loadAdminData = () => {
     void Promise.all([
       appointmentStore.list(),

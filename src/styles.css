@@ -2043,24 +2043,18 @@ textarea.selected {
 }
 
 @media (max-width: 760px) {
-  html:has(.admin-shell),
-  body:has(.admin-shell),
-  body:has(.admin-shell) #root {
-    height: auto;
-    min-height: 100%;
-    overflow-x: hidden;
-    overflow-y: auto;
-  }
-
   .admin-shell {
+    position: fixed;
+    inset: 0;
     display: block;
     width: 100vw;
     max-width: 100vw;
-    height: auto;
+    height: 100dvh;
     min-height: 100dvh;
     padding: calc(82px + env(safe-area-inset-top)) 16px calc(120px + env(safe-area-inset-bottom));
     overflow-x: hidden;
-    overflow-y: visible;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .admin-sidebar {
