@@ -270,6 +270,7 @@ const calendarSheetItem = {
   },
 };
 const calendarPickedSpring = { type: "spring" as const, stiffness: 100, damping: 15 };
+const myBookingsIntroSpring = { type: "spring" as const, stiffness: 100, damping: 15 };
 const calendarWeekdays = ["일", "월", "화", "수", "목", "금", "토"];
 const screenVariants = {
   enter: (latestDirection: number) => ({ x: latestDirection > 0 ? "100%" : "-50%" }),
@@ -1305,7 +1306,12 @@ function Header({
           <img className="svg-icon back-icon" src={backIcon} alt="" />
         </TapButton>
       ) : onOpenMyBookings ? (
-        <TapButton className={`my-bookings-link ${upcomingBookingCount === 0 ? "empty" : ""}`} onClick={onOpenMyBookings}>
+        <TapButton
+          className={`my-bookings-link ${upcomingBookingCount === 0 ? "empty" : ""}`}
+          initial={{ scale: 1.05 }}
+          transition={myBookingsIntroSpring}
+          onClick={onOpenMyBookings}
+        >
           <span className="my-bookings-calendar-icon">
             <img className="svg-icon" src={upcomingBookingCount > 0 ? myBookingsCalendarIcon : myBookingsCalendarEmptyIcon} alt="" />
           </span>
