@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { createRoot } from "react-dom/client";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useAnimationControls } from "framer-motion";
 import { IconGearLine } from "@karrotmarket/react-monochrome-icon";
 import "@stackflow/react";
 import "./styles.css";
@@ -1306,22 +1306,7 @@ function Header({
           <img className="svg-icon back-icon" src={backIcon} alt="" />
         </TapButton>
       ) : onOpenMyBookings ? (
-        <TapButton
-          className={`my-bookings-link ${upcomingBookingCount === 0 ? "empty" : ""}`}
-          initial={{ scale: 1.1 }}
-          transition={myBookingsIntroSpring}
-          onClick={onOpenMyBookings}
-        >
-          <span className="my-bookings-calendar-icon">
-            <img className="svg-icon" src={upcomingBookingCount > 0 ? myBookingsCalendarIcon : myBookingsCalendarEmptyIcon} alt="" />
-          </span>
-          <span className="my-bookings-label">
-            <strong>{upcomingBookingCount > 0 ? `내 진료 ${upcomingBookingCount}건` : "내 진료"}</strong>
-            <span className="my-bookings-chevron-icon">
-              <img className="svg-icon" src={upcomingBookingCount > 0 ? myBookingsChevronIcon : myBookingsChevronEmptyIcon} alt="" />
-            </span>
-          </span>
-        </TapButton>
+        <MyBookingsHeaderButton upcomingBookingCount={upcomingBookingCount} onClick={onOpenMyBookings} />
       ) : (
         <div className="clinic-title">
           <span className="icon-18"><img className="svg-icon hospital-icon" src={hospitalIcon} alt="" /></span>
@@ -1332,6 +1317,34 @@ function Header({
       {!back && <span className={upcomingBookingCount === 0 ? "clinic-status" : "header-spacer"}>{upcomingBookingCount === 0 ? clinicStatus ?? clinicSettings.status : ""}</span>}
       {back && <span className="header-spacer" />}
     </header>
+  );
+}
+
+function MyBookingsHeaderButton({ upcomingBookingCount, onClick }: { upcomingBookingCount: number; onClick: () => void }) {
+  const controls = useAnimationControls();
+  const hasUpcomingBookings = upcomingBookingCount > 0;
+
+  useEffect(() => {
+    void controls.set({ scale: 1.1 });
+    void controls.start({ scale: 1, transition: myBookingsIntroSpring });
+  }, [controls]);
+
+  return (
+    <TapButton
+      className={`my-bookings-link ${hasUpcomingBookings ? "" : "empty"}`}
+      animate={controls}
+      onClick={onClick}
+    >
+      <span className="my-bookings-calendar-icon">
+        <img className="svg-icon" src={hasUpcomingBookings ? myBookingsCalendarIcon : myBookingsCalendarEmptyIcon} alt="" />
+      </span>
+      <span className="my-bookings-label">
+        <strong>{hasUpcomingBookings ? `내 진료 ${upcomingBookingCount}건` : "내 진료"}</strong>
+        <span className="my-bookings-chevron-icon">
+          <img className="svg-icon" src={hasUpcomingBookings ? myBookingsChevronIcon : myBookingsChevronEmptyIcon} alt="" />
+        </span>
+      </span>
+    </TapButton>
   );
 }
 
