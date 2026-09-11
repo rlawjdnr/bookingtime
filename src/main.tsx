@@ -2,6 +2,7 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "re
 import { flushSync } from "react-dom";
 import { createRoot } from "react-dom/client";
 import { AnimatePresence, motion } from "framer-motion";
+import { IconGearLine } from "@karrotmarket/react-monochrome-icon";
 import "@stackflow/react";
 import "./styles.css";
 import { hasSupabaseConfig, supabase } from "./lib/supabaseClient";
@@ -1894,10 +1895,10 @@ function AdminApp() {
                   setIsAdminAuthenticated(false);
                 }}
               >
-                <img className="svg-icon" src={adminLogoutIcon} alt="" />
+                <AdminMobileLogoutIcon />
               </TapButton>
               <TapButton className="admin-icon-button" aria-label="설정" onClick={() => switchAdminTab("settings")}>
-                <SettingsIcon />
+                <IconGearLine />
               </TapButton>
             </div>
           </div>
@@ -2371,21 +2372,11 @@ function AdminSettingValueRow({ label, value, action }: { label: string; value?:
   );
 }
 
-function SettingsIcon() {
+function AdminMobileLogoutIcon() {
   return (
     <svg className="svg-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Z"
-        stroke="currentColor"
-        strokeWidth="2"
-      />
-      <path
-        d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.05.05a2.05 2.05 0 0 1-2.9 2.9l-.05-.05A1.7 1.7 0 0 0 15 19.43a1.7 1.7 0 0 0-1 .31 1.7 1.7 0 0 0-.82 1.46v.14a2.05 2.05 0 0 1-4.1 0v-.07A1.7 1.7 0 0 0 8 19.71a1.7 1.7 0 0 0-1.86.34l-.05.05a2.05 2.05 0 0 1-2.9-2.9l.05-.05A1.7 1.7 0 0 0 3.58 15a1.7 1.7 0 0 0-.31-1 1.7 1.7 0 0 0-1.46-.82h-.14a2.05 2.05 0 0 1 0-4.1h.07A1.7 1.7 0 0 0 3.3 8a1.7 1.7 0 0 0-.34-1.86l-.05-.05a2.05 2.05 0 0 1 2.9-2.9l.05.05A1.7 1.7 0 0 0 8 3.58h.08A1.7 1.7 0 0 0 9 2.12v-.14a2.05 2.05 0 0 1 4.1 0v.07a1.7 1.7 0 0 0 .92 1.56 1.7 1.7 0 0 0 1.86-.34l.05-.05a2.05 2.05 0 0 1 2.9 2.9l-.05.05A1.7 1.7 0 0 0 19.42 8v.08a1.7 1.7 0 0 0 1.46.92h.14a2.05 2.05 0 0 1 0 4.1h-.07a1.7 1.7 0 0 0-1.56.92Z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <path fillRule="evenodd" clipRule="evenodd" d="M19.2002 4C19.642 4 20.0002 4.35817 20.0002 4.8V19.2C20.0002 19.6418 19.642 20 19.2002 20H13.0002C12.4479 20 12.0002 20.4477 12.0002 21C12.0002 21.5523 12.4479 22 13.0002 22H19.2002C20.7466 22 22.0002 20.7464 22.0002 19.2V4.8C22.0002 3.2536 20.7466 2 19.2002 2H13.0002C12.4479 2 12.0002 2.44772 12.0002 3C12.0002 3.55228 12.4479 4 13.0002 4H19.2002Z" fill="#1A1C20" />
+      <path fillRule="evenodd" clipRule="evenodd" d="M9.34406 5.95766C8.95393 5.56675 8.32076 5.56612 7.92985 5.95625L2.2936 11.5812C2.10563 11.7688 2 12.0235 2 12.2891C2 12.5546 2.10563 12.8093 2.2936 12.9969L7.92985 18.6219C8.32076 19.012 8.95393 19.0114 9.34406 18.6205C9.7342 18.2295 9.73356 17.5964 9.34265 17.2062L5.41763 13.2891H14.6213C15.1735 13.2891 15.6213 12.8413 15.6213 12.2891C15.6213 11.7368 15.1735 11.2891 14.6213 11.2891H5.41763L9.34265 7.37188C9.73356 6.98174 9.7342 6.34858 9.34406 5.95766Z" fill="#1A1C20" />
     </svg>
   );
 }
