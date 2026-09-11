@@ -711,14 +711,14 @@ function App() {
     const dayClosed = Boolean(daySetting?.isClosed) || !dayOpen;
     return applyBookingsToSlots(baseSlots, selectedDate, bookings, dayClosed, now);
   }, [baseSlots, bookings, clinicSettings.openDays, daySettings, now, selectedDate]);
-  const selectedSlot = slots.find((slot) => slot.id === selectedSlotId) ?? slots.find((slot) => !slot.closed) ?? initialSlots[0];
+  const selectedSlot = slots.find((slot) => slot.id === selectedSlotId && !slot.closed) ?? slots.find((slot) => !slot.closed);
 
   useEffect(() => {
-    const selectedSlotExists = slots.some((slot) => slot.id === selectedSlotId);
-    if (selectedSlotExists && !selectedSlot.closed) return;
+    const selectedSlotIsBookable = slots.some((slot) => slot.id === selectedSlotId && !slot.closed);
+    if (selectedSlotIsBookable) return;
     const firstOpenSlot = slots.find((slot) => !slot.closed);
-    if (firstOpenSlot) setSelectedSlotId(firstOpenSlot.id);
-  }, [selectedSlot.closed, selectedSlotId, slots]);
+    setSelectedSlotId(firstOpenSlot?.id ?? "");
+  }, [selectedSlotId, slots]);
 
   useEffect(() => {
     let isMounted = true;
@@ -810,15 +810,15 @@ function App() {
     saveStoredPatientName(name);
   };
 
-  const appointmentLabel = `${formatShortDate(selectedDate)} ${selectedSlot.time}`;
-  const waitMinutes = getWaitMinutesForNextReservation(selectedSlot, selectedDate, bookings, waitRules);
-  const canContinue = Boolean(selectedSlot && !selectedSlot.closed);
-  const canBook = patientName.trim().length > 0 && !selectedSlot.closed;
+  const appointmentLabel = `${formatShortDate(selectedDate)} ${selectedSlot?.time ?? ""}`;
+  const waitMinutes = selectedSlot ? getWaitMinutesForNextReservation(selectedSlot, selectedDate, bookings, waitRules) : 0;
+  const canContinue = Boolean(selectedSlot);
+  const canBook = patientName.trim().length > 0 && Boolean(selectedSlot);
   const upcomingStoredBookings = storedBookings.filter(isUpcomingBooking);
   const clinicStatus = getClinicStatus(now, baseSlots, daySettings);
 
   const submitBooking = async () => {
-    if (selectedSlot.closed) {
+    if (!selectedSlot || selectedSlot.closed) {
       setIsConfirmOpen(false);
       setToast("접수가 마감된 시간이에요");
       return;
@@ -1344,7 +1344,7 @@ function TimeScreen(props: {
   const visibleSlots = getVisibleSlotsForDate(props.slots, props.selectedDate);
   const morning = visibleSlots.filter((slot) => Number(slot.time.split(":")[0]) < 13);
   const afternoon = visibleSlots.filter((slot) => Number(slot.time.split(":")[0]) >= 13);
-  const selectedSlot = visibleSlots.find((slot) => slot.id === props.selectedSlotId) ?? visibleSlots.find((slot) => !slot.closed);
+  const selectedSlot = visibleSlots.find((slot) => slot.id === props.selectedSlotId && !slot.closed) ?? visibleSlots.find((slot) => !slot.closed);
   const relativeDateLabel = getRelativeDateLabel(props.selectedDate);
 
   return (
@@ -1382,11 +1382,12 @@ function SlotGroup(props: { title: string; slots: Slot[]; selectedDate: Date; se
       {props.slots.length ? (
         <div className="slot-grid">
           {props.slots.map((slot) => {
-            const selected = slot.id === props.selectedId;
+            const selected = slot.id === props.selectedId && !slot.closed;
             return (
               <TapButton
                 className={`slot-card ${selected ? "selected" : ""} ${slot.closed ? "closed" : ""}`}
                 key={slot.id}
+                disabled={slot.closed}
                 onClick={() => props.onSelect(slot)}
               >
                 <strong>{slot.time}</strong>
