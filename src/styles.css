@@ -2051,10 +2051,9 @@ textarea.selected {
     max-width: 100vw;
     height: 100dvh;
     min-height: 100dvh;
-    padding: calc(82px + env(safe-area-inset-top)) 16px calc(120px + env(safe-area-inset-bottom));
+    padding: 0;
     overflow-x: hidden;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    overflow-y: hidden;
   }
 
   .admin-sidebar {
@@ -2107,7 +2106,21 @@ textarea.selected {
     width: 100%;
     max-width: 100%;
     min-width: 0;
+  }
+
+  .admin-reservations,
+  .admin-settings {
+    position: fixed;
+    top: calc(78px + env(safe-area-inset-top));
+    left: 16px;
+    right: 16px;
+    bottom: 0;
+    width: auto;
     padding-top: 12px;
+    padding-bottom: calc(120px + env(safe-area-inset-bottom));
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .admin-reservations h1 {
@@ -2144,8 +2157,10 @@ textarea.selected {
 
   .admin-mobile-calendar-sheet .admin-side-panel {
     display: flex;
+    position: static;
     width: 100%;
     padding: 0;
+    overflow: visible;
   }
 
   .admin-slot-section,
