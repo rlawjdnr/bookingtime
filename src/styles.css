@@ -1158,7 +1158,29 @@ textarea.selected {
 }
 
 .admin-logo strong {
+  min-width: 0;
   font-weight: 600;
+}
+
+.admin-mobile-actions,
+.admin-mobile-date-select,
+.admin-mobile-calendar-dim {
+  display: none;
+}
+
+.admin-icon-button {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--text);
+}
+
+.admin-icon-button img,
+.admin-icon-button svg {
+  width: 18px;
+  height: 18px;
 }
 
 .admin-nav {
@@ -2041,9 +2063,34 @@ textarea.selected {
     padding: 16px;
   }
 
+  .admin-sidebar-main {
+    width: 100%;
+  }
+
+  .admin-logo {
+    width: 100%;
+  }
+
+  .admin-logo strong {
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .admin-mobile-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
   .admin-nav {
-    grid-template-columns: 1fr 1fr;
-    margin-top: 20px;
+    display: none;
+  }
+
+  .admin-sidebar > .admin-logout-button {
+    display: none;
   }
 
   .admin-reservations,
@@ -2053,6 +2100,44 @@ textarea.selected {
     max-width: 100%;
     min-width: 0;
     padding-top: 28px;
+  }
+
+  .admin-reservations h1 {
+    margin-bottom: 10px;
+  }
+
+  .admin-mobile-date-select {
+    display: flex;
+    margin-top: 0;
+    margin-bottom: 28px;
+  }
+
+  .admin-shell > .admin-side-panel {
+    display: none;
+  }
+
+  .admin-mobile-calendar-dim {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: flex-end;
+    background: rgba(26, 28, 32, 0.18);
+  }
+
+  .admin-mobile-calendar-sheet {
+    width: 100%;
+    max-height: calc(100dvh - 24px);
+    padding: 24px 16px calc(26px + env(safe-area-inset-bottom));
+    overflow-y: auto;
+    border-radius: 28px 28px 0 0;
+    background: #f7f8f9;
+  }
+
+  .admin-mobile-calendar-sheet .admin-side-panel {
+    display: flex;
+    width: 100%;
+    padding: 0;
   }
 
   .admin-slot-section,

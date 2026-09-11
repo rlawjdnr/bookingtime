@@ -1817,7 +1817,7 @@ function AdminApp() {
   );
   const now = useCurrentMinute();
   const [activeTab, setActiveTab] = useState<"reservations" | "settings">(
-    window.location.pathname.startsWith("/admin/settings") ? "settings" : "reservations",
+    () => window.location.pathname.startsWith("/admin/settings") && !isMobileAdminViewport() ? "settings" : "reservations",
   );
   const [selectedDate, setSelectedDate] = useState(getToday());
   const [viewDate, setViewDate] = useState(getToday());
@@ -1830,6 +1830,7 @@ function AdminApp() {
   const [editingSlot, setEditingSlot] = useState<Slot | null>(null);
   const [toast, setToast] = useState("");
   const [isDateSwitching, setIsDateSwitching] = useState(false);
+  const [isAdminCalendarOpen, setIsAdminCalendarOpen] = useState(false);
 
   const loadAdminData = () => {
     void Promise.all([
@@ -1884,6 +1885,21 @@ function AdminApp() {
           <div className="admin-logo">
             <span className="icon-18"><img className="svg-icon admin-hospital-icon" src={adminHospitalIcon} alt="" /></span>
             <strong>{clinicSettings.name}</strong>
+            <div className="admin-mobile-actions">
+              <TapButton
+                className="admin-icon-button"
+                aria-label="로그아웃"
+                onClick={() => {
+                  clearAdminSession();
+                  setIsAdminAuthenticated(false);
+                }}
+              >
+                <img className="svg-icon" src={adminLogoutIcon} alt="" />
+              </TapButton>
+              <TapButton className="admin-icon-button" aria-label="설정" onClick={() => switchAdminTab("settings")}>
+                <SettingsIcon />
+              </TapButton>
+            </div>
           </div>
           <nav className="admin-nav">
             <TapButton className={activeTab === "reservations" ? "active" : ""} onClick={() => switchAdminTab("reservations")}>
@@ -1912,6 +1928,7 @@ function AdminApp() {
             selectedDate={selectedDate}
             slots={displaySlots}
             treatmentLabels={treatmentLabels}
+            onOpenCalendar={() => setIsAdminCalendarOpen(true)}
             onAdd={setEditingSlot}
             onUpdateReservation={(id, updates) =>
               appointmentStore.updateReservation(id, updates).catch((error) => {
@@ -1938,6 +1955,29 @@ function AdminApp() {
               appointmentStore.saveDaySetting(setting).then(() => setToast("오늘 운영 설정을 저장했어요")).catch((error) => setToast(getReservationErrorMessage(error)))
             }
           />
+          <AnimatePresence>
+            {isAdminCalendarOpen && (
+              <AdminMobileCalendarSheet
+                selectedDate={selectedDate}
+                viewDate={viewDate}
+                openDays={clinicSettings.openDays}
+                daySettings={daySettings}
+                daySetting={selectedDaySetting}
+                disableSwitchMotion={isDateSwitching}
+                onClose={() => setIsAdminCalendarOpen(false)}
+                onSelectDate={(date) => {
+                  setIsDateSwitching(true);
+                  setSelectedDate(date);
+                  setViewDate(new Date(date.getFullYear(), date.getMonth(), 1));
+                  window.requestAnimationFrame(() => setIsDateSwitching(false));
+                }}
+                onMoveMonth={(offset) => setViewDate((date) => new Date(date.getFullYear(), date.getMonth() + offset, 1))}
+                onSaveDaySetting={(setting) =>
+                  appointmentStore.saveDaySetting(setting).then(() => setToast("오늘 운영 설정을 저장했어요")).catch((error) => setToast(getReservationErrorMessage(error)))
+                }
+              />
+            )}
+          </AnimatePresence>
         </>
       ) : (
         <AdminSettingsPanel
@@ -1994,6 +2034,7 @@ function AdminReservationList({
   selectedDate,
   slots,
   treatmentLabels,
+  onOpenCalendar,
   onAdd,
   onUpdateReservation,
 }: {
@@ -2001,6 +2042,7 @@ function AdminReservationList({
   selectedDate: Date;
   slots: Slot[];
   treatmentLabels: Treatment[];
+  onOpenCalendar?: () => void;
   onAdd: (slot: Slot) => void;
   onUpdateReservation: (id: string, updates: Partial<Pick<Booking, "patientName" | "treatment" | "status" | "cancelReason">>) => void;
 }) {
@@ -2012,6 +2054,15 @@ function AdminReservationList({
   return (
     <section className="admin-reservations">
       <h1>예약 현황</h1>
+      {onOpenCalendar && (
+        <TapButton className="date-select admin-mobile-date-select" onClick={onOpenCalendar}>
+          <span>
+            <img className="svg-icon calendar-icon" src={calendarIcon} alt="" />
+            <span className="date-select-value">{formatMonthDayWeek(selectedDate)}</span>
+          </span>
+          <img className="svg-icon chevron" src={chevronDownIcon} alt="" />
+        </TapButton>
+      )}
       <AdminSlotSection
         title="오전"
         dateKey={dateKey}
@@ -2160,6 +2211,41 @@ function AdminCalendarPanel(props: {
   );
 }
 
+function AdminMobileCalendarSheet(props: {
+  selectedDate: Date;
+  viewDate: Date;
+  openDays: number;
+  daySettings: DaySetting[];
+  daySetting?: DaySetting;
+  disableSwitchMotion?: boolean;
+  onClose: () => void;
+  onSelectDate: (date: Date) => void;
+  onMoveMonth: (offset: number) => void;
+  onSaveDaySetting: (setting: DaySetting) => void;
+}) {
+  return (
+    <motion.div
+      className="admin-mobile-calendar-dim"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={confirmSheetFade}
+      onClick={props.onClose}
+    >
+      <motion.div
+        className="admin-mobile-calendar-sheet"
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        exit={{ y: "100%" }}
+        transition={spring}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <AdminCalendarPanel {...props} />
+      </motion.div>
+    </motion.div>
+  );
+}
+
 function AdminSettingsPanel(props: {
   clinicSettings: ClinicSettings;
   slots: Slot[];
@@ -2282,6 +2368,25 @@ function AdminSettingValueRow({ label, value, action }: { label: string; value?:
         {action}
       </div>
     </div>
+  );
+}
+
+function SettingsIcon() {
+  return (
+    <svg className="svg-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Z"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.05.05a2.05 2.05 0 0 1-2.9 2.9l-.05-.05A1.7 1.7 0 0 0 15 19.43a1.7 1.7 0 0 0-1 .31 1.7 1.7 0 0 0-.82 1.46v.14a2.05 2.05 0 0 1-4.1 0v-.07A1.7 1.7 0 0 0 8 19.71a1.7 1.7 0 0 0-1.86.34l-.05.05a2.05 2.05 0 0 1-2.9-2.9l.05-.05A1.7 1.7 0 0 0 3.58 15a1.7 1.7 0 0 0-.31-1 1.7 1.7 0 0 0-1.46-.82h-.14a2.05 2.05 0 0 1 0-4.1h.07A1.7 1.7 0 0 0 3.3 8a1.7 1.7 0 0 0-.34-1.86l-.05-.05a2.05 2.05 0 0 1 2.9-2.9l.05.05A1.7 1.7 0 0 0 8 3.58h.08A1.7 1.7 0 0 0 9 2.12v-.14a2.05 2.05 0 0 1 4.1 0v.07a1.7 1.7 0 0 0 .92 1.56 1.7 1.7 0 0 0 1.86-.34l.05-.05a2.05 2.05 0 0 1 2.9 2.9l-.05.05A1.7 1.7 0 0 0 19.42 8v.08a1.7 1.7 0 0 0 1.46.92h.14a2.05 2.05 0 0 1 0 4.1h-.07a1.7 1.7 0 0 0-1.56.92Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 
@@ -2864,6 +2969,10 @@ function saveAdminSession() {
 function clearAdminSession() {
   window.localStorage.removeItem(ADMIN_SESSION_KEY);
   window.sessionStorage.removeItem(ADMIN_SESSION_KEY);
+}
+
+function isMobileAdminViewport() {
+  return window.matchMedia("(max-width: 760px)").matches;
 }
 
 function isValidStoredBooking(booking: Partial<Booking>) {
