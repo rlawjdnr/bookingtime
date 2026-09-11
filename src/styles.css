@@ -2056,11 +2056,12 @@ textarea.selected {
     width: auto;
     height: auto;
     inset: auto;
-    z-index: 10;
+    z-index: 50;
     top: 0;
     min-height: 0;
     margin: 0 -16px;
-    padding: 16px;
+    padding: calc(16px + env(safe-area-inset-top)) 16px 16px;
+    background: #f7f8f9;
   }
 
   .admin-sidebar-main {
