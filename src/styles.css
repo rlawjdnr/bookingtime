@@ -1164,8 +1164,13 @@ textarea.selected {
 
 .admin-mobile-actions,
 .admin-mobile-date-select,
-.admin-mobile-calendar-dim {
+.admin-mobile-calendar-dim,
+.admin-settings-back {
   display: none;
+}
+
+.admin-page-motion {
+  display: contents;
 }
 
 .admin-icon-button {
@@ -2084,6 +2089,12 @@ textarea.selected {
     width: 100%;
   }
 
+  .admin-settings-back {
+    display: grid;
+    flex: 0 0 34px;
+    margin-right: 2px;
+  }
+
   .admin-logo strong {
     flex: 1 1 auto;
     overflow: hidden;
@@ -2120,6 +2131,12 @@ textarea.selected {
     padding-top: 28px;
     padding-bottom: 0;
     overflow: visible;
+  }
+
+  .admin-page-motion {
+    display: block;
+    width: 100%;
+    min-width: 0;
   }
 
   .admin-reservations h1 {

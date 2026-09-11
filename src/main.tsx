@@ -1824,8 +1824,9 @@ function AdminApp() {
   );
   const now = useCurrentMinute();
   const [activeTab, setActiveTab] = useState<"reservations" | "settings">(
-    () => window.location.pathname.startsWith("/admin/settings") && !isMobileAdminViewport() ? "settings" : "reservations",
+    () => window.location.pathname.startsWith("/admin/settings") ? "settings" : "reservations",
   );
+  const [adminDirection, setAdminDirection] = useState(1);
   const [selectedDate, setSelectedDate] = useState(getToday());
   const [viewDate, setViewDate] = useState(getToday());
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -1898,6 +1899,11 @@ function AdminApp() {
       <aside className="admin-sidebar">
         <div className="admin-sidebar-main">
           <div className="admin-logo">
+            {activeTab === "settings" && (
+              <TapButton className="admin-icon-button admin-settings-back" aria-label="예약현황으로 돌아가기" onClick={() => switchAdminTab("reservations")}>
+                <img className="svg-icon back-icon" src={backIcon} alt="" />
+              </TapButton>
+            )}
             <span className="icon-18"><img className="svg-icon admin-hospital-icon" src={adminHospitalIcon} alt="" /></span>
             <strong>{clinicSettings.name}</strong>
             <div className="admin-mobile-actions">
@@ -1911,9 +1917,11 @@ function AdminApp() {
               >
                 <AdminMobileLogoutIcon />
               </TapButton>
-              <TapButton className="admin-icon-button" aria-label="설정" onClick={() => switchAdminTab("settings")}>
-                <IconGearLine />
-              </TapButton>
+              {activeTab === "reservations" && (
+                <TapButton className="admin-icon-button" aria-label="설정" onClick={() => switchAdminTab("settings")}>
+                  <IconGearLine />
+                </TapButton>
+              )}
             </div>
           </div>
           <nav className="admin-nav">
@@ -1936,50 +1944,40 @@ function AdminApp() {
           로그아웃
         </TapButton>
       </aside>
-      {activeTab === "reservations" ? (
-        <>
-          <AdminReservationList
-            bookings={bookings}
-            selectedDate={selectedDate}
-            slots={displaySlots}
-            treatmentLabels={treatmentLabels}
-            onOpenCalendar={() => setIsAdminCalendarOpen(true)}
-            onAdd={setEditingSlot}
-            onUpdateReservation={(id, updates) =>
-              appointmentStore.updateReservation(id, updates).catch((error) => {
-                console.error("Failed to update reservation", error);
-                setToast(getReservationErrorMessage(error));
-              })
-            }
-          />
-          <AdminCalendarPanel
-            selectedDate={selectedDate}
-            viewDate={viewDate}
-            openDays={clinicSettings.openDays}
-            daySettings={daySettings}
-            daySetting={selectedDaySetting}
-            disableSwitchMotion={isDateSwitching}
-            onSelectDate={(date) => {
-              setIsDateSwitching(true);
-              setSelectedDate(date);
-              setViewDate(new Date(date.getFullYear(), date.getMonth(), 1));
-              window.requestAnimationFrame(() => setIsDateSwitching(false));
-            }}
-            onMoveMonth={(offset) => setViewDate((date) => new Date(date.getFullYear(), date.getMonth() + offset, 1))}
-            onSaveDaySetting={(setting) =>
-              appointmentStore.saveDaySetting(setting).then(() => setToast("오늘 운영 설정을 저장했어요")).catch((error) => setToast(getReservationErrorMessage(error)))
-            }
-          />
-          <AnimatePresence>
-            {isAdminCalendarOpen && (
-              <AdminMobileCalendarSheet
+      <AnimatePresence custom={adminDirection} initial={false} mode="popLayout">
+        <motion.div
+          className="admin-page-motion"
+          custom={adminDirection}
+          key={activeTab}
+          variants={screenVariants}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          transition={screenSpring}
+        >
+          {activeTab === "reservations" ? (
+            <>
+              <AdminReservationList
+                bookings={bookings}
+                selectedDate={selectedDate}
+                slots={displaySlots}
+                treatmentLabels={treatmentLabels}
+                onOpenCalendar={() => setIsAdminCalendarOpen(true)}
+                onAdd={setEditingSlot}
+                onUpdateReservation={(id, updates) =>
+                  appointmentStore.updateReservation(id, updates).catch((error) => {
+                    console.error("Failed to update reservation", error);
+                    setToast(getReservationErrorMessage(error));
+                  })
+                }
+              />
+              <AdminCalendarPanel
                 selectedDate={selectedDate}
                 viewDate={viewDate}
                 openDays={clinicSettings.openDays}
                 daySettings={daySettings}
                 daySetting={selectedDaySetting}
                 disableSwitchMotion={isDateSwitching}
-                onClose={() => setIsAdminCalendarOpen(false)}
                 onSelectDate={(date) => {
                   setIsDateSwitching(true);
                   setSelectedDate(date);
@@ -1991,26 +1989,49 @@ function AdminApp() {
                   appointmentStore.saveDaySetting(setting).then(() => setToast("오늘 운영 설정을 저장했어요")).catch((error) => setToast(getReservationErrorMessage(error)))
                 }
               />
-            )}
-          </AnimatePresence>
-        </>
-      ) : (
-        <AdminSettingsPanel
-          clinicSettings={clinicSettings}
-          slots={baseSlots}
-          treatmentOptions={treatmentOptions}
-          waitRules={waitRules}
-          onSaveClinic={(settings) =>
-            appointmentStore.saveClinicSettings(settings).then(() => setToast("설정을 저장했어요")).catch((error) => setToast(getReservationErrorMessage(error)))
-          }
-          onSaveWaitInterval={(minutes) =>
-            appointmentStore.saveWaitInterval(baseSlots, minutes).then(() => setToast("대기 시간 규칙을 저장했어요")).catch((error) => setToast(getReservationErrorMessage(error)))
-          }
-          onSaveTreatments={(options) =>
-            appointmentStore.saveTreatments(options).then(() => setToast("진료 과목을 저장했어요")).catch((error) => setToast(getReservationErrorMessage(error)))
-          }
-        />
-      )}
+              <AnimatePresence>
+                {isAdminCalendarOpen && (
+                  <AdminMobileCalendarSheet
+                    selectedDate={selectedDate}
+                    viewDate={viewDate}
+                    openDays={clinicSettings.openDays}
+                    daySettings={daySettings}
+                    daySetting={selectedDaySetting}
+                    disableSwitchMotion={isDateSwitching}
+                    onClose={() => setIsAdminCalendarOpen(false)}
+                    onSelectDate={(date) => {
+                      setIsDateSwitching(true);
+                      setSelectedDate(date);
+                      setViewDate(new Date(date.getFullYear(), date.getMonth(), 1));
+                      window.requestAnimationFrame(() => setIsDateSwitching(false));
+                    }}
+                    onMoveMonth={(offset) => setViewDate((date) => new Date(date.getFullYear(), date.getMonth() + offset, 1))}
+                    onSaveDaySetting={(setting) =>
+                      appointmentStore.saveDaySetting(setting).then(() => setToast("오늘 운영 설정을 저장했어요")).catch((error) => setToast(getReservationErrorMessage(error)))
+                    }
+                  />
+                )}
+              </AnimatePresence>
+            </>
+          ) : (
+            <AdminSettingsPanel
+              clinicSettings={clinicSettings}
+              slots={baseSlots}
+              treatmentOptions={treatmentOptions}
+              waitRules={waitRules}
+              onSaveClinic={(settings) =>
+                appointmentStore.saveClinicSettings(settings).then(() => setToast("설정을 저장했어요")).catch((error) => setToast(getReservationErrorMessage(error)))
+              }
+              onSaveWaitInterval={(minutes) =>
+                appointmentStore.saveWaitInterval(baseSlots, minutes).then(() => setToast("대기 시간 규칙을 저장했어요")).catch((error) => setToast(getReservationErrorMessage(error)))
+              }
+              onSaveTreatments={(options) =>
+                appointmentStore.saveTreatments(options).then(() => setToast("진료 과목을 저장했어요")).catch((error) => setToast(getReservationErrorMessage(error)))
+              }
+            />
+          )}
+        </motion.div>
+      </AnimatePresence>
       <AnimatePresence>
         {editingSlot && (
           <AdminAddReservationModal
@@ -2039,6 +2060,7 @@ function AdminApp() {
   );
 
   function switchAdminTab(tab: "reservations" | "settings") {
+    setAdminDirection(tab === "settings" ? 1 : -1);
     setActiveTab(tab);
     window.history.replaceState(null, "", tab === "settings" ? "/admin/settings" : "/admin");
   }
