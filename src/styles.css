@@ -2059,20 +2059,19 @@ textarea.selected {
     max-width: 100vw;
     height: auto;
     min-height: 100svh;
-    padding: calc(66px + env(safe-area-inset-top)) 16px calc(120px + env(safe-area-inset-bottom));
+    padding: 0 16px calc(120px + env(safe-area-inset-bottom));
     overflow: visible;
   }
 
   .admin-sidebar {
-    position: fixed;
-    left: 0;
-    right: 0;
+    position: -webkit-sticky;
+    position: sticky;
     height: auto;
     top: 0;
     z-index: 100;
     min-height: 0;
-    width: 100%;
-    margin: 0;
+    width: auto;
+    margin: 0 -16px;
     padding: calc(16px + env(safe-area-inset-top)) 16px 16px;
     background: #f7f8f9;
   }
