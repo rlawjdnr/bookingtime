@@ -2190,13 +2190,9 @@ textarea.selected {
 
   .admin-reservation-row {
     display: grid;
-    grid-template-columns: auto minmax(0, 0.8fr) minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 0.8fr) minmax(0, 1fr) minmax(0, 1fr);
     gap: 8px;
     padding: 8px 0;
-  }
-
-  .admin-reservation-row.cancelled {
-    grid-template-columns: auto minmax(0, 0.8fr) minmax(0, 1fr) minmax(0, 1fr);
   }
 
   .admin-status-select,
