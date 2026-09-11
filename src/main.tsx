@@ -1387,7 +1387,6 @@ function SlotGroup(props: { title: string; slots: Slot[]; selectedDate: Date; se
               <TapButton
                 className={`slot-card ${selected ? "selected" : ""} ${slot.closed ? "closed" : ""}`}
                 key={slot.id}
-                disabled={slot.closed}
                 onClick={() => props.onSelect(slot)}
               >
                 <strong>{slot.time}</strong>
