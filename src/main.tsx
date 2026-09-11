@@ -3250,6 +3250,7 @@ function sameDay(a: Date, b: Date) {
 }
 
 const isAdminRoute = window.location.pathname.startsWith("/admin");
+document.documentElement.classList.toggle("admin-page", isAdminRoute);
 document.body.classList.toggle("admin-page", isAdminRoute);
 
 createRoot(document.getElementById("root")!).render(isAdminRoute ? <AdminApp /> : <App />);
