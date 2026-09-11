@@ -2060,15 +2060,15 @@ textarea.selected {
     height: auto;
     min-height: 100svh;
     padding: 0 16px calc(120px + env(safe-area-inset-bottom));
-    overflow-x: hidden;
-    overflow-y: visible;
+    overflow: visible;
   }
 
   .admin-sidebar {
+    position: -webkit-sticky;
     position: sticky;
     height: auto;
-    z-index: 50;
     top: 0;
+    z-index: 100;
     min-height: 0;
     width: auto;
     margin: 0 -16px;
