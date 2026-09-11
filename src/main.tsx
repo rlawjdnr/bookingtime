@@ -241,17 +241,17 @@ const confirmSheetItem = {
   },
 };
 const calendarSheetItems = {
-  hidden: { y: "100%" },
+  hidden: { opacity: 0 },
   visible: {
-    y: 0,
+    opacity: 1,
     transition: {
-      ...spring,
+      opacity: confirmSheetFade,
       staggerChildren: 0.03,
     },
   },
   exit: {
-    y: "100%",
-    transition: spring,
+    opacity: 0,
+    transition: confirmSheetFade,
   },
 };
 const calendarSheetItem = {
@@ -1664,7 +1664,7 @@ function CalendarSheet(props: {
   const days = useMemo(() => makeCalendarDays(viewDate), [viewDate]);
 
   return (
-    <motion.div className="sheet-dim gradient-sheet-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={confirmSheetFade} onClick={props.onClose}>
+    <motion.div className="sheet-dim confirm-sheet-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={confirmSheetFade} onClick={props.onClose}>
       <motion.section
         className="calendar-sheet"
         initial="hidden"
