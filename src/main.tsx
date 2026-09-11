@@ -2123,7 +2123,7 @@ function AdminSlotSection(props: {
                 <AdminStatusSelect booking={booking} onUpdate={(updates) => props.onUpdateReservation(booking.id, updates)} />
                 <span className="admin-patient-name">{booking.patientName}</span>
                 <span className="admin-treatment-value">{booking.treatment}</span>
-                {booking.status === "cancelled" && <span className="admin-cancel-reason">{booking.cancelReason || "관리자 취소"}</span>}
+                <span className="admin-cancel-reason">{booking.status === "cancelled" ? booking.cancelReason || "관리자 취소" : ""}</span>
               </div>
             ))}
           </article>
