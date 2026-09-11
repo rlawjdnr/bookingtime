@@ -866,7 +866,7 @@ textarea.selected {
   z-index: 80;
   left: 16px;
   right: 16px;
-  bottom: 96px;
+  bottom: 112px;
   height: 41px;
   padding: 12px;
   background: var(--text);
@@ -2015,7 +2015,7 @@ textarea.selected {
   position: fixed;
   left: auto;
   right: 24px;
-  bottom: 24px;
+  bottom: 40px;
   width: 320px;
 }
 
