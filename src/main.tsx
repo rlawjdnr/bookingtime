@@ -1325,7 +1325,7 @@ function MyBookingsHeaderButton({ upcomingBookingCount, onClick }: { upcomingBoo
   const hasUpcomingBookings = upcomingBookingCount > 0;
 
   useEffect(() => {
-    void controls.set({ scale: 1.1 });
+    void controls.set({ scale: 1.05 });
     void controls.start({ scale: 1, transition: myBookingsIntroSpring });
   }, [controls]);
 
