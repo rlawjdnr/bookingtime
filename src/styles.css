@@ -1015,7 +1015,7 @@ textarea.selected {
 
 .confirm-actions {
   margin: 12px -16px 0;
-  padding: 12px 16px 32px;
+  padding: 12px 16px calc(26px + env(safe-area-inset-bottom));
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
