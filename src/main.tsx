@@ -1308,7 +1308,7 @@ function Header({
       ) : onOpenMyBookings ? (
         <TapButton
           className={`my-bookings-link ${upcomingBookingCount === 0 ? "empty" : ""}`}
-          initial={{ scale: 1.05 }}
+          initial={{ scale: 1.1 }}
           transition={myBookingsIntroSpring}
           onClick={onOpenMyBookings}
         >
