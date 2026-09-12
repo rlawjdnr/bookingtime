@@ -924,7 +924,7 @@ textarea.selected {
   background: linear-gradient(
     180deg,
     rgba(255, 255, 255, 0) 0%,
-    #fff 32%,
+    #fff 24%,
     #fff 100%
   );
   overflow: hidden;
