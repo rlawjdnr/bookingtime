@@ -883,8 +883,12 @@ textarea.selected {
 .toast span {
   display: flex;
   align-items: center;
+  flex: 1 1 auto;
   gap: 8px;
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .snackbar-icon {
@@ -893,6 +897,8 @@ textarea.selected {
 }
 
 .toast button {
+  flex: 0 0 auto;
+  margin-left: 12px;
   color: #fff;
   font-weight: 400;
 }

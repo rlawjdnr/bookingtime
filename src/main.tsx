@@ -701,6 +701,7 @@ function App() {
   const [daySettings, setDaySettings] = useState<DaySetting[]>([]);
   const [treatmentOptions, setTreatmentOptions] = useState<TreatmentOption[]>(fallbackTreatments);
   const [toast, setToast] = useState("");
+  const [toastAction, setToastAction] = useState<ToastAction | null>(null);
   const [isCancelOpen, setIsCancelOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [screenTransitionMode, setScreenTransitionMode] = useState<ScreenTransitionMode>("slide");
@@ -818,13 +819,45 @@ function App() {
   const upcomingStoredBookings = storedBookings.filter(isUpcomingBooking);
   const clinicStatus = getClinicStatus(now, baseSlots, daySettings);
 
+  const dismissToast = () => {
+    setToast("");
+    setToastAction(null);
+  };
+
+  const showToast = (message: string, action: ToastAction | null = null) => {
+    setToastAction(action);
+    setToast(message);
+  };
+
+  const findDuplicateStoredBooking = (slot = selectedSlot) => {
+    if (!slot) return null;
+    const dateKey = toDateKey(selectedDate);
+    return storedBookings.find((item) => item.status === "confirmed" && item.date === dateKey && item.time === slot.time && !isBookingDatePassed(item)) ?? null;
+  };
+
+  const showDuplicateBookingToast = (duplicateBooking: Booking) => {
+    showToast(`이미 ${duplicateBooking.patientName}님이 예약한 시간이에요`, {
+      label: "보기",
+      onClick: () => {
+        dismissToast();
+        push("myBookings");
+      },
+    });
+  };
+
   const submitBooking = async () => {
     if (!selectedSlot || selectedSlot.closed) {
       setIsConfirmOpen(false);
-      setToast("접수가 마감된 시간이에요");
+      showToast("접수가 마감된 시간이에요");
       return;
     }
     if (!canBook) return;
+    const duplicateBooking = findDuplicateStoredBooking();
+    if (duplicateBooking) {
+      setIsConfirmOpen(false);
+      showDuplicateBookingToast(duplicateBooking);
+      return;
+    }
     const nextBooking: Booking = {
       id: crypto.randomUUID(),
       patientName: patientName.trim(),
@@ -843,7 +876,7 @@ function App() {
       push("complete");
     } catch (error) {
       console.error("Failed to create reservation", error);
-      setToast(getReservationErrorMessage(error));
+      showToast(getReservationErrorMessage(error));
     }
   };
 
@@ -862,12 +895,12 @@ function App() {
       window.setTimeout(() => {
         setIsCancelOpen(false);
         setIsCancelling(false);
-        setToast("예약을 취소했어요");
+        showToast("예약을 취소했어요");
       }, 180);
     } catch (error) {
       console.error("Failed to cancel reservation", error);
       setIsCancelling(false);
-      setToast("예약 취소에 실패했어요");
+      showToast("예약 취소에 실패했어요");
     }
   };
 
@@ -886,7 +919,7 @@ function App() {
       setScreenTransitionMode("instant");
       resetStack("time");
     }
-    setToast("예약이 취소됐어요");
+    showToast("예약이 취소됐어요");
   }, [booking, bookings, stack]);
 
   useEffect(() => {
@@ -926,14 +959,19 @@ function App() {
                     onOpenMyBookings={() => push("myBookings")}
                     onSelectSlot={(slot) => {
                       if (slot.closed) {
-                        setToast("접수가 마감된 시간이에요");
+                        showToast("접수가 마감된 시간이에요");
                         return;
                       }
-                      setToast("");
+                      dismissToast();
                       setSelectedSlotId(slot.id);
                     }}
                     onNext={() => {
                       if (!canContinue) return;
+                      const duplicateBooking = findDuplicateStoredBooking();
+                      if (duplicateBooking) {
+                        showDuplicateBookingToast(duplicateBooking);
+                        return;
+                      }
                       flushSync(() => push("details"));
                     }}
                   />
@@ -950,7 +988,14 @@ function App() {
                     onBack={back}
                     onNameChange={handlePatientNameChange}
                     onTreatmentChange={setTreatment}
-                    onSubmit={() => setIsConfirmOpen(true)}
+                    onSubmit={() => {
+                      const duplicateBooking = findDuplicateStoredBooking();
+                      if (duplicateBooking) {
+                        showDuplicateBookingToast(duplicateBooking);
+                        return;
+                      }
+                      setIsConfirmOpen(true);
+                    }}
                   />
                 )}
                 {route === "complete" && booking && (
@@ -1017,7 +1062,7 @@ function App() {
               selectedDate={selectedDate}
               now={now}
               onClose={() => setIsCalendarOpen(false)}
-              onBlockedDate={(message) => setToast(message)}
+              onBlockedDate={(message) => showToast(message)}
               onSelect={(date) => {
                 setSelectedDate(date);
                 setIsCalendarOpen(false);
@@ -1025,7 +1070,7 @@ function App() {
             />
           )}
         </AnimatePresence>
-        <Toast message={toast} onDismiss={() => setToast("")} />
+        <Toast message={toast} action={toastAction} onDismiss={dismissToast} />
       </div>
     </main>
   );
@@ -1175,6 +1220,11 @@ function ScreenMotion({
 
 type TapButtonProps = React.ComponentProps<typeof motion.button> & {
   disableTapMotion?: boolean;
+};
+
+type ToastAction = {
+  label: string;
+  onClick: () => void;
 };
 
 function TapButton(props: TapButtonProps) {
@@ -1794,7 +1844,7 @@ function SummaryCard({ rows, flat = false, hideIcons = false }: { rows: [string,
   );
 }
 
-function Toast({ message, onDismiss }: { message: string; onDismiss: () => void }) {
+function Toast({ message, action, onDismiss }: { message: string; action?: ToastAction | null; onDismiss: () => void }) {
   const icon = message.includes("마감") || message.includes("진료하지") || message.includes("예약이 열리지") ? snackbarAlertIcon : snackbarCheckIcon;
 
   useEffect(() => {
@@ -1814,7 +1864,7 @@ function Toast({ message, onDismiss }: { message: string; onDismiss: () => void 
           transition={{ y: snackbarSpring, opacity: { duration: 0.08 } }}
         >
           <span><img className="svg-icon snackbar-icon" src={icon} alt="" />{message}</span>
-          <TapButton onClick={onDismiss}>확인</TapButton>
+          <TapButton onClick={action?.onClick ?? onDismiss}>{action?.label ?? "확인"}</TapButton>
         </motion.div>
       )}
     </AnimatePresence>
