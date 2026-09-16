@@ -1510,10 +1510,10 @@ function DetailsScreen(props: {
               className="field-block"
               key="treatment-options"
               layout
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ layout: screenSpring, opacity: { duration: 0.2, delay: 0.1, ease: "easeOut" }, y: screenSpring }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ layout: screenSpring, opacity: { duration: 0.3, delay: 0.1, ease: "easeOut" } }}
             >
               <span>어떤 진료를 원하시나요?</span>
               <div className="option-list">
