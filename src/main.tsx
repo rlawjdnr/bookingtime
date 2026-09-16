@@ -1513,7 +1513,7 @@ function DetailsScreen(props: {
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              transition={{ layout: screenSpring, opacity: { duration: 0.2, ease: "easeOut" }, y: screenSpring }}
+              transition={{ layout: screenSpring, opacity: { duration: 0.2, delay: 0.1, ease: "easeOut" }, y: screenSpring }}
             >
               <span>어떤 진료를 원하시나요?</span>
               <div className="option-list">
