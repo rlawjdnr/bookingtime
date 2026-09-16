@@ -519,6 +519,15 @@ class SyncReadyAppointmentStore implements AppointmentStore {
       throw new Error("Supabase 환경변수가 배포에 반영되지 않았어요.");
     }
 
+    const nowIso = new Date().toISOString();
+    const timeBlockRows = slots.map((slot, index) => ({
+      id: slot.id,
+      time_label: slot.time,
+      capacity: Math.max(0, slot.remaining),
+      is_open: !slot.closed,
+      sort_order: getDefaultSlotSortOrder(slot.id, index),
+      updated_at: nowIso,
+    }));
     const rules = slots.flatMap((slot) =>
       Array.from({ length: Math.max(1, slot.remaining) }, (_, index) => ({
         time_block_id: slot.id,
@@ -528,6 +537,12 @@ class SyncReadyAppointmentStore implements AppointmentStore {
     );
 
     if (this.isRemoteReady && supabase) {
+      const { error: timeBlockError } = await supabase.from("appointment_time_blocks").upsert(timeBlockRows, {
+        ignoreDuplicates: true,
+        onConflict: "id",
+      });
+      if (timeBlockError) throw timeBlockError;
+
       const { error } = await supabase.from("wait_time_rules").upsert(rules, {
         onConflict: "time_block_id,reservation_order",
       });
@@ -2411,18 +2426,41 @@ function AdminSettingsPanel(props: {
   treatmentOptions: TreatmentOption[];
   waitRules: WaitRule[];
   onSaveClinic: (settings: ClinicSettings) => void;
-  onSaveWaitInterval: (minutes: number) => void;
+  onSaveWaitInterval: (minutes: number) => void | Promise<void>;
   onSaveTreatments: (options: TreatmentOption[]) => void;
 }) {
   const [clinicDraft, setClinicDraft] = useState(props.clinicSettings);
   const [waitInterval, setWaitInterval] = useState(getWaitInterval(props.waitRules));
   const [isClinicEditOpen, setIsClinicEditOpen] = useState(false);
   const [isTreatmentAddOpen, setIsTreatmentAddOpen] = useState(false);
+  const waitIntervalRef = useRef(waitInterval);
+  const waitSaveQueueRef = useRef(Promise.resolve());
+  const pendingWaitSavesRef = useRef(0);
 
   useEffect(() => setClinicDraft(props.clinicSettings), [props.clinicSettings]);
-  useEffect(() => setWaitInterval(getWaitInterval(props.waitRules)), [props.waitRules]);
+  useEffect(() => {
+    if (pendingWaitSavesRef.current > 0) return;
+    const nextInterval = getWaitInterval(props.waitRules);
+    waitIntervalRef.current = nextInterval;
+    setWaitInterval(nextInterval);
+  }, [props.waitRules]);
 
   const visibleTreatments = props.treatmentOptions.filter((option) => option.isOpen);
+
+  const updateWaitInterval = (step: number) => {
+    const next = Math.max(0, waitIntervalRef.current + step);
+    if (next === waitIntervalRef.current) return;
+
+    waitIntervalRef.current = next;
+    setWaitInterval(next);
+    pendingWaitSavesRef.current += 1;
+    waitSaveQueueRef.current = waitSaveQueueRef.current
+      .catch(() => undefined)
+      .then(() => Promise.resolve(props.onSaveWaitInterval(next)))
+      .finally(() => {
+        pendingWaitSavesRef.current = Math.max(0, pendingWaitSavesRef.current - 1);
+      });
+  };
 
   return (
     <section className="admin-settings">
@@ -2453,16 +2491,8 @@ function AdminSettingsPanel(props: {
             action={
               <AdminStepper
                 value={`${waitInterval}분`}
-                onDecrease={() => {
-                  const next = Math.max(0, waitInterval - 1);
-                  setWaitInterval(next);
-                  props.onSaveWaitInterval(next);
-                }}
-                onIncrease={() => {
-                  const next = waitInterval + 1;
-                  setWaitInterval(next);
-                  props.onSaveWaitInterval(next);
-                }}
+                onDecrease={() => updateWaitInterval(-1)}
+                onIncrease={() => updateWaitInterval(1)}
               />
             }
           />
@@ -2855,6 +2885,12 @@ function mergeConfiguredSlots(remoteSlots: Slot[]) {
       closed: remoteSlot.closed,
     };
   });
+}
+
+function getDefaultSlotSortOrder(slotId: string, fallbackIndex: number) {
+  const initialIndex = initialSlots.findIndex((slot) => slot.id === slotId);
+  if (initialIndex >= 0) return (initialIndex + 1) * 10;
+  return (fallbackIndex + 1) * 10;
 }
 
 function toReservationRow(booking: Booking) {
