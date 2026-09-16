@@ -1485,7 +1485,19 @@ function DetailsScreen(props: {
   onSubmit: () => void;
 }) {
   const nameInputRef = useRef<HTMLInputElement>(null);
-  const showTreatmentOptions = props.name.trim().length > 0;
+  const [isNameSubmitted, setIsNameSubmitted] = useState(false);
+  const hasName = props.name.trim().length > 0;
+  const showTreatmentOptions = isNameSubmitted && hasName;
+
+  useEffect(() => {
+    if (!hasName) setIsNameSubmitted(false);
+  }, [hasName]);
+
+  const submitName = () => {
+    if (!hasName) return;
+    nameInputRef.current?.blur();
+    setIsNameSubmitted(true);
+  };
 
   return (
     <>
@@ -1519,18 +1531,27 @@ function DetailsScreen(props: {
             </motion.section>
           )}
         </AnimatePresence>
-        <motion.label className="field-block" layout transition={screenSpring}>
+        <motion.form
+          className="field-block"
+          layout
+          transition={screenSpring}
+          onSubmit={(event) => {
+            event.preventDefault();
+            submitName();
+          }}
+        >
           <span>이름을 입력해 주세요</span>
           <input
             ref={nameInputRef}
             value={props.name}
             onChange={(event) => props.onNameChange(event.target.value)}
+            enterKeyHint="done"
             placeholder="이름 입력"
           />
-        </motion.label>
+        </motion.form>
       </div>
-      <BottomCTA disabled={!props.canBook} onClick={props.onSubmit}>
-        {props.name.trim() && !props.canBook ? "접수가 마감된 시간이에요" : props.canBook ? "진료 예약하기" : "이름을 입력해주세요"}
+      <BottomCTA disabled={!hasName || (showTreatmentOptions && !props.canBook)} onClick={showTreatmentOptions ? props.onSubmit : submitName}>
+        {!hasName ? "이름을 입력해주세요" : showTreatmentOptions ? (props.canBook ? "진료 예약하기" : "접수가 마감된 시간이에요") : "다음"}
       </BottomCTA>
     </>
   );
