@@ -1485,13 +1485,41 @@ function DetailsScreen(props: {
   onSubmit: () => void;
 }) {
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const showTreatmentOptions = props.name.trim().length > 0;
 
   return (
     <>
       <Header clinicSettings={props.clinicSettings} back={props.onBack} compact />
       <div className="content details-content">
         <SummaryCard rows={[["예약 시간", props.appointmentLabel, timeCalendarIcon], ["대기 시간", `${props.waitMinutes}분`, waitIcon]]} />
-        <label className="field-block">
+        <AnimatePresence initial={false}>
+          {showTreatmentOptions && (
+            <motion.section
+              className="field-block"
+              key="treatment-options"
+              layout
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ layout: screenSpring, opacity: { duration: 0.16 }, y: screenSpring }}
+            >
+              <span>어떤 진료를 원하시나요?</span>
+              <div className="option-list">
+                {props.treatmentOptions.map(({ label: item }) => (
+                  <TapButton
+                    className={`option-row ${props.treatment === item ? "selected" : ""}`}
+                    key={item}
+                    onClick={() => props.onTreatmentChange(item)}
+                  >
+                    <strong>{item}</strong>
+                    <img className="svg-icon radio-icon" src={props.treatment === item ? radioSelectedIcon : radioEmptyIcon} alt="" />
+                  </TapButton>
+                ))}
+              </div>
+            </motion.section>
+          )}
+        </AnimatePresence>
+        <motion.label className="field-block" layout transition={screenSpring}>
           <span>이름을 입력해 주세요</span>
           <input
             ref={nameInputRef}
@@ -1499,22 +1527,7 @@ function DetailsScreen(props: {
             onChange={(event) => props.onNameChange(event.target.value)}
             placeholder="이름 입력"
           />
-        </label>
-        <section className="field-block">
-          <span>어떤 진료를 원하시나요?</span>
-          <div className="option-list">
-            {props.treatmentOptions.map(({ label: item }) => (
-              <TapButton
-                className={`option-row ${props.treatment === item ? "selected" : ""}`}
-                key={item}
-                onClick={() => props.onTreatmentChange(item)}
-              >
-                <strong>{item}</strong>
-                <img className="svg-icon radio-icon" src={props.treatment === item ? radioSelectedIcon : radioEmptyIcon} alt="" />
-              </TapButton>
-            ))}
-          </div>
-        </section>
+        </motion.label>
       </div>
       <BottomCTA disabled={!props.canBook} onClick={props.onSubmit}>
         {props.name.trim() && !props.canBook ? "접수가 마감된 시간이에요" : props.canBook ? "진료 예약하기" : "이름을 입력해주세요"}
