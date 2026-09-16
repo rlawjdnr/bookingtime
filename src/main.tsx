@@ -2454,12 +2454,12 @@ function AdminSettingsPanel(props: {
               <AdminStepper
                 value={`${waitInterval}분`}
                 onDecrease={() => {
-                  const next = Math.max(0, waitInterval - 5);
+                  const next = Math.max(0, waitInterval - 1);
                   setWaitInterval(next);
                   props.onSaveWaitInterval(next);
                 }}
                 onIncrease={() => {
-                  const next = waitInterval + 5;
+                  const next = waitInterval + 1;
                   setWaitInterval(next);
                   props.onSaveWaitInterval(next);
                 }}
