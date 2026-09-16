@@ -528,13 +528,7 @@ class SyncReadyAppointmentStore implements AppointmentStore {
       sort_order: getDefaultSlotSortOrder(slot.id, index),
       updated_at: nowIso,
     }));
-    const rules = slots.flatMap((slot) =>
-      Array.from({ length: Math.max(1, slot.remaining) }, (_, index) => ({
-        time_block_id: slot.id,
-        reservation_order: index + 1,
-        wait_minutes: (index + 1) * intervalMinutes,
-      })),
-    );
+    const rules = makeWaitRulesForInterval(slots, intervalMinutes).map(toWaitRuleRow);
 
     if (this.isRemoteReady && supabase) {
       const { error: timeBlockError } = await supabase.from("appointment_time_blocks").upsert(timeBlockRows, {
@@ -2078,9 +2072,19 @@ function AdminApp() {
       onSaveClinic={(settings) =>
         appointmentStore.saveClinicSettings(settings).then(() => setToast("설정을 저장했어요")).catch((error) => setToast(getReservationErrorMessage(error)))
       }
-      onSaveWaitInterval={(minutes) =>
-        appointmentStore.saveWaitInterval(baseSlots, minutes).then(() => setToast("대기 시간 규칙을 저장했어요")).catch((error) => setToast(getReservationErrorMessage(error)))
-      }
+      onSaveWaitInterval={(minutes) => {
+        const nextRules = makeWaitRulesForInterval(baseSlots, minutes);
+        setWaitRules(nextRules);
+        return appointmentStore.saveWaitInterval(baseSlots, minutes)
+          .then(() => {
+            setWaitRules(nextRules);
+            setToast("대기 시간 규칙을 저장했어요");
+          })
+          .catch((error) => {
+            setToast(getReservationErrorMessage(error));
+            throw error;
+          });
+      }}
       onSaveTreatments={(options) =>
         appointmentStore.saveTreatments(options).then(() => setToast("진료 과목을 저장했어요")).catch((error) => setToast(getReservationErrorMessage(error)))
       }
@@ -2436,11 +2440,14 @@ function AdminSettingsPanel(props: {
   const waitIntervalRef = useRef(waitInterval);
   const waitSaveQueueRef = useRef(Promise.resolve());
   const pendingWaitSavesRef = useRef(0);
+  const hasLocalWaitIntervalRef = useRef(false);
 
   useEffect(() => setClinicDraft(props.clinicSettings), [props.clinicSettings]);
   useEffect(() => {
     if (pendingWaitSavesRef.current > 0) return;
     const nextInterval = getWaitInterval(props.waitRules);
+    if (hasLocalWaitIntervalRef.current && nextInterval !== waitIntervalRef.current) return;
+    if (nextInterval === waitIntervalRef.current) hasLocalWaitIntervalRef.current = false;
     waitIntervalRef.current = nextInterval;
     setWaitInterval(nextInterval);
   }, [props.waitRules]);
@@ -2452,11 +2459,13 @@ function AdminSettingsPanel(props: {
     if (next === waitIntervalRef.current) return;
 
     waitIntervalRef.current = next;
+    hasLocalWaitIntervalRef.current = true;
     setWaitInterval(next);
     pendingWaitSavesRef.current += 1;
     waitSaveQueueRef.current = waitSaveQueueRef.current
       .catch(() => undefined)
       .then(() => Promise.resolve(props.onSaveWaitInterval(next)))
+      .catch(() => undefined)
       .finally(() => {
         pendingWaitSavesRef.current = Math.max(0, pendingWaitSavesRef.current - 1);
       });
@@ -2893,6 +2902,16 @@ function getDefaultSlotSortOrder(slotId: string, fallbackIndex: number) {
   return (fallbackIndex + 1) * 10;
 }
 
+function makeWaitRulesForInterval(slots: Slot[], intervalMinutes: number): WaitRule[] {
+  return slots.flatMap((slot) =>
+    Array.from({ length: Math.max(1, slot.remaining) }, (_, index) => ({
+      timeBlockId: slot.id,
+      reservationOrder: index + 1,
+      waitMinutes: (index + 1) * intervalMinutes,
+    })),
+  );
+}
+
 function toReservationRow(booking: Booking) {
   return {
     id: booking.id,
@@ -2948,6 +2967,14 @@ function fromWaitRuleRow(row: WaitRuleRow): WaitRule {
     timeBlockId: row.time_block_id,
     reservationOrder: row.reservation_order,
     waitMinutes: row.wait_minutes,
+  };
+}
+
+function toWaitRuleRow(rule: WaitRule) {
+  return {
+    time_block_id: rule.timeBlockId,
+    reservation_order: rule.reservationOrder,
+    wait_minutes: rule.waitMinutes,
   };
 }
 
