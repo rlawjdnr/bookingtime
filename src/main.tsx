@@ -41,7 +41,7 @@ import phoneFillIcon from "./assets/figma/phone-fill.svg";
 const ADMIN_SESSION_KEY = "bookingtime-admin-authenticated";
 const ADMIN_SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
 
-type Route = "time" | "details" | "complete" | "myBookings";
+type Route = "date" | "time" | "details" | "complete" | "myBookings";
 type Treatment = string;
 type ScreenTransitionMode = "slide" | "instant";
 type StackEntry = {
@@ -693,7 +693,7 @@ function App() {
   const stackIdRef = useRef(1);
   const stackMotionLockRef = useRef<number | null>(null);
   const [stack, setStack] = useState<StackEntry[]>([
-    { id: 0, route: "time" },
+    { id: 0, route: "date" },
   ]);
   const [direction, setDirection] = useState(1);
   const [selectedDate, setSelectedDate] = useState(getToday());
@@ -823,9 +823,8 @@ function App() {
 
   const appointmentLabel = `${formatShortDate(selectedDate)} ${selectedSlot?.time ?? ""}`;
   const waitMinutes = selectedSlot ? getWaitMinutesForNextReservation(selectedSlot, selectedDate, bookings, waitRules) : 0;
-  const canContinue = Boolean(selectedSlot);
+  const canContinueDate = isMobileOpenDate(selectedDate, clinicSettings.openDays, daySettings, baseSlots, now);
   const canBook = patientName.trim().length > 0 && Boolean(selectedSlot);
-  const upcomingStoredBookings = storedBookings.filter(isUpcomingBooking);
   const clinicStatus = getClinicStatus(now, baseSlots, daySettings);
 
   const dismissToast = () => {
@@ -899,7 +898,7 @@ function App() {
       if (wasCompleting) {
         setScreenTransitionMode("instant");
         setDirection(-1);
-        resetStack("time");
+        resetStack("date");
       }
       window.setTimeout(() => {
         setIsCancelOpen(false);
@@ -926,7 +925,7 @@ function App() {
     setBooking(null);
     if (stack[stack.length - 1]?.route === "complete") {
       setScreenTransitionMode("instant");
-      resetStack("time");
+      resetStack("date");
     }
     showToast("예약이 취소됐어요");
   }, [booking, bookings, stack]);
@@ -956,16 +955,37 @@ function App() {
 
             return (
               <ScreenMotion key={id} direction={direction} index={index} isTop={isTop} mode={screenTransitionMode}>
-                {route === "time" && (
-                  <TimeScreen
+                {route === "date" && (
+                  <DateScreen
                     clinicSettings={clinicSettings}
                     clinicStatus={clinicStatus}
                     selectedDate={selectedDate}
+                    openDays={clinicSettings.openDays}
+                    daySettings={daySettings}
+                    slots={baseSlots}
+                    now={now}
+                    bookings={storedBookings}
+                    canContinue={canContinueDate}
+                    onBlockedDate={(message) => showToast(message)}
+                    onOpenMyBookings={() => push("myBookings")}
+                    onSelectDate={(date) => {
+                      dismissToast();
+                      setSelectedDate(date);
+                    }}
+                    onNext={() => {
+                      if (!canContinueDate) return;
+                      flushSync(() => push("time"));
+                    }}
+                  />
+                )}
+                {route === "time" && (
+                  <TimeScreen
+                    clinicSettings={clinicSettings}
+                    selectedDate={selectedDate}
                     selectedSlotId={selectedSlotId}
                     slots={slots}
-                    upcomingBookingCount={upcomingStoredBookings.length}
+                    onBack={back}
                     onOpenCalendar={() => setIsCalendarOpen(true)}
-                    onOpenMyBookings={() => push("myBookings")}
                     onSelectSlot={(slot) => {
                       if (slot.closed) {
                         showToast("접수가 마감된 시간이에요");
@@ -975,7 +995,7 @@ function App() {
                       setSelectedSlotId(slot.id);
                     }}
                     onNext={() => {
-                      if (!canContinue) return;
+                      if (!selectedSlot) return;
                       const duplicateBooking = findDuplicateStoredBooking();
                       if (duplicateBooking) {
                         showDuplicateBookingToast(duplicateBooking);
@@ -1015,7 +1035,7 @@ function App() {
                       setBooking(null);
                       setDirection(-1);
                       setTreatment(treatmentOptions.find((option) => option.isOpen)?.label ?? otherTreatmentLabel);
-                      resetStack("time");
+                      resetStack("date");
                     }}
                   />
                 )}
@@ -1407,15 +1427,186 @@ function MyBookingsHeaderButton({ upcomingBookingCount, onClick }: { upcomingBoo
   );
 }
 
-function TimeScreen(props: {
+function DateScreen(props: {
   clinicSettings: ClinicSettings;
   clinicStatus: string;
   selectedDate: Date;
+  openDays: number;
+  daySettings: DaySetting[];
+  slots: Slot[];
+  now: Date;
+  bookings: Booking[];
+  canContinue: boolean;
+  onBlockedDate: (message: string) => void;
+  onOpenMyBookings: () => void;
+  onSelectDate: (date: Date) => void;
+  onNext: () => void;
+}) {
+  const upcomingBookings = props.bookings.filter(isUpcomingBooking).sort(compareBookingsByAppointmentTime);
+  const featuredBooking = upcomingBookings[0] ?? null;
+  const shouldShowBookingSummary = props.bookings.length > 0;
+
+  return (
+    <>
+      <Header clinicSettings={props.clinicSettings} clinicStatus={props.clinicStatus} />
+      <div className={`content date-home-content ${shouldShowBookingSummary ? "with-booking-summary" : ""}`}>
+        {shouldShowBookingSummary && (
+          <HomeBookingSummary
+            booking={featuredBooking}
+            upcomingBookingCount={upcomingBookings.length}
+            onOpenMyBookings={props.onOpenMyBookings}
+          />
+        )}
+        <section className={`date-step ${shouldShowBookingSummary ? (featuredBooking ? "after-upcoming-summary" : "after-empty-summary") : ""}`}>
+          <h1 className="screen-title">어느 날짜에 진료를 원하시나요?</h1>
+          <InlineCalendar
+            daySettings={props.daySettings}
+            now={props.now}
+            openDays={props.openDays}
+            selectedDate={props.selectedDate}
+            slots={props.slots}
+            onBlockedDate={props.onBlockedDate}
+            onSelect={props.onSelectDate}
+          />
+        </section>
+      </div>
+      <BottomCTA disabled={!props.canContinue} onClick={props.onNext}>다음</BottomCTA>
+    </>
+  );
+}
+
+function HomeBookingSummary({
+  booking,
+  upcomingBookingCount,
+  onOpenMyBookings,
+}: {
+  booking: Booking | null;
+  upcomingBookingCount: number;
+  onOpenMyBookings: () => void;
+}) {
+  const controls = useAnimationControls();
+  const hasUpcomingBooking = Boolean(booking);
+  const relativeDateLabel = booking ? getRelativeDateLabel(parseBookingDate(booking.date)) : "";
+
+  useEffect(() => {
+    void controls.set({ scale: 1.05 });
+    void controls.start({ scale: 1, transition: myBookingsIntroSpring });
+  }, [controls]);
+
+  return (
+    <motion.section className="home-booking-summary" animate={controls}>
+      <div className="home-booking-count">
+        <span>내 진료</span>
+        <strong className={hasUpcomingBooking ? "has-upcoming" : ""}>{upcomingBookingCount}</strong>
+      </div>
+      {booking ? (
+        <div className="home-booking-featured">
+          <p>
+            {relativeDateLabel && <span>{relativeDateLabel}</span>}
+            <strong>{formatShortDate(parseBookingDate(booking.date))} {booking.time}</strong>
+          </p>
+          <p>{booking.patientName} · {booking.treatment} · 대기 {booking.waitMinutes}분</p>
+        </div>
+      ) : (
+        <p className="home-booking-empty">예약한 진료가 없어요</p>
+      )}
+      <TapButton className="home-booking-all" onClick={onOpenMyBookings}>전체 보기</TapButton>
+    </motion.section>
+  );
+}
+
+function InlineCalendar(props: {
+  openDays: number;
+  daySettings: DaySetting[];
+  slots: Slot[];
+  selectedDate: Date;
+  now: Date;
+  onBlockedDate: (message: string) => void;
+  onSelect: (date: Date) => void;
+}) {
+  const [viewDate, setViewDate] = useState(new Date(props.selectedDate));
+  const days = useMemo(() => makeCalendarDays(viewDate), [viewDate]);
+
+  useEffect(() => {
+    setViewDate((currentViewDate) => {
+      if (currentViewDate.getFullYear() === props.selectedDate.getFullYear() && currentViewDate.getMonth() === props.selectedDate.getMonth()) {
+        return currentViewDate;
+      }
+      return new Date(props.selectedDate);
+    });
+  }, [props.selectedDate]);
+
+  return (
+    <div className="inline-calendar">
+      <div className="month-control">
+        <TapButton onClick={() => moveCalendarMonth(-1)} aria-label="이전 달">
+          <img className="svg-icon month-arrow" src={monthPrevIcon} alt="" />
+        </TapButton>
+        <strong>{viewDate.getFullYear()}년 {viewDate.getMonth() + 1}월</strong>
+        <TapButton onClick={() => moveCalendarMonth(1)} aria-label="다음 달">
+          <img src={monthNextIcon} alt="" className="svg-icon month-arrow" />
+        </TapButton>
+      </div>
+      <div className="calendar-grid weekdays">{calendarWeekdays.map((day) => <span key={day}>{day}</span>)}</div>
+      <div className="calendar-grid">
+        {days.map((date, index) => {
+          const dayStatus = date ? getMobileCalendarDayStatus(date, props.openDays, props.daySettings, props.slots, props.now) : "open";
+          const isPicked = date && sameDay(date, props.selectedDate);
+
+          return (
+            <TapButton
+              key={date ? date.toISOString() : `empty-${index}`}
+              className={[
+                isPicked ? "picked" : "",
+                dayStatus === "closed" ? "closed" : "",
+                dayStatus === "unopened" ? "unopened" : "",
+              ].filter(Boolean).join(" ")}
+              disabled={!date}
+              onClick={() => {
+                if (!date) return;
+
+                if (isPastCalendarDate(date, props.slots, props.now)) {
+                  return;
+                }
+
+                if (dayStatus === "closed") {
+                  props.onBlockedDate("진료하지 않는 날이에요");
+                  return;
+                }
+
+                if (dayStatus === "unopened" || !isMobileOpenDate(date, props.openDays, props.daySettings, props.slots, props.now)) {
+                  props.onBlockedDate("아직 예약이 열리지 않은 날이에요");
+                  return;
+                }
+
+                props.onSelect(date);
+              }}
+            >
+              {date && (
+                <>
+                  {isPicked && <span className="calendar-picked-circle" />}
+                  <span className="calendar-day-label">{date.getDate()}</span>
+                </>
+              )}
+            </TapButton>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  function moveCalendarMonth(offset: number) {
+    setViewDate((currentViewDate) => new Date(currentViewDate.getFullYear(), currentViewDate.getMonth() + offset, 1));
+  }
+}
+
+function TimeScreen(props: {
+  clinicSettings: ClinicSettings;
+  selectedDate: Date;
   selectedSlotId: string;
   slots: Slot[];
-  upcomingBookingCount: number;
+  onBack: () => void;
   onOpenCalendar: () => void;
-  onOpenMyBookings: () => void;
   onSelectSlot: (slot: Slot) => void;
   onNext: () => void;
 }) {
@@ -1427,21 +1618,20 @@ function TimeScreen(props: {
 
   return (
     <>
-      <Header
-        clinicSettings={props.clinicSettings}
-        clinicStatus={props.clinicStatus}
-        upcomingBookingCount={props.upcomingBookingCount}
-        onOpenMyBookings={props.onOpenMyBookings}
-      />
-      <div className="content">
-        <h1 className="screen-title">언제 진료를 원하시나요?</h1>
-        <TapButton className="date-select" onClick={props.onOpenCalendar}>
+      <Header clinicSettings={props.clinicSettings} back={props.onBack} compact />
+      <div className="content time-selection-content">
+        <h1 className="screen-title time-screen-title">
+          {props.selectedDate.getMonth() + 1}월 {props.selectedDate.getDate()}일 어떤 시간에
+          <br />
+          진료를 원하시나요?
+        </h1>
+        <TapButton className="time-date-select" onClick={props.onOpenCalendar}>
           <span>
             <img className="svg-icon calendar-icon" src={calendarIcon} alt="" />
             {relativeDateLabel && <strong>{relativeDateLabel}</strong>}
             <span className="date-select-value">{formatMonthDayWeek(props.selectedDate)}</span>
           </span>
-          <img className="svg-icon chevron" src={chevronDownIcon} alt="" />
+          <em>다시 선택</em>
         </TapButton>
         <SlotGroup title="오전" slots={morning} selectedDate={props.selectedDate} selectedId={props.selectedSlotId} onSelect={props.onSelectSlot} />
         <SlotGroup title="오후" slots={afternoon} selectedDate={props.selectedDate} selectedId={props.selectedSlotId} onSelect={props.onSelectSlot} />

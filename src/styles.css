@@ -253,8 +253,8 @@ a {
 }
 
 .hospital-icon {
-  width: 15.3px;
-  height: 15.3px;
+  width: 18px;
+  height: 18px;
 }
 
 .admin-hospital-icon {
@@ -347,7 +347,185 @@ a {
 }
 
 .content h1.screen-title {
-  font-size: 1.0588rem;
+  font-size: 1.1765rem;
+}
+
+.date-home-content {
+  padding-top: 48px;
+}
+
+.date-home-content.with-booking-summary {
+  padding-top: 0;
+}
+
+.home-booking-summary {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.home-booking-count {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text);
+  font-size: 0.9412rem;
+  line-height: normal;
+  font-weight: 600;
+}
+
+.home-booking-count strong {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.home-booking-count strong.has-upcoming {
+  color: #079171;
+}
+
+.home-booking-featured {
+  min-width: 0;
+}
+
+.home-booking-featured p {
+  margin: 0;
+}
+
+.home-booking-featured p:first-child {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.home-booking-featured p:first-child span {
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: var(--muted);
+  color: #fff;
+  font-size: 0.7647rem;
+  line-height: normal;
+  font-weight: 600;
+}
+
+.home-booking-featured p:first-child strong {
+  min-width: 0;
+  color: var(--text);
+  font-size: 1rem;
+  line-height: normal;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.home-booking-featured p:last-child {
+  margin-top: 6px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.8824rem;
+  line-height: normal;
+  font-weight: 500;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.home-booking-empty {
+  margin: 0;
+  color: var(--muted);
+  text-align: center;
+  font-size: 0.8235rem;
+  line-height: 1.47;
+}
+
+.home-booking-all {
+  width: 100%;
+  min-height: 38px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.8824rem;
+  line-height: 1.47;
+  font-weight: 600;
+}
+
+.date-step.after-upcoming-summary {
+  margin-top: 40px;
+}
+
+.date-step.after-empty-summary {
+  margin-top: 62px;
+}
+
+.inline-calendar .month-control {
+  margin-top: 20px;
+}
+
+.time-selection-content {
+  padding-top: 32px;
+}
+
+.time-screen-title {
+  width: min(210px, 100%);
+}
+
+.time-date-select {
+  width: 100%;
+  min-height: 46px;
+  margin-top: 22px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.time-date-select span {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 8px;
+  color: var(--text);
+  font-size: 0.9412rem;
+  line-height: normal;
+}
+
+.time-date-select .calendar-icon {
+  width: 20px;
+  height: 20px;
+  margin-right: 4px;
+}
+
+.time-date-select strong,
+.time-date-select .date-select-value,
+.time-date-select em {
+  white-space: nowrap;
+}
+
+.time-date-select strong {
+  font-weight: 600;
+}
+
+.time-date-select em {
+  color: #079171;
+  font-size: 0.9412rem;
+  line-height: normal;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.time-selection-content .slot-section {
+  margin-top: 27px;
+}
+
+.time-selection-content .slot-section + .slot-section {
+  margin-top: 36px;
 }
 
 .date-select {
