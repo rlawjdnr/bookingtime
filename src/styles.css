@@ -477,7 +477,7 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 4px;
   background: var(--surface);
   color: var(--text);
   font-size: 0.8824rem;
@@ -486,16 +486,16 @@ a {
 }
 
 .home-booking-all-icon {
-  width: 24px;
-  height: 24px;
+  width: 16px;
+  height: 16px;
   display: grid;
   place-items: center;
   overflow: hidden;
 }
 
 .home-booking-all-icon img {
-  width: 7px;
-  height: 12px;
+  width: 7.33334px;
+  height: 12.7619px;
 }
 
 .date-step.after-upcoming-summary {

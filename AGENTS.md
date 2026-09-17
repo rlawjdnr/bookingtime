@@ -6,6 +6,7 @@ This directory is a local mirror of the ChatGPT project “병원 에약”.
 - Do not edit, rename, move, or delete synced project files.
 - These files may be replaced the next time a task is created from this ChatGPT project.
 
+
 ## Project instructions
 
 This project has no custom instructions.
