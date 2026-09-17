@@ -463,7 +463,10 @@ a {
 }
 
 .home-booking-empty {
+  height: 52px;
   margin: 0;
+  display: grid;
+  place-items: center;
   color: var(--muted);
   text-align: center;
   font-size: 0.8235rem;
