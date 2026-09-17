@@ -7,7 +7,7 @@
   --muted: #555d6d;
   --disabled: #b0b3ba;
   --line: #eeeff1;
-  --surface: #f7f8f9;
+  --surface: #F3F4F5;
   --p0: #fa342c;
   --danger: #fa342c;
   --danger-bg: #fdf0f0;
@@ -418,7 +418,7 @@ a {
 }
 
 .home-booking-status-badge {
-  width: 58px;
+  min-width: 58px;
   padding: 2px 5px;
   border-radius: 4px;
   display: inline-grid;
@@ -429,6 +429,7 @@ a {
   font-size: 0.7647rem;
   line-height: normal;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .home-booking-relative-date {
@@ -517,50 +518,61 @@ a {
   width: min(210px, 100%);
 }
 
-.time-date-select {
+.time-date-control {
   width: 100%;
-  min-height: 46px;
+  min-height: 50px;
   margin-top: 22px;
-  padding: 12px 16px;
+  padding: 12px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  display: flex;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 24px;
   align-items: center;
-  justify-content: space-between;
 }
 
-.time-date-select span {
+.time-date-arrow {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+}
+
+.time-date-arrow:disabled {
+  opacity: 0.25;
+}
+
+.time-date-arrow-icon {
+  width: 7px;
+  height: 12px;
+}
+
+.time-date-center {
+  min-width: 0;
   display: flex;
   align-items: center;
-  min-width: 0;
-  gap: 8px;
+  justify-content: center;
+  gap: 6px;
   color: var(--text);
   font-size: 0.9412rem;
   line-height: normal;
+  font-weight: 500;
 }
 
-.time-date-select .calendar-icon {
+.time-date-center .calendar-icon {
   width: 20px;
   height: 20px;
-  margin-right: 4px;
 }
 
-.time-date-select strong,
-.time-date-select .date-select-value,
-.time-date-select em {
-  white-space: nowrap;
-}
-
-.time-date-select strong {
-  font-weight: 600;
-}
-
-.time-date-select em {
-  color: #079171;
+.time-date-center .date-select-value {
+  overflow: hidden;
+  color: var(--text);
   font-size: 0.9412rem;
   line-height: normal;
-  font-style: normal;
   font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .time-selection-content .slot-section {
@@ -1256,6 +1268,11 @@ textarea.selected {
   align-items: center;
   gap: 8px;
   font-weight: 400;
+}
+
+.confirm-summary-row .summary-icon {
+  width: 16px;
+  height: 16px;
 }
 
 .confirm-summary-row strong {

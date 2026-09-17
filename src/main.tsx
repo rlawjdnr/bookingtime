@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { createRoot } from "react-dom/client";
-import { AnimatePresence, motion, useAnimationControls } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { IconGearLine } from "@karrotmarket/react-monochrome-icon";
 import "@stackflow/react";
 import "./styles.css";
@@ -271,7 +271,6 @@ const calendarSheetItem = {
   },
 };
 const calendarPickedSpring = { type: "spring" as const, stiffness: 100, damping: 15 };
-const myBookingsIntroSpring = { type: "spring" as const, stiffness: 100, damping: 15 };
 const calendarWeekdays = ["일", "월", "화", "수", "목", "금", "토"];
 const screenVariants = {
   enter: (latestDirection: number) => ({ x: latestDirection > 0 ? "100%" : "-50%" }),
@@ -827,6 +826,14 @@ function App() {
   const canContinueDate = isMobileOpenDate(selectedDate, clinicSettings.openDays, daySettings, baseSlots, now);
   const canBook = patientName.trim().length > 0 && Boolean(selectedSlot);
   const clinicStatus = getClinicStatus(now, baseSlots, daySettings);
+  const previousTimeDate = useMemo(
+    () => findAdjacentMobileOpenDate(selectedDate, -1, clinicSettings.openDays, daySettings, baseSlots, now),
+    [baseSlots, clinicSettings.openDays, daySettings, now, selectedDate],
+  );
+  const nextTimeDate = useMemo(
+    () => findAdjacentMobileOpenDate(selectedDate, 1, clinicSettings.openDays, daySettings, baseSlots, now),
+    [baseSlots, clinicSettings.openDays, daySettings, now, selectedDate],
+  );
 
   const dismissToast = () => {
     setToast("");
@@ -983,13 +990,21 @@ function App() {
                   <TimeScreen
                     clinicSettings={clinicSettings}
                     selectedDate={selectedDate}
-                    selectedSlotId={selectedSlotId}
-                    slots={slots}
-                    onBack={back}
-                    onOpenCalendar={() => setIsCalendarOpen(true)}
-                    onSelectSlot={(slot) => {
-                      if (slot.closed) {
-                        showToast("접수가 마감된 시간이에요");
+	                    selectedSlotId={selectedSlotId}
+	                    slots={slots}
+	                    onBack={back}
+	                    onOpenCalendar={() => setIsCalendarOpen(true)}
+	                    canMovePrevDate={Boolean(previousTimeDate)}
+	                    canMoveNextDate={Boolean(nextTimeDate)}
+	                    onMoveDate={(dateDirection) => {
+	                      const nextDate = dateDirection === -1 ? previousTimeDate : nextTimeDate;
+	                      if (!nextDate) return;
+	                      dismissToast();
+	                      setSelectedDate(nextDate);
+	                    }}
+	                    onSelectSlot={(slot) => {
+	                      if (slot.closed) {
+	                        showToast("접수가 마감된 시간이에요");
                         return;
                       }
                       dismissToast();
@@ -1401,25 +1416,18 @@ function Header({
 }
 
 function MyBookingsHeaderButton({ upcomingBookingCount, onClick }: { upcomingBookingCount: number; onClick: () => void }) {
-  const controls = useAnimationControls();
   const hasUpcomingBookings = upcomingBookingCount > 0;
-
-  useEffect(() => {
-    void controls.set({ scale: 1.05 });
-    void controls.start({ scale: 1, transition: myBookingsIntroSpring });
-  }, [controls]);
 
   return (
     <TapButton
       className={`my-bookings-link ${hasUpcomingBookings ? "" : "empty"}`}
-      animate={controls}
       onClick={onClick}
     >
       <span className="my-bookings-calendar-icon">
         <img className="svg-icon" src={hasUpcomingBookings ? myBookingsCalendarIcon : myBookingsCalendarEmptyIcon} alt="" />
       </span>
       <span className="my-bookings-label">
-        <strong>{hasUpcomingBookings ? `내 진료 ${upcomingBookingCount}건` : "내 진료"}</strong>
+        <strong>{hasUpcomingBookings ? `내 예약 ${upcomingBookingCount}건` : "내 예약"}</strong>
         <span className="my-bookings-chevron-icon">
           <img className="svg-icon" src={hasUpcomingBookings ? myBookingsChevronIcon : myBookingsChevronEmptyIcon} alt="" />
         </span>
@@ -1485,19 +1493,13 @@ function HomeBookingSummary({
   upcomingBookingCount: number;
   onOpenMyBookings: () => void;
 }) {
-  const controls = useAnimationControls();
   const hasUpcomingBooking = Boolean(booking);
   const relativeDateLabel = booking ? getRelativeDateLabel(parseBookingDate(booking.date)) : "";
 
-  useEffect(() => {
-    void controls.set({ scale: 1.05 });
-    void controls.start({ scale: 1, transition: myBookingsIntroSpring });
-  }, [controls]);
-
   return (
-    <motion.section className="home-booking-summary" animate={controls}>
+    <section className="home-booking-summary">
       <div className="home-booking-count">
-        <span>내 진료</span>
+        <span>내 예약</span>
         <strong className={hasUpcomingBooking ? "has-upcoming" : ""}>{upcomingBookingCount}</strong>
       </div>
       {booking ? (
@@ -1520,7 +1522,7 @@ function HomeBookingSummary({
           <img className="svg-icon" src={bookingCardChevronRightIcon} alt="" />
         </span>
       </TapButton>
-    </motion.section>
+    </section>
   );
 }
 
@@ -1616,6 +1618,9 @@ function TimeScreen(props: {
   slots: Slot[];
   onBack: () => void;
   onOpenCalendar: () => void;
+  canMovePrevDate: boolean;
+  canMoveNextDate: boolean;
+  onMoveDate: (direction: -1 | 1) => void;
   onSelectSlot: (slot: Slot) => void;
   onNext: () => void;
 }) {
@@ -1623,7 +1628,6 @@ function TimeScreen(props: {
   const morning = visibleSlots.filter((slot) => Number(slot.time.split(":")[0]) < 13);
   const afternoon = visibleSlots.filter((slot) => Number(slot.time.split(":")[0]) >= 13);
   const selectedSlot = visibleSlots.find((slot) => slot.id === props.selectedSlotId && !slot.closed) ?? visibleSlots.find((slot) => !slot.closed);
-  const relativeDateLabel = getRelativeDateLabel(props.selectedDate);
 
   return (
     <>
@@ -1634,14 +1638,28 @@ function TimeScreen(props: {
           <br />
           진료를 원하시나요?
         </h1>
-        <TapButton className="time-date-select" onClick={props.onOpenCalendar}>
-          <span>
+        <div className="time-date-control">
+          <TapButton
+            className="time-date-arrow"
+            disabled={!props.canMovePrevDate}
+            onClick={() => props.onMoveDate(-1)}
+            aria-label="이전 날짜"
+          >
+            <img className="svg-icon time-date-arrow-icon" src={monthPrevIcon} alt="" />
+          </TapButton>
+          <TapButton className="time-date-center" onClick={props.onOpenCalendar}>
             <img className="svg-icon calendar-icon" src={calendarIcon} alt="" />
-            {relativeDateLabel && <strong>{relativeDateLabel}</strong>}
             <span className="date-select-value">{formatMonthDayWeek(props.selectedDate)}</span>
-          </span>
-          <em>다시 선택</em>
-        </TapButton>
+          </TapButton>
+          <TapButton
+            className="time-date-arrow"
+            disabled={!props.canMoveNextDate}
+            onClick={() => props.onMoveDate(1)}
+            aria-label="다음 날짜"
+          >
+            <img className="svg-icon time-date-arrow-icon" src={monthNextIcon} alt="" />
+          </TapButton>
+        </div>
         <SlotGroup title="오전" slots={morning} selectedDate={props.selectedDate} selectedId={props.selectedSlotId} onSelect={props.onSelectSlot} />
         <SlotGroup title="오후" slots={afternoon} selectedDate={props.selectedDate} selectedId={props.selectedSlotId} onSelect={props.onSelectSlot} />
       </div>
@@ -1696,10 +1714,26 @@ function DetailsScreen(props: {
   const [isNameSubmitted, setIsNameSubmitted] = useState(false);
   const hasName = props.name.trim().length > 0;
   const showTreatmentOptions = isNameSubmitted && hasName;
+  const shouldAutoFocusName = !hasName;
 
   useEffect(() => {
     if (!hasName) setIsNameSubmitted(false);
   }, [hasName]);
+
+  useLayoutEffect(() => {
+    if (!shouldAutoFocusName) return undefined;
+
+    const focusNameInput = () => {
+      const input = nameInputRef.current;
+      if (!input) return;
+      input.focus({ preventScroll: true });
+    };
+
+    focusNameInput();
+    const focusTimer = window.setTimeout(focusNameInput, 560);
+
+    return () => window.clearTimeout(focusTimer);
+  }, [shouldAutoFocusName]);
 
   const submitName = () => {
     if (!hasName) return;
@@ -1817,7 +1851,7 @@ function MyBookingsScreen({
     <>
       <Header clinicSettings={clinicSettings} back={onBack} compact hideTitle />
       <div className="my-bookings-sticky">
-        <h1>내 진료</h1>
+        <h1>내 예약</h1>
         <div className="my-bookings-tabs" role="tablist">
           <motion.div
             className="my-bookings-tab-indicator"
@@ -2120,7 +2154,11 @@ function Toast({ message, action, onDismiss }: { message: string; action?: Toast
 function BottomCTA(props: { children: React.ReactNode; disabled?: boolean; variant?: "default" | "danger"; inSheet?: boolean; onClick: () => void }) {
   return (
     <div className={props.inSheet ? "bottom-cta in-sheet" : "bottom-cta"}>
-      <TapButton className={props.variant === "danger" ? "danger-button" : "primary-button"} disabled={props.disabled} onClick={props.onClick}>
+      <TapButton
+        className={props.variant === "danger" ? "danger-button" : "primary-button"}
+        disabled={props.disabled}
+        onClick={props.onClick}
+      >
         {props.children}
       </TapButton>
     </div>
@@ -3622,6 +3660,32 @@ function findNextMobileOpenDate(openDays: number, daySettings: DaySetting[], slo
   for (let offset = 0; offset < totalDays; offset += 1) {
     const date = new Date(today);
     date.setDate(today.getDate() + offset);
+    if (isMobileOpenDate(date, openDays, daySettings, slots, now)) return date;
+  }
+
+  return null;
+}
+
+function findAdjacentMobileOpenDate(
+  selectedDate: Date,
+  direction: -1 | 1,
+  openDays: number,
+  daySettings: DaySetting[],
+  slots: Slot[],
+  now: Date,
+) {
+  const baseDate = startOfDay(selectedDate);
+  const today = getToday();
+  const lastDefaultOpenDate = new Date(today);
+  lastDefaultOpenDate.setDate(today.getDate() + Math.max(1, openDays) - 1);
+  const searchLimit = Math.max(31, openDays + 31);
+
+  for (let offset = 1; offset <= searchLimit; offset += 1) {
+    const date = new Date(baseDate);
+    date.setDate(baseDate.getDate() + direction * offset);
+
+    if (direction < 0 && startOfDay(date).getTime() < today.getTime()) return null;
+    if (direction > 0 && startOfDay(date).getTime() > lastDefaultOpenDate.getTime() && !getDaySetting(daySettings, date)?.isOpen) continue;
     if (isMobileOpenDate(date, openDays, daySettings, slots, now)) return date;
   }
 
