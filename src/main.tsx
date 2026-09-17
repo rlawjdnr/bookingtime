@@ -3536,9 +3536,11 @@ function toPhoneHref(phone: string) {
 }
 
 function getWaitInterval(waitRules: WaitRule[]) {
-  const firstSlotId = waitRules[0]?.timeBlockId;
-  if (!firstSlotId) return 15;
-  return getFallbackWaitInterval(firstSlotId, waitRules);
+  const intervals = initialSlots
+    .map((slot) => getWaitIntervalForSlot(slot.id, waitRules))
+    .filter((interval) => interval > 0);
+
+  return getMostCommonWaitInterval(intervals) || getFirstWaitInterval(waitRules) || 15;
 }
 
 function getFallbackWaitInterval(slotId: string, waitRules: WaitRule[]) {
@@ -3574,6 +3576,31 @@ function getFirstWaitInterval(waitRules: WaitRule[]) {
   }
 
   return 0;
+}
+
+function getMostCommonWaitInterval(intervals: number[]) {
+  const counts = new Map<number, number>();
+
+  intervals.forEach((interval) => {
+    counts.set(interval, (counts.get(interval) ?? 0) + 1);
+  });
+
+  let selectedInterval = 0;
+  let selectedCount = 0;
+
+  counts.forEach((count, interval) => {
+    if (count > selectedCount) {
+      selectedInterval = interval;
+      selectedCount = count;
+      return;
+    }
+
+    if (count === selectedCount && interval < selectedInterval) {
+      selectedInterval = interval;
+    }
+  });
+
+  return selectedInterval;
 }
 
 async function verifyAdminPassword(password: string) {
