@@ -389,8 +389,20 @@ a {
   color: #079171;
 }
 
+.home-booking-featured-row {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  padding: 4px 0;
+}
+
 .home-booking-featured {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
 }
 
 .home-booking-featured p {
@@ -398,32 +410,48 @@ a {
 }
 
 .home-booking-featured p:first-child {
+  max-width: 100%;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.home-booking-featured p:first-child span {
+.home-booking-status-badge {
+  width: 58px;
   padding: 2px 5px;
   border-radius: 4px;
-  background: var(--muted);
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  background: #079171;
   color: #fff;
   font-size: 0.7647rem;
   line-height: normal;
   font-weight: 600;
 }
 
-.home-booking-featured p:first-child strong {
-  min-width: 0;
+.home-booking-relative-date {
+  flex: 0 0 auto;
   color: var(--text);
-  font-size: 1rem;
+  font-size: 0.9412rem;
   line-height: normal;
   font-weight: 600;
   white-space: nowrap;
 }
 
+.home-booking-featured p:first-child strong {
+  min-width: 0;
+  color: var(--text);
+  font-size: 0.9412rem;
+  line-height: normal;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .home-booking-featured p:last-child {
-  margin-top: 6px;
   overflow: hidden;
   color: var(--muted);
   font-size: 0.8824rem;
@@ -445,13 +473,28 @@ a {
   width: 100%;
   min-height: 38px;
   border-radius: 8px;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
   background: var(--surface);
   color: var(--text);
   font-size: 0.8824rem;
   line-height: 1.47;
   font-weight: 600;
+}
+
+.home-booking-all-icon {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.home-booking-all-icon img {
+  width: 7px;
+  height: 12px;
 }
 
 .date-step.after-upcoming-summary {
@@ -908,10 +951,7 @@ textarea::placeholder {
 }
 
 .my-booking-main {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
+  min-width: 0;
 }
 
 .my-booking-main p,
@@ -919,7 +959,15 @@ textarea::placeholder {
   margin: 0;
 }
 
+.my-booking-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .my-booking-date {
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -929,37 +977,56 @@ textarea::placeholder {
   line-height: normal;
 }
 
-.my-booking-date span {
+.my-booking-status-badge {
   padding: 2px 5px;
   border-radius: 4px;
-  background: var(--muted);
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  background: #079171;
   color: #fff;
   font-size: 0.7647rem;
   font-weight: 600;
+  line-height: normal;
+  white-space: nowrap;
 }
 
-.my-booking-main div > p:not(.my-booking-date) {
-  margin-top: 4px;
+.my-booking-status-badge.cancelled,
+.my-booking-status-badge.completed {
+  background: #868b94;
+}
+
+.my-booking-relative-date {
+  flex: 0 0 auto;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.my-booking-date strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.my-booking-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.my-booking-meta p {
   color: var(--muted);
   font-size: 0.8824rem;
   line-height: normal;
   font-weight: 500;
 }
 
-.my-booking-main div > p:nth-child(2) {
-  margin-top: 10px;
-}
-
-.my-booking-main strong {
-  flex: 0 0 auto;
-  color: var(--text);
-  font-size: 0.8824rem;
-  line-height: normal;
-  font-weight: 600;
-}
-
 .my-booking-main .my-booking-wait-minutes {
   color: inherit;
+  font-weight: 600;
 }
 
 .my-booking-cancel,
@@ -984,9 +1051,10 @@ textarea::placeholder {
   color: var(--text);
 }
 
-.my-booking-card.dimmed .my-booking-date,
-.my-booking-card.dimmed .my-booking-main div > p,
-.my-booking-card.dimmed .my-booking-main strong {
+.my-booking-card.dimmed .my-booking-relative-date,
+.my-booking-card.dimmed .my-booking-date strong,
+.my-booking-card.dimmed .my-booking-meta p,
+.my-booking-card.dimmed .my-booking-wait-minutes {
   color: #868b94;
 }
 

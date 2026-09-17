@@ -36,6 +36,7 @@ import myBookingsCalendarIcon from "./assets/figma/my-bookings-calendar.svg";
 import myBookingsCalendarEmptyIcon from "./assets/figma/my-bookings-calendar-empty.svg";
 import myBookingsChevronIcon from "./assets/figma/my-bookings-chevron.svg";
 import myBookingsChevronEmptyIcon from "./assets/figma/my-bookings-chevron-empty.svg";
+import bookingCardChevronRightIcon from "./assets/figma/booking-card-chevron-right.svg";
 import phoneFillIcon from "./assets/figma/phone-fill.svg";
 
 const ADMIN_SESSION_KEY = "bookingtime-admin-authenticated";
@@ -1500,17 +1501,25 @@ function HomeBookingSummary({
         <strong className={hasUpcomingBooking ? "has-upcoming" : ""}>{upcomingBookingCount}</strong>
       </div>
       {booking ? (
-        <div className="home-booking-featured">
-          <p>
-            {relativeDateLabel && <span>{relativeDateLabel}</span>}
-            <strong>{formatShortDate(parseBookingDate(booking.date))} {booking.time}</strong>
-          </p>
-          <p>{booking.patientName} · {booking.treatment} · 대기 {booking.waitMinutes}분</p>
+        <div className="home-booking-featured-row">
+          <div className="home-booking-featured">
+            <p>
+              <span className="home-booking-status-badge">예약 완료</span>
+              {relativeDateLabel && <span className="home-booking-relative-date">{relativeDateLabel}</span>}
+              <strong>{formatShortDate(parseBookingDate(booking.date))} {booking.time}</strong>
+            </p>
+            <p>{booking.treatment} · 대기 {booking.waitMinutes}분</p>
+          </div>
         </div>
       ) : (
         <p className="home-booking-empty">예약한 진료가 없어요</p>
       )}
-      <TapButton className="home-booking-all" onClick={onOpenMyBookings}>전체 보기</TapButton>
+      <TapButton className="home-booking-all" onClick={onOpenMyBookings}>
+        <span>전체 보기</span>
+        <span className="home-booking-all-icon">
+          <img className="svg-icon" src={bookingCardChevronRightIcon} alt="" />
+        </span>
+      </TapButton>
     </motion.section>
   );
 }
@@ -1866,23 +1875,27 @@ function MyBookingCard({
   onDelete: () => void;
 }) {
   const dimmed = booking.status === "cancelled";
+  const isCompleted = booking.status === "confirmed" && !isUpcoming;
   const showWaitMinutes = !isBookingDatePassed(booking);
   const dateTag = getRelativeDateLabel(parseBookingDate(booking.date));
+  const statusLabel = dimmed ? "예약 취소" : isCompleted ? "진료 완료" : "예약 완료";
   return (
     <article className={`my-booking-card ${dimmed ? "dimmed" : ""}`}>
       <div className="my-booking-main">
-        <div>
+        <div className="my-booking-info">
           <p className="my-booking-date">
-            {!dimmed && dateTag && <span>{dateTag}</span>}
-            {formatShortDate(parseBookingDate(booking.date))} {booking.time}
+            <span className={`my-booking-status-badge ${dimmed ? "cancelled" : isCompleted ? "completed" : ""}`}>{statusLabel}</span>
+            {!dimmed && dateTag && <span className="my-booking-relative-date">{dateTag}</span>}
+            <strong>{formatShortDate(parseBookingDate(booking.date))} {booking.time}</strong>
           </p>
-          <p>{booking.patientName} · {booking.treatment}</p>
-          {showWaitMinutes && <p>예상 대기 <strong className="my-booking-wait-minutes">{booking.waitMinutes}분</strong></p>}
+          <div className="my-booking-meta">
+            <p>{booking.patientName} · {booking.treatment}</p>
+            {showWaitMinutes && <p>예상 대기 <strong className="my-booking-wait-minutes">{booking.waitMinutes}분</strong></p>}
+          </div>
         </div>
-        <strong>{booking.status === "cancelled" ? "예약 취소" : isUpcoming ? "예약 완료" : "진료 완료"}</strong>
       </div>
       {isUpcoming ? (
-        <TapButton className="my-booking-cancel" onClick={onCancel}>예약 취소</TapButton>
+        <TapButton className="my-booking-cancel" onClick={onCancel}>예약 취소하기</TapButton>
       ) : (
         <TapButton className="my-booking-delete" onClick={onDelete}>목록에서 삭제</TapButton>
       )}
