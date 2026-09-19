@@ -1207,8 +1207,8 @@ function ConfirmBookingSheet({
         <div className="confirm-sheet-content">
           <div className="confirm-heading">
             <h1>
-              <motion.span variants={confirmSheetItem}>{patientName}님 예약하기 전에</motion.span>
-              <motion.span variants={confirmSheetItem}>마지막으로 확인해주세요</motion.span>
+              <motion.span variants={confirmSheetItem}>{patientName}님 마지막으로</motion.span>
+              <motion.span variants={confirmSheetItem}>확인해주세요</motion.span>
             </h1>
             <motion.p className="confirm-sheet-note" variants={confirmSheetItem}>당일 예약 취소는 어려워요</motion.p>
           </div>
