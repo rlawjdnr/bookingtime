@@ -1068,12 +1068,13 @@ textarea::placeholder {
 }
 
 .my-booking-cancel {
-  background: var(--danger-bg);
-  color: var(--danger);
+  background: #fdf0f0;
+  color: #fc6a66;
 }
 
 .my-booking-delete {
-  background: var(--surface);
+  border: 1px solid var(--surface);
+  background: #fff;
   color: var(--text);
 }
 
@@ -1233,6 +1234,11 @@ textarea.selected {
   gap: 16px;
 }
 
+.confirm-heading {
+  display: grid;
+  gap: 8px;
+}
+
 .confirm-sheet h1 {
   margin: 0;
   color: var(--text);
@@ -1243,6 +1249,14 @@ textarea.selected {
 
 .confirm-sheet h1 span {
   display: block;
+}
+
+.confirm-sheet-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8824rem;
+  line-height: 1.32;
+  font-weight: 500;
 }
 
 .confirm-summary {

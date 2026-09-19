@@ -41,6 +41,7 @@ import phoneFillIcon from "./assets/figma/phone-fill.svg";
 
 const ADMIN_SESSION_KEY = "bookingtime-admin-authenticated";
 const ADMIN_SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
+const sameDayCancelBlockedMessage = "예약 당일에는 예약을 취소할 수 없어요";
 
 type Route = "date" | "time" | "details" | "complete" | "myBookings";
 type Treatment = string;
@@ -906,6 +907,12 @@ function App() {
 
   const cancelBooking = async (reason: string) => {
     if (!booking) return;
+    if (isSameDayBooking(booking)) {
+      setIsCancelOpen(false);
+      setIsCancelling(false);
+      showToast(sameDayCancelBlockedMessage);
+      return;
+    }
     setIsCancelling(true);
     try {
       await appointmentStore.cancel(booking.id, reason);
@@ -1060,16 +1067,20 @@ function App() {
                 )}
                 {route === "myBookings" && (
                   <MyBookingsScreen
-                    clinicSettings={clinicSettings}
-                    bookings={storedBookings}
-                    onBack={back}
-                    onCancel={(targetBooking) => {
-                      setBooking(targetBooking);
-                      setIsCancelOpen(true);
-                    }}
-                    onDelete={(targetBooking) => {
-                      setStoredBookings(removeStoredBooking(targetBooking.id));
-                    }}
+	                    clinicSettings={clinicSettings}
+	                    bookings={storedBookings}
+	                    onBack={back}
+	                    onCancel={(targetBooking) => {
+	                      if (isSameDayBooking(targetBooking)) {
+	                        showToast(sameDayCancelBlockedMessage);
+	                        return;
+	                      }
+	                      setBooking(targetBooking);
+	                      setIsCancelOpen(true);
+	                    }}
+	                    onDelete={(targetBooking) => {
+	                      setStoredBookings(removeStoredBooking(targetBooking.id));
+	                    }}
                   />
                 )}
               </ScreenMotion>
@@ -1194,10 +1205,13 @@ function ConfirmBookingSheet({
         onClick={(event) => event.stopPropagation()}
       >
         <div className="confirm-sheet-content">
-          <h1>
-            <motion.span variants={confirmSheetItem}>{patientName}님 예약하기 전에</motion.span>
-            <motion.span variants={confirmSheetItem}>마지막으로 확인해주세요</motion.span>
-          </h1>
+          <div className="confirm-heading">
+            <h1>
+              <motion.span variants={confirmSheetItem}>{patientName}님 예약하기 전에</motion.span>
+              <motion.span variants={confirmSheetItem}>마지막으로 확인해주세요</motion.span>
+            </h1>
+            <motion.p className="confirm-sheet-note" variants={confirmSheetItem}>당일 예약 취소는 어려워요</motion.p>
+          </div>
           <div className="confirm-summary">
             <motion.div
               className="confirm-summary-line"
@@ -2124,7 +2138,7 @@ function SummaryCard({ rows, flat = false, hideIcons = false }: { rows: [string,
 }
 
 function Toast({ message, action, onDismiss }: { message: string; action?: ToastAction | null; onDismiss: () => void }) {
-  const icon = message.includes("마감") || message.includes("진료하지") || message.includes("예약이 열리지") ? snackbarAlertIcon : snackbarCheckIcon;
+  const icon = message.includes("마감") || message.includes("진료하지") || message.includes("예약이 열리지") || message.includes("취소할 수") ? snackbarAlertIcon : snackbarCheckIcon;
 
   useEffect(() => {
     if (!message) return;
@@ -3462,6 +3476,10 @@ function isVisibleStoredBooking(booking: Booking) {
 
 function isBookingDatePassed(booking: Booking) {
   return getAppointmentDateTime(booking).getTime() <= getCurrentMinute().getTime();
+}
+
+function isSameDayBooking(booking: Pick<Booking, "date">) {
+  return sameDay(parseBookingDate(booking.date), getCurrentMinute());
 }
 
 function compareBookingsByAppointmentTime(a: Booking, b: Booking) {
