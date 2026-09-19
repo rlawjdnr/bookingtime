@@ -54,6 +54,7 @@ body {
   letter-spacing: 0;
 }
 
+html.admin-page,
 body.admin-page {
   background: #f7f8f9;
 }
@@ -2380,10 +2381,12 @@ textarea.selected {
     top: 0;
     z-index: 100;
     min-height: 0;
-    width: auto;
-    margin: 0 -16px;
+    width: 100%;
+    margin: 0;
     padding: calc(16px + var(--safe-top)) 16px 16px;
     background: #f7f8f9;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 
   .admin-sidebar-main {
