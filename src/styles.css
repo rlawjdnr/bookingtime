@@ -2373,6 +2373,7 @@ textarea.selected {
 
   .admin-sidebar {
     position: fixed;
+    bottom: auto;
     left: 0;
     right: 0;
     height: auto;
