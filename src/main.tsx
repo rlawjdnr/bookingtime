@@ -2271,6 +2271,14 @@ function AdminApp() {
         slots={displaySlots}
         treatmentLabels={treatmentLabels}
         onOpenCalendar={() => setIsAdminCalendarOpen(true)}
+        onMoveDate={(offset) => {
+          const nextDate = new Date(selectedDate);
+          nextDate.setDate(nextDate.getDate() + offset);
+          setIsDateSwitching(true);
+          setSelectedDate(nextDate);
+          setViewDate(new Date(nextDate.getFullYear(), nextDate.getMonth(), 1));
+          window.requestAnimationFrame(() => setIsDateSwitching(false));
+        }}
         onAdd={setEditingSlot}
         onUpdateReservation={(id, updates) =>
           appointmentStore.updateReservation(id, updates).catch((error) => {
@@ -2473,6 +2481,7 @@ function AdminReservationList({
   slots,
   treatmentLabels,
   onOpenCalendar,
+  onMoveDate,
   onAdd,
   onUpdateReservation,
 }: {
@@ -2481,6 +2490,7 @@ function AdminReservationList({
   slots: Slot[];
   treatmentLabels: Treatment[];
   onOpenCalendar?: () => void;
+  onMoveDate?: (offset: -1 | 1) => void;
   onAdd: (slot: Slot) => void;
   onUpdateReservation: (id: string, updates: Partial<Pick<Booking, "patientName" | "treatment" | "status" | "cancelReason">>) => void;
 }) {
@@ -2493,13 +2503,26 @@ function AdminReservationList({
     <section className="admin-reservations">
       <h1>예약 현황</h1>
       {onOpenCalendar && (
-        <TapButton className="date-select admin-mobile-date-select" onClick={onOpenCalendar}>
-          <span>
+        <div className="time-date-control admin-mobile-date-select">
+          <TapButton
+            className="time-date-arrow"
+            onClick={() => onMoveDate?.(-1)}
+            aria-label="이전 날짜"
+          >
+            <img className="svg-icon time-date-arrow-icon" src={monthPrevIcon} alt="" />
+          </TapButton>
+          <TapButton className="time-date-center" onClick={onOpenCalendar}>
             <img className="svg-icon calendar-icon" src={calendarIcon} alt="" />
             <span className="date-select-value">{formatMonthDayWeek(selectedDate)}</span>
-          </span>
-          <img className="svg-icon chevron" src={chevronDownIcon} alt="" />
-        </TapButton>
+          </TapButton>
+          <TapButton
+            className="time-date-arrow"
+            onClick={() => onMoveDate?.(1)}
+            aria-label="다음 날짜"
+          >
+            <img className="svg-icon time-date-arrow-icon" src={monthNextIcon} alt="" />
+          </TapButton>
+        </div>
       )}
       <AdminSlotSection
         title="오전"
