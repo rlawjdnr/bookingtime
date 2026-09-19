@@ -1797,12 +1797,18 @@ function DetailsScreen(props: {
         >
           <span>이름을 입력해 주세요</span>
           <input
-            ref={nameInputRef}
-            value={props.name}
-            onChange={(event) => props.onNameChange(event.target.value)}
-            enterKeyHint="done"
-            placeholder="이름 입력"
-          />
+	            ref={nameInputRef}
+	            value={props.name}
+	            onChange={(event) => props.onNameChange(event.target.value)}
+	            onBlur={submitName}
+	            onKeyDown={(event) => {
+	              if (event.key !== "Enter") return;
+	              event.preventDefault();
+	              submitName();
+	            }}
+	            enterKeyHint="done"
+	            placeholder="이름 입력"
+	          />
         </motion.form>
       </div>
       <BottomCTA disabled={!hasName || (showTreatmentOptions && !props.canBook)} onClick={showTreatmentOptions ? props.onSubmit : submitName}>

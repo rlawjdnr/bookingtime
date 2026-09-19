@@ -2,11 +2,13 @@
 
 :root {
   --app-height: 100dvh;
-  --topbar-height: 55px;
-  --topbar-compact-height: 48px;
-  --complete-topbar-height: 43px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --topbar-height: calc(55px + var(--safe-top));
+  --topbar-compact-height: calc(48px + var(--safe-top));
+  --complete-topbar-height: calc(43px + var(--safe-top));
   --my-bookings-nav-height: 90px;
-  --admin-mobile-header-height: calc(66px + env(safe-area-inset-top));
+  --admin-mobile-header-height: calc(66px + var(--safe-top));
   --background: #ffffff;
   --text: #1a1c20;
   --muted: #555d6d;
@@ -154,7 +156,7 @@ a {
   z-index: 30;
   width: 100%;
   height: var(--topbar-height);
-  padding: 16px 16px 20px;
+  padding: calc(16px + var(--safe-top)) 16px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -170,7 +172,7 @@ a {
 
 .complete-topbar {
   height: var(--complete-topbar-height);
-  padding: 16px 16px 8px;
+  padding: calc(16px + var(--safe-top)) 16px 8px;
   justify-content: center;
 }
 
@@ -2379,7 +2381,7 @@ textarea.selected {
     min-height: 0;
     width: auto;
     margin: 0 -16px;
-    padding: calc(16px + env(safe-area-inset-top)) 16px 16px;
+    padding: calc(16px + var(--safe-top)) 16px 16px;
     background: #f7f8f9;
   }
 
@@ -2459,14 +2461,14 @@ textarea.selected {
   .admin-mobile-settings-header {
     flex: 0 0 auto;
     background: #f7f8f9;
-    padding-top: calc(16px + env(safe-area-inset-top));
-    height: calc(48px + env(safe-area-inset-top));
+    padding-top: calc(16px + var(--safe-top));
+    height: var(--topbar-compact-height);
   }
 
   .admin-mobile-settings-body {
     flex: 1 1 auto;
     min-height: 0;
-    padding: calc(var(--topbar-compact-height) + env(safe-area-inset-top)) 16px calc(120px + env(safe-area-inset-bottom));
+    padding: var(--topbar-compact-height) 16px calc(120px + env(safe-area-inset-bottom));
     overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
