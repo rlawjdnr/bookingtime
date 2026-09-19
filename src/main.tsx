@@ -845,10 +845,18 @@ function App() {
     setToast(message);
   };
 
-  const findDuplicateStoredBooking = (slot = selectedSlot) => {
+  const findDuplicateStoredBooking = (slot = selectedSlot, name = patientName) => {
     if (!slot) return null;
+    const targetName = normalizePatientNameForDuplicate(name);
+    if (!targetName) return null;
     const dateKey = toDateKey(selectedDate);
-    return storedBookings.find((item) => item.status === "confirmed" && item.date === dateKey && item.time === slot.time && !isBookingDatePassed(item)) ?? null;
+    return storedBookings.find((item) => (
+      item.status === "confirmed"
+      && item.date === dateKey
+      && item.time === slot.time
+      && normalizePatientNameForDuplicate(item.patientName) === targetName
+      && !isBookingDatePassed(item)
+    )) ?? null;
   };
 
   const showDuplicateBookingToast = (duplicateBooking: Booking) => {
@@ -1010,16 +1018,11 @@ function App() {
                       dismissToast();
                       setSelectedSlotId(slot.id);
                     }}
-                    onNext={() => {
-                      if (!selectedSlot) return;
-                      const duplicateBooking = findDuplicateStoredBooking();
-                      if (duplicateBooking) {
-                        showDuplicateBookingToast(duplicateBooking);
-                        return;
-                      }
-                      flushSync(() => push("details"));
-                    }}
-                  />
+	                    onNext={() => {
+	                      if (!selectedSlot) return;
+	                      flushSync(() => push("details"));
+	                    }}
+	                  />
                 )}
                 {route === "details" && (
                   <DetailsScreen
@@ -3382,6 +3385,10 @@ function saveStoredPatientName(name: string) {
   }
 
   window.localStorage.removeItem(storedPatientNameStorageKey);
+}
+
+function normalizePatientNameForDuplicate(name: string) {
+  return name.trim().toLocaleLowerCase();
 }
 
 function isStoredAdminSessionValid() {

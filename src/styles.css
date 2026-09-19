@@ -2,6 +2,11 @@
 
 :root {
   --app-height: 100dvh;
+  --topbar-height: 55px;
+  --topbar-compact-height: 48px;
+  --complete-topbar-height: 43px;
+  --my-bookings-nav-height: 90px;
+  --admin-mobile-header-height: calc(66px + env(safe-area-inset-top));
   --background: #ffffff;
   --text: #1a1c20;
   --muted: #555d6d;
@@ -142,11 +147,13 @@ a {
 }
 
 .topbar {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 30;
   width: 100%;
-  height: 55px;
+  height: var(--topbar-height);
   padding: 16px 16px 20px;
   display: flex;
   align-items: center;
@@ -157,12 +164,12 @@ a {
 }
 
 .topbar.centered {
-  height: 48px;
+  height: var(--topbar-compact-height);
   padding-bottom: 8px;
 }
 
 .complete-topbar {
-  height: 43px;
+  height: var(--complete-topbar-height);
   padding: 16px 16px 8px;
   justify-content: center;
 }
@@ -335,7 +342,7 @@ a {
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
-  padding: 18px 16px calc(103px + env(safe-area-inset-bottom));
+  padding: calc(var(--topbar-height) + 18px) 16px calc(103px + env(safe-area-inset-bottom));
 }
 
 .content h1,
@@ -351,11 +358,11 @@ a {
 }
 
 .date-home-content {
-  padding-top: 48px;
+  padding-top: calc(var(--topbar-height) + 48px);
 }
 
 .date-home-content.with-booking-summary {
-  padding-top: 0;
+  padding-top: var(--topbar-height);
 }
 
 .home-booking-summary {
@@ -514,7 +521,7 @@ a {
 }
 
 .time-selection-content {
-  padding-top: 32px;
+  padding-top: calc(var(--topbar-compact-height) + 32px);
 }
 
 .time-screen-title {
@@ -743,7 +750,7 @@ a {
 }
 
 .details-content {
-  padding-top: 24px;
+  padding-top: calc(var(--topbar-compact-height) + 24px);
 }
 
 .summary {
@@ -893,12 +900,16 @@ textarea::placeholder {
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
-  padding: 0 16px calc(103px + env(safe-area-inset-bottom));
+  padding: calc(var(--topbar-compact-height) + var(--my-bookings-nav-height)) 16px calc(103px + env(safe-area-inset-bottom));
 }
 
 .my-bookings-sticky {
-  flex: 0 0 auto;
-  z-index: 5;
+  position: fixed;
+  top: var(--topbar-compact-height);
+  left: 0;
+  right: 0;
+  z-index: 25;
+  height: var(--my-bookings-nav-height);
   padding: 0 16px;
   background: var(--background);
 }
@@ -1104,7 +1115,7 @@ textarea::placeholder {
 }
 
 .cancel-content {
-  padding-top: 46px;
+  padding-top: calc(var(--topbar-compact-height) + 46px);
 }
 
 .cancel-content .option-list {
@@ -2345,8 +2356,9 @@ textarea.selected {
   }
 
   .admin-sidebar {
-    position: -webkit-sticky;
-    position: sticky;
+    position: fixed;
+    left: 0;
+    right: 0;
     height: auto;
     top: 0;
     z-index: 100;
@@ -2404,7 +2416,7 @@ textarea.selected {
   .admin-reservations,
   .admin-settings {
     position: static;
-    padding-top: 28px;
+    padding-top: calc(var(--admin-mobile-header-height) + 28px);
     padding-bottom: 0;
     overflow: visible;
   }
@@ -2440,7 +2452,7 @@ textarea.selected {
   .admin-mobile-settings-body {
     flex: 1 1 auto;
     min-height: 0;
-    padding: 0 16px calc(120px + env(safe-area-inset-bottom));
+    padding: calc(var(--topbar-compact-height) + env(safe-area-inset-top)) 16px calc(120px + env(safe-area-inset-bottom));
     overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
