@@ -1716,12 +1716,8 @@ function DetailsScreen(props: {
   const nameInputRef = useRef<HTMLInputElement>(null);
   const [isNameSubmitted, setIsNameSubmitted] = useState(false);
   const hasName = props.name.trim().length > 0;
-  const showTreatmentOptions = isNameSubmitted && hasName;
+  const showTreatmentOptions = isNameSubmitted;
   const shouldAutoFocusName = !hasName;
-
-  useEffect(() => {
-    if (!hasName) setIsNameSubmitted(false);
-  }, [hasName]);
 
   useLayoutEffect(() => {
     if (!shouldAutoFocusName) return undefined;
