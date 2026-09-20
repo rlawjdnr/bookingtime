@@ -379,6 +379,12 @@ a {
   align-items: stretch;
   gap: 8px;
   overflow: hidden;
+  text-align: left;
+}
+
+.home-booking-summary:focus-visible {
+  outline: 2px solid rgba(7, 145, 113, 0.28);
+  outline-offset: 2px;
 }
 
 .home-booking-count {
@@ -574,14 +580,9 @@ a {
   padding-top: calc(var(--topbar-compact-height) + 32px);
 }
 
-.time-screen-title {
-  width: min(210px, 100%);
-}
-
 .time-date-control {
   width: 100%;
   min-height: 50px;
-  margin-top: 22px;
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -611,22 +612,16 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
   color: var(--text);
-  font-size: 0.8824rem;
+  font-size: 0.9412rem;
   line-height: normal;
   font-weight: 500;
-}
-
-.time-date-center .calendar-icon {
-  width: 18px;
-  height: 18px;
 }
 
 .time-date-center .date-select-value {
   overflow: hidden;
   color: var(--text);
-  font-size: 0.8824rem;
+  font-size: 0.9412rem;
   line-height: normal;
   font-weight: 500;
   text-decoration: underline;
@@ -635,8 +630,21 @@ a {
   white-space: nowrap;
 }
 
+.time-selection-title {
+  margin-top: 32px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.time-selection-title-icon {
+  width: 20px;
+  height: 20px;
+}
+
 .time-selection-content .slot-section {
-  margin-top: 27px;
+  margin-top: 32px;
 }
 
 .time-selection-content .slot-section + .slot-section {
@@ -717,7 +725,7 @@ a {
 
 .slot-card span {
   margin-top: 1px;
-  color: #2a3038;
+  color: var(--muted);
   font-size: 0.8235rem;
 }
 

@@ -1525,7 +1525,7 @@ function HomeBookingSummary({
   const treatmentIllustrations = booking ? getTreatmentIllustrations(booking.treatment) : [];
 
   return (
-    <section className="home-booking-summary">
+    <TapButton className="home-booking-summary" type="button" onClick={onOpenMyBookings} disableTapMotion>
       <div className="home-booking-count">
         <span>내 예약</span>
         <strong className={hasUpcomingBooking ? "has-upcoming" : ""}>{upcomingBookingCount}건</strong>
@@ -1541,13 +1541,13 @@ function HomeBookingSummary({
       ) : (
         <p className="home-booking-empty">예약한 진료가 없어요</p>
       )}
-      <TapButton className="home-booking-all" onClick={onOpenMyBookings}>
+      <div className="home-booking-all" aria-hidden="true">
         <span>전체 보기</span>
         <span className="home-booking-all-icon">
           <img className="svg-icon" src={bookingCardChevronRightIcon} alt="" />
         </span>
-      </TapButton>
-    </section>
+      </div>
+    </TapButton>
   );
 }
 
@@ -1674,11 +1674,6 @@ function TimeScreen(props: {
     <>
       <Header clinicSettings={props.clinicSettings} back={props.onBack} compact />
       <div className="content time-selection-content">
-        <h1 className="screen-title time-screen-title">
-          {props.selectedDate.getMonth() + 1}월 {props.selectedDate.getDate()}일 어떤 시간에
-          <br />
-          진료를 원하시나요?
-        </h1>
         <div className="time-date-control">
           <TapButton
             className="time-date-arrow"
@@ -1689,7 +1684,6 @@ function TimeScreen(props: {
             <img className="svg-icon time-date-arrow-icon" src={monthPrevIcon} alt="" />
           </TapButton>
           <TapButton className="time-date-center" onClick={props.onOpenCalendar}>
-            <img className="svg-icon calendar-icon" src={calendarIcon} alt="" />
             <span className="date-select-value">{formatMonthDayWeek(props.selectedDate)}</span>
           </TapButton>
           <TapButton
@@ -1701,6 +1695,10 @@ function TimeScreen(props: {
             <img className="svg-icon time-date-arrow-icon" src={monthNextIcon} alt="" />
           </TapButton>
         </div>
+        <h1 className="screen-title time-selection-title">
+          <img className="svg-icon time-selection-title-icon" src={dateTitleCalendarIcon} alt="" />
+          <span>시간을 선택해 주세요</span>
+        </h1>
         <SlotGroup title="오전" slots={morning} selectedDate={props.selectedDate} selectedId={props.selectedSlotId} onSelect={props.onSelectSlot} />
         <SlotGroup title="오후" slots={afternoon} selectedDate={props.selectedDate} selectedId={props.selectedSlotId} onSelect={props.onSelectSlot} />
       </div>
