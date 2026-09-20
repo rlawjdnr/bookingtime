@@ -52,9 +52,36 @@ create table if not exists public.reservations (
   wait_minutes integer not null default 15,
   status text not null default 'confirmed' check (status in ('confirmed', 'cancelled')),
   cancel_reason text,
+  owner_token_hash text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.reservations
+add column if not exists owner_token_hash text;
+
+create table if not exists public.reservation_push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  reservation_id uuid not null references public.reservations(id) on delete cascade,
+  device_id text not null,
+  endpoint text not null,
+  p256dh text not null,
+  auth text not null,
+  expiration_time timestamptz,
+  user_agent text,
+  is_active boolean not null default true,
+  last_reminded_for date,
+  last_reminded_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (reservation_id, endpoint)
+);
+
+create index if not exists reservation_push_subscriptions_reservation_id_idx
+on public.reservation_push_subscriptions (reservation_id);
+
+create index if not exists reservation_push_subscriptions_active_idx
+on public.reservation_push_subscriptions (is_active, last_reminded_for);
 
 insert into public.clinic_settings (id, clinic_name, phone, open_days)
 values ('default', '이목구비 김한의원', '055-335-9799', 7)
@@ -121,6 +148,7 @@ alter table public.appointment_time_blocks enable row level security;
 alter table public.wait_time_rules enable row level security;
 alter table public.treatment_options enable row level security;
 alter table public.reservations enable row level security;
+alter table public.reservation_push_subscriptions enable row level security;
 
 drop policy if exists "Public read clinic settings" on public.clinic_settings;
 create policy "Public read clinic settings"

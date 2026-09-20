@@ -500,7 +500,10 @@ a {
 }
 
 .treatment-illustration.acupuncture {
-  background: #fff6f2;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  background: #f7f8f9;
 }
 
 .treatment-illustration.herbal {
@@ -510,6 +513,14 @@ a {
 .treatment-illustration img {
   width: 54px;
   height: 54px;
+}
+
+.treatment-illustration.acupuncture img {
+  width: 71.0223px;
+  height: 54px;
+  max-width: none;
+  flex: 0 0 auto;
+  object-fit: fill;
 }
 
 .home-booking-empty {
@@ -1046,6 +1057,32 @@ textarea::placeholder {
   font-weight: 600;
 }
 
+.push-reminder-button {
+  min-height: 39px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--text);
+  font-size: 0.8235rem;
+  line-height: normal;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.push-reminder-button:disabled {
+  opacity: 0.55;
+}
+
+.push-reminder-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+}
+
 .complete-summary {
   position: absolute;
   left: 0;
@@ -1317,7 +1354,7 @@ textarea.selected {
   left: 16px;
   right: 16px;
   bottom: 120px;
-  height: 41px;
+  min-height: 41px;
   padding: 12px;
   background: var(--text);
   border-radius: 8px;
@@ -1330,15 +1367,19 @@ textarea.selected {
   font-weight: 400;
 }
 
-.toast span {
+.toast-content {
   display: flex;
   align-items: center;
   flex: 1 1 auto;
   gap: 8px;
   min-width: 0;
+}
+
+.toast-message {
+  min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: normal;
+  white-space: normal;
 }
 
 .snackbar-icon {
@@ -1430,10 +1471,18 @@ textarea.selected {
 
 .confirm-sheet-note {
   margin: 0;
-  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fc6a66;
   font-size: 0.8824rem;
   line-height: 1.32;
   font-weight: 500;
+}
+
+.confirm-sheet-note-icon {
+  width: 16px;
+  height: 16px;
 }
 
 .confirm-summary {

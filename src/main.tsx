@@ -41,10 +41,11 @@ import dateTitleCalendarIcon from "./assets/figma/date-title-calendar-fill.svg";
 import phoneFillIcon from "./assets/figma/phone-fill.svg";
 import treatmentAcupunctureIllustration from "./assets/figma/treatment-acupuncture-illustration.svg";
 import treatmentHerbalIllustration from "./assets/figma/treatment-herbal-illustration.svg";
+import notificationBellIcon from "./assets/figma/notification-bell-fill.svg";
 
 const ADMIN_SESSION_KEY = "bookingtime-admin-authenticated";
 const ADMIN_SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
-const sameDayCancelBlockedMessage = "예약 당일에는 예약을 취소할 수 없어요";
+const sameDayCancelBlockedMessage = "예약 당일에는 예약을 취소하려면 전화로 문의해주세요";
 
 type Route = "date" | "time" | "details" | "complete" | "myBookings";
 type Treatment = string;
@@ -72,6 +73,8 @@ type Booking = {
   status: "confirmed" | "cancelled";
   cancelReason?: string;
   createdAt?: string;
+  ownerToken?: string;
+  ownerTokenHash?: string;
 };
 
 type ReservationRow = {
@@ -84,6 +87,7 @@ type ReservationRow = {
   status: "confirmed" | "cancelled";
   cancel_reason?: string | null;
   created_at?: string;
+  owner_token_hash?: string | null;
 };
 
 type TimeBlockRow = {
@@ -171,6 +175,9 @@ type AppointmentStore = {
 const activeBookingStorageKey = "hospital-reservation.activeBooking";
 const storedBookingsStorageKey = "hospital-reservation.bookings";
 const storedPatientNameStorageKey = "hospital-reservation.patientName";
+const pushDeviceIdStorageKey = "hospital-reservation.pushDeviceId";
+const pushReminderReservationIdsStorageKey = "hospital-reservation.pushReminderReservationIds";
+const vapidPublicKey = (import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined) ?? "";
 const otherTreatmentLabel = "기타";
 
 const fallbackClinic = {
@@ -311,8 +318,14 @@ class SyncReadyAppointmentStore implements AppointmentStore {
     }
 
     if (this.isRemoteReady && supabase) {
-      const { error } = await supabase.from("reservations").insert(toReservationRow(booking));
-      if (error) throw error;
+      const row = toReservationRow(booking);
+      const { error } = await supabase.from("reservations").insert(row);
+      if (error) {
+        if (!isMissingOwnerTokenColumnError(error)) throw error;
+        const { owner_token_hash: _ownerTokenHash, ...fallbackRow } = row;
+        const { error: fallbackError } = await supabase.from("reservations").insert(fallbackRow);
+        if (fallbackError) throw fallbackError;
+      }
     }
 
     this.bookings = [booking, ...this.bookings.filter((item) => item.id !== booking.id)];
@@ -700,11 +713,10 @@ function App() {
 
   const now = useCurrentMinute();
   const storedBookingsOnLoad = useMemo(() => loadStoredBookings(), []);
-  const stackIdRef = useRef(1);
+  const initialStack = useMemo(() => makeInitialStackFromUrl(), []);
+  const stackIdRef = useRef(initialStack.length);
   const stackMotionLockRef = useRef<number | null>(null);
-  const [stack, setStack] = useState<StackEntry[]>([
-    { id: 0, route: "date" },
-  ]);
+  const [stack, setStack] = useState<StackEntry[]>(initialStack);
   const [direction, setDirection] = useState(1);
   const [selectedDate, setSelectedDate] = useState(getToday());
   const [timeDateSlideDirection, setTimeDateSlideDirection] = useState<-1 | 0 | 1>(0);
@@ -726,6 +738,9 @@ function App() {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [screenTransitionMode, setScreenTransitionMode] = useState<ScreenTransitionMode>("slide");
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isInstalledApp, setIsInstalledApp] = useState(() => isInstalledAppMode());
+  const [isPushEnabled, setIsPushEnabled] = useState(false);
+  const [isPushBusy, setIsPushBusy] = useState(false);
 
   const slots = useMemo(() => {
     const daySetting = getDaySetting(daySettings, selectedDate);
@@ -793,6 +808,47 @@ function App() {
     return () => {
       if (stackMotionLockRef.current) window.clearTimeout(stackMotionLockRef.current);
     };
+  }, []);
+
+  useEffect(() => {
+    const updateInstalledMode = () => setIsInstalledApp(isInstalledAppMode());
+    const standaloneMedia = window.matchMedia("(display-mode: standalone)");
+    updateInstalledMode();
+    standaloneMedia.addEventListener("change", updateInstalledMode);
+    return () => standaloneMedia.removeEventListener("change", updateInstalledMode);
+  }, []);
+
+  useEffect(() => {
+    if (!canUsePushReminders()) return;
+    let isMounted = true;
+    void getExistingPushSubscription()
+      .then((subscription) => {
+        if (!isMounted) return;
+        setIsPushEnabled(Notification.permission === "granted" && Boolean(subscription));
+      })
+      .catch(() => {
+        if (isMounted) setIsPushEnabled(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [isInstalledApp]);
+
+  useEffect(() => {
+    if (!isInstalledApp || !isPushEnabled) return;
+    const reminderBookingIds = loadPushReminderReservationIds();
+    const reminderBookings = storedBookings.filter((item) => reminderBookingIds.has(item.id));
+    void syncPushReminderSubscriptions(reminderBookings).catch((error) => {
+      console.error("Failed to sync push reminders", error);
+    });
+  }, [isInstalledApp, isPushEnabled, storedBookings]);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("view") !== "myBookings") return;
+    url.searchParams.delete("view");
+    const nextUrl = `${url.pathname}${url.search}${url.hash}`;
+    window.history.replaceState(null, "", nextUrl || "/");
   }, []);
 
   const push = (route: Route) => {
@@ -891,6 +947,35 @@ function App() {
     });
   };
 
+  const enablePushReminders = async (targetBooking: Booking | null) => {
+    if (!targetBooking || isPushBusy) return;
+    if (!isInstalledAppMode()) return;
+    if (!canUsePushReminders()) {
+      showToast("이 기기에서는 알림을 지원하지 않아요");
+      return;
+    }
+
+    setIsPushBusy(true);
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") {
+        setIsPushEnabled(false);
+        showToast("알림을 받지 않아요");
+        return;
+      }
+
+      const registeredCount = await syncPushReminderSubscriptions([targetBooking]);
+      if (registeredCount > 0) savePushReminderReservationId(targetBooking.id);
+      setIsPushEnabled(true);
+      showToast(registeredCount > 0 ? "진료일 하루 전에 알려드릴게요." : "알림을 받아요");
+    } catch (error) {
+      console.error("Failed to enable push reminders", error);
+      showToast("알림 설정에 실패했어요");
+    } finally {
+      setIsPushBusy(false);
+    }
+  };
+
   const submitBooking = async () => {
     if (!selectedSlot || selectedSlot.closed) {
       setIsConfirmOpen(false);
@@ -904,17 +989,21 @@ function App() {
       showDuplicateBookingToast(duplicateBooking);
       return;
     }
-    const nextBooking: Booking = {
-      id: crypto.randomUUID(),
-      patientName: patientName.trim(),
-      date: toDateKey(selectedDate),
-      time: selectedSlot.time,
-      treatment,
-      waitMinutes,
-      status: "confirmed",
-      createdAt: new Date().toISOString(),
-    };
     try {
+      const ownerToken = createReservationOwnerToken();
+      const ownerTokenHash = await hashReservationOwnerToken(ownerToken);
+      const nextBooking: Booking = {
+        id: crypto.randomUUID(),
+        patientName: patientName.trim(),
+        date: toDateKey(selectedDate),
+        time: selectedSlot.time,
+        treatment,
+        waitMinutes,
+        status: "confirmed",
+        createdAt: new Date().toISOString(),
+        ownerToken,
+        ownerTokenHash,
+      };
       await appointmentStore.create(nextBooking);
       saveStoredPatientName(nextBooking.patientName);
       setStoredBookings(saveStoredBooking(nextBooking));
@@ -1081,6 +1170,9 @@ function App() {
                   <CompleteScreen
                     clinicSettings={clinicSettings}
                     booking={booking}
+                    showPushReminderButton={isInstalledApp && canUsePushReminders()}
+                    isPushBusy={isPushBusy}
+                    onEnablePushReminder={() => void enablePushReminders(booking)}
                     onConfirm={() => {
                       setBooking(null);
                       setDirection(-1);
@@ -1235,7 +1327,10 @@ function ConfirmBookingSheet({
               <motion.span variants={confirmSheetItem}>{patientName}님 마지막으로</motion.span>
               <motion.span variants={confirmSheetItem}>확인해주세요</motion.span>
             </h1>
-            <motion.p className="confirm-sheet-note" variants={confirmSheetItem}>당일 예약 취소는 어려워요</motion.p>
+            <motion.div className="confirm-sheet-note" variants={confirmSheetItem}>
+              <img className="svg-icon confirm-sheet-note-icon" src={snackbarAlertIcon} alt="" />
+              <span>당일 예약 취소는 어려워요</span>
+            </motion.div>
           </div>
           <div className="confirm-summary">
             <motion.div
@@ -1903,7 +1998,21 @@ function DetailsAppointmentSummary({ appointmentLabel, waitMinutes }: { appointm
   );
 }
 
-function CompleteScreen({ clinicSettings, booking, onConfirm }: { clinicSettings: ClinicSettings; booking: Booking; onConfirm: () => void }) {
+function CompleteScreen({
+  clinicSettings,
+  booking,
+  showPushReminderButton,
+  isPushBusy,
+  onEnablePushReminder,
+  onConfirm,
+}: {
+  clinicSettings: ClinicSettings;
+  booking: Booking;
+  showPushReminderButton: boolean;
+  isPushBusy: boolean;
+  onEnablePushReminder: () => void;
+  onConfirm: () => void;
+}) {
   return (
     <>
       <Header clinicSettings={clinicSettings} complete />
@@ -1916,6 +2025,12 @@ function CompleteScreen({ clinicSettings, booking, onConfirm }: { clinicSettings
           <br />
           예약을 완료했어요
         </h1>
+        {showPushReminderButton && (
+          <TapButton className="push-reminder-button" disabled={isPushBusy} onClick={onEnablePushReminder}>
+            <img className="svg-icon push-reminder-icon" src={notificationBellIcon} alt="" />
+            진료일 하루 전에 알림 받기
+          </TapButton>
+        )}
       </section>
       <div className="complete-summary">
         <SummaryCard
@@ -2240,7 +2355,7 @@ function SummaryCard({ rows, flat = false, hideIcons = false }: { rows: [string,
 }
 
 function Toast({ message, action, onDismiss }: { message: string; action?: ToastAction | null; onDismiss: () => void }) {
-  const icon = message.includes("마감") || message.includes("진료하지") || message.includes("예약이 열리지") || message.includes("취소할 수") ? snackbarAlertIcon : snackbarCheckIcon;
+  const icon = message.includes("마감") || message.includes("진료하지") || message.includes("예약이 열리지") || message.includes("예약 당일") ? snackbarAlertIcon : snackbarCheckIcon;
 
   useEffect(() => {
     if (!message) return;
@@ -2258,7 +2373,10 @@ function Toast({ message, action, onDismiss }: { message: string; action?: Toast
           exit={{ y: "calc(100% + 112px)", opacity: 0 }}
           transition={{ y: snackbarSpring, opacity: { duration: 0.08 } }}
         >
-          <span><img className="svg-icon snackbar-icon" src={icon} alt="" />{message}</span>
+          <span className="toast-content">
+            <img className="svg-icon snackbar-icon" src={icon} alt="" />
+            <span className="toast-message">{message}</span>
+          </span>
           <TapButton onClick={action?.onClick ?? onDismiss}>{action?.label ?? "확인"}</TapButton>
         </motion.div>
       )}
@@ -3301,6 +3419,7 @@ function toReservationRow(booking: Booking) {
     wait_minutes: booking.waitMinutes,
     status: booking.status,
     cancel_reason: booking.cancelReason,
+    owner_token_hash: booking.ownerTokenHash,
   };
 }
 
@@ -3409,9 +3528,26 @@ function getReservationErrorMessage(error: unknown) {
   return "예약 저장에 실패했어요";
 }
 
+function makeInitialStackFromUrl(): StackEntry[] {
+  const url = new URL(window.location.href);
+  if (url.searchParams.get("view") === "myBookings") {
+    return [
+      { id: 0, route: "date" },
+      { id: 1, route: "myBookings" },
+    ];
+  }
+
+  return [{ id: 0, route: "date" }];
+}
+
 function isMissingOptionalTableError(error: unknown) {
   const message = error instanceof Error ? error.message : String((error as { message?: string })?.message || error || "");
   return message.includes("schema cache") || message.includes("Could not find the table");
+}
+
+function isMissingOwnerTokenColumnError(error: unknown) {
+  const message = error instanceof Error ? error.message : String((error as { message?: string })?.message || error || "");
+  return message.includes("owner_token_hash") && (message.includes("schema cache") || message.includes("Could not find"));
 }
 
 function makeCalendarDays(date: Date) {
@@ -3520,6 +3656,122 @@ function saveStoredPatientName(name: string) {
   }
 
   window.localStorage.removeItem(storedPatientNameStorageKey);
+}
+
+function isInstalledAppMode() {
+  const standaloneNavigator = navigator as Navigator & { standalone?: boolean };
+  return window.matchMedia("(display-mode: standalone)").matches || standaloneNavigator.standalone === true;
+}
+
+function canUsePushReminders() {
+  return Boolean(
+    vapidPublicKey &&
+      "Notification" in window &&
+      "serviceWorker" in navigator &&
+      "PushManager" in window &&
+      window.isSecureContext,
+  );
+}
+
+async function getExistingPushSubscription() {
+  if (!("serviceWorker" in navigator)) return null;
+  const registration = await navigator.serviceWorker.getRegistration("/");
+  return registration?.pushManager.getSubscription() ?? null;
+}
+
+async function syncPushReminderSubscriptions(bookings: Booking[]) {
+  if (!canUsePushReminders() || Notification.permission !== "granted") return 0;
+
+  const reservations = dedupeBookings(bookings)
+    .filter((booking) => booking.status === "confirmed" && !isBookingDatePassed(booking) && Boolean(booking.ownerToken))
+    .map((booking) => ({
+      id: booking.id,
+      ownerToken: booking.ownerToken as string,
+    }));
+
+  if (!reservations.length) return 0;
+
+  const registration = await navigator.serviceWorker.register("/service-worker.js");
+  const readyRegistration = await navigator.serviceWorker.ready;
+  const subscription =
+    (await readyRegistration.pushManager.getSubscription()) ??
+    (await readyRegistration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+    }));
+
+  const response = await fetch("/api/push-subscribe", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      deviceId: getOrCreatePushDeviceId(),
+      subscription: subscription.toJSON(),
+      reservations,
+      scope: registration.scope,
+    }),
+  });
+
+  if (!response.ok) throw new Error("Push subscription failed");
+  const result = (await response.json()) as { registered?: number };
+  return result.registered ?? 0;
+}
+
+function getOrCreatePushDeviceId() {
+  const savedDeviceId = window.localStorage.getItem(pushDeviceIdStorageKey);
+  if (savedDeviceId) return savedDeviceId;
+
+  const nextDeviceId = crypto.randomUUID();
+  window.localStorage.setItem(pushDeviceIdStorageKey, nextDeviceId);
+  return nextDeviceId;
+}
+
+function loadPushReminderReservationIds() {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(pushReminderReservationIdsStorageKey) || "[]");
+    if (!Array.isArray(parsed)) return new Set<string>();
+    return new Set(parsed.filter((id): id is string => typeof id === "string"));
+  } catch {
+    window.localStorage.removeItem(pushReminderReservationIdsStorageKey);
+    return new Set<string>();
+  }
+}
+
+function savePushReminderReservationId(id: string) {
+  const ids = loadPushReminderReservationIds();
+  ids.add(id);
+  window.localStorage.setItem(pushReminderReservationIdsStorageKey, JSON.stringify([...ids]));
+}
+
+function createReservationOwnerToken() {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return bytesToBase64Url(bytes);
+}
+
+async function hashReservationOwnerToken(token: string) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+  return bytesToBase64Url(new Uint8Array(digest));
+}
+
+function urlBase64ToUint8Array(value: string) {
+  const padding = "=".repeat((4 - (value.length % 4)) % 4);
+  const base64 = `${value}${padding}`.replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let index = 0; index < rawData.length; index += 1) {
+    outputArray[index] = rawData.charCodeAt(index);
+  }
+
+  return outputArray;
+}
+
+function bytesToBase64Url(bytes: Uint8Array) {
+  let binary = "";
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return window.btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
 function normalizePatientNameForDuplicate(name: string) {
