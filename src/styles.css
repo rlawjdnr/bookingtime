@@ -4,6 +4,9 @@
   --app-height: 100dvh;
   --safe-top: calc(env(safe-area-inset-top, 0px) + 8px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --bottom-cta-padding-bottom: max(26px, var(--safe-bottom));
+  --bottom-cta-content-padding: calc(77px + var(--bottom-cta-padding-bottom));
+  --complete-summary-bottom: calc(73px + var(--bottom-cta-padding-bottom));
   --topbar-height: calc(56px + var(--safe-top));
   --topbar-compact-height: calc(48px + var(--safe-top));
   --complete-topbar-height: calc(43px + var(--safe-top));
@@ -430,7 +433,7 @@ a {
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
-  padding: calc(var(--topbar-height) + 18px) 16px calc(103px + var(--safe-bottom));
+  padding: calc(var(--topbar-height) + 18px) 16px var(--bottom-cta-content-padding);
 }
 
 .content h1,
@@ -905,7 +908,7 @@ a {
   right: 0;
   bottom: 0;
   z-index: 10;
-  padding: 12px 16px calc(26px + var(--safe-bottom));
+  padding: 12px 16px var(--bottom-cta-padding-bottom);
   background: var(--background);
 }
 
@@ -1164,7 +1167,7 @@ textarea::placeholder {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: calc(99px + var(--safe-bottom));
+  bottom: var(--complete-summary-bottom);
   height: 122px;
   padding: 10px 16px;
   display: flex;
@@ -1181,7 +1184,7 @@ textarea::placeholder {
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
-  padding: calc(var(--topbar-compact-height) + var(--my-bookings-nav-height)) 16px calc(103px + var(--safe-bottom));
+  padding: calc(var(--topbar-compact-height) + var(--my-bookings-nav-height)) 16px var(--bottom-cta-content-padding);
 }
 
 .my-bookings-sticky {
