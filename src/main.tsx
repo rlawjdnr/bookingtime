@@ -2099,10 +2099,7 @@ function DetailsAppointmentSummary({ appointmentLabel, waitMinutes }: { appointm
     <section className="details-appointment-summary">
       <strong>{appointmentLabel}</strong>
       <div className="details-wait-row">
-        <span>
-          <img className="svg-icon details-wait-icon" src={waitIcon} alt="" />
-          대기 시간
-        </span>
+        <span>예상 대기 시간</span>
         <b>{waitMinutes}분</b>
       </div>
     </section>
