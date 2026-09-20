@@ -281,7 +281,6 @@ const calendarSheetItem = {
 };
 const calendarPickedSpring = { type: "spring" as const, stiffness: 100, damping: 15 };
 const timeSlotSlideSpring = { type: "spring" as const, stiffness: 480, damping: 50 };
-const timeSlotSlideDistance = 44;
 const calendarWeekdays = ["일", "월", "화", "수", "목", "금", "토"];
 const screenVariants = {
   enter: (latestDirection: number) => ({ x: latestDirection > 0 ? "100%" : "-50%" }),
@@ -1693,6 +1692,8 @@ function TimeScreen(props: {
   const morning = visibleSlots.filter((slot) => Number(slot.time.split(":")[0]) < 13);
   const afternoon = visibleSlots.filter((slot) => Number(slot.time.split(":")[0]) >= 13);
   const selectedSlot = visibleSlots.find((slot) => slot.id === props.selectedSlotId && !slot.closed) ?? visibleSlots.find((slot) => !slot.closed);
+  const enterX = getTimeSlotSlideX(props.dateSlideDirection);
+  const exitX = getTimeSlotSlideX(-props.dateSlideDirection);
 
   return (
     <>
@@ -1728,12 +1729,12 @@ function TimeScreen(props: {
             <motion.div
               className="time-slot-motion"
               key={toDateKey(props.selectedDate)}
-              initial={props.dateSlideDirection === 0 ? false : { x: props.dateSlideDirection * timeSlotSlideDistance, opacity: 0 }}
+              initial={props.dateSlideDirection === 0 ? false : { x: enterX, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={
                 props.dateSlideDirection === 0
                   ? { x: 0, opacity: 1, transition: { duration: 0 } }
-                  : { x: props.dateSlideDirection * -timeSlotSlideDistance, opacity: 0 }
+                  : { x: exitX, opacity: 0 }
               }
               transition={{ x: timeSlotSlideSpring, opacity: { duration: 0.12 } }}
             >
@@ -1775,6 +1776,12 @@ function SlotGroup(props: { title: string; slots: Slot[]; selectedDate: Date; se
       )}
     </section>
   );
+}
+
+function getTimeSlotSlideX(direction: number) {
+  if (direction > 0) return "calc(100% + 32px)";
+  if (direction < 0) return "calc(-100% - 32px)";
+  return 0;
 }
 
 function DetailsScreen(props: {
@@ -1821,7 +1828,7 @@ function DetailsScreen(props: {
     <>
       <Header clinicSettings={props.clinicSettings} back={props.onBack} compact />
       <div className="content details-content">
-        <SummaryCard rows={[["예약 시간", props.appointmentLabel, timeCalendarIcon], ["대기 시간", `${props.waitMinutes}분`, waitIcon]]} />
+        <DetailsAppointmentSummary appointmentLabel={props.appointmentLabel} waitMinutes={props.waitMinutes} />
         <AnimatePresence initial={false}>
           {showTreatmentOptions && (
             <motion.section
@@ -1878,6 +1885,21 @@ function DetailsScreen(props: {
         {!hasName ? "이름을 입력해주세요" : showTreatmentOptions ? (props.canBook ? "진료 예약하기" : "접수가 마감된 시간이에요") : "다음"}
       </BottomCTA>
     </>
+  );
+}
+
+function DetailsAppointmentSummary({ appointmentLabel, waitMinutes }: { appointmentLabel: string; waitMinutes: number }) {
+  return (
+    <section className="details-appointment-summary">
+      <strong>{appointmentLabel}</strong>
+      <div className="details-wait-row">
+        <span>
+          <img className="svg-icon details-wait-icon" src={waitIcon} alt="" />
+          대기 시간
+        </span>
+        <b>{waitMinutes}분</b>
+      </div>
+    </section>
   );
 }
 
