@@ -577,7 +577,7 @@ a {
 }
 
 .time-selection-content {
-  padding-top: calc(var(--topbar-compact-height) + 34px);
+  padding-top: calc(var(--topbar-compact-height) + 32px);
 }
 
 .time-date-control {
@@ -589,6 +589,10 @@ a {
   display: grid;
   grid-template-columns: 24px minmax(0, 1fr) 24px;
   align-items: center;
+}
+
+.time-selection-content .time-date-control {
+  margin-top: 22px;
 }
 
 .time-date-arrow {
@@ -671,10 +675,10 @@ a {
 }
 
 .time-selection-title {
-  margin-top: 32px;
   display: flex;
   align-items: center;
   gap: 8px;
+  min-height: 26px;
   white-space: nowrap;
 }
 
@@ -684,7 +688,7 @@ a {
 }
 
 .time-selection-content .slot-section {
-  margin-top: 32px;
+  margin-top: 22px;
 }
 
 .time-selection-content .slot-section + .slot-section {

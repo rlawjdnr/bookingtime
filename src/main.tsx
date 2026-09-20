@@ -1674,6 +1674,10 @@ function TimeScreen(props: {
     <>
       <Header clinicSettings={props.clinicSettings} back={props.onBack} compact />
       <div className="content time-selection-content">
+        <h1 className="screen-title time-selection-title">
+          <img className="svg-icon time-selection-title-icon" src={dateTitleCalendarIcon} alt="" />
+          <span>시간을 선택해 주세요</span>
+        </h1>
         <div className="time-date-control time-date-control-text-trigger">
           <TapButton
             className="time-date-side time-date-side-prev"
@@ -1695,10 +1699,6 @@ function TimeScreen(props: {
             <img className="svg-icon time-date-arrow-icon" src={monthNextIcon} alt="" />
           </TapButton>
         </div>
-        <h1 className="screen-title time-selection-title">
-          <img className="svg-icon time-selection-title-icon" src={dateTitleCalendarIcon} alt="" />
-          <span>시간을 선택해 주세요</span>
-        </h1>
         <SlotGroup title="오전" slots={morning} selectedDate={props.selectedDate} selectedId={props.selectedSlotId} onSelect={props.onSelectSlot} />
         <SlotGroup title="오후" slots={afternoon} selectedDate={props.selectedDate} selectedId={props.selectedSlotId} onSelect={props.onSelectSlot} />
       </div>
