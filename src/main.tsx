@@ -734,6 +734,7 @@ function App() {
   const [treatmentOptions, setTreatmentOptions] = useState<TreatmentOption[]>(fallbackTreatments);
   const [toast, setToast] = useState("");
   const [toastAction, setToastAction] = useState<ToastAction | null>(null);
+  const [toastTone, setToastTone] = useState<ToastTone>("default");
   const [isCancelOpen, setIsCancelOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [screenTransitionMode, setScreenTransitionMode] = useState<ScreenTransitionMode>("slide");
@@ -916,12 +917,16 @@ function App() {
   const dismissToast = () => {
     setToast("");
     setToastAction(null);
+    setToastTone("default");
   };
 
-  const showToast = (message: string, action: ToastAction | null = null) => {
+  const showToast = (message: string, action: ToastAction | null = null, tone: ToastTone = "default") => {
     setToastAction(action);
+    setToastTone(tone);
     setToast(message);
   };
+
+  const showNotificationToast = (message: string) => showToast(message, null, "notification");
 
   const findDuplicateStoredBooking = (slot = selectedSlot, name = patientName) => {
     if (!slot) return null;
@@ -951,23 +956,29 @@ function App() {
     if (!targetBooking || isPushBusy) return;
     if (!isInstalledAppMode()) return;
     if (!canUsePushReminders()) {
-      showToast("이 기기에서는 알림을 지원하지 않아요");
+      showNotificationToast("알림을 받지 않아요");
       return;
     }
 
     setIsPushBusy(true);
     try {
+      const shouldShowPermissionToast = Notification.permission !== "granted";
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
         setIsPushEnabled(false);
-        showToast("알림을 받지 않아요");
+        showNotificationToast("알림을 받지 않아요");
         return;
+      }
+
+      if (shouldShowPermissionToast) {
+        showNotificationToast("알림을 받아요");
+        await delay(700);
       }
 
       const registeredCount = await syncPushReminderSubscriptions([targetBooking]);
       if (registeredCount > 0) savePushReminderReservationId(targetBooking.id);
       setIsPushEnabled(true);
-      showToast(registeredCount > 0 ? "진료일 하루 전에 알려드릴게요." : "알림을 받아요");
+      showNotificationToast(registeredCount > 0 ? "진료일 하루 전에 알려드릴게요." : "알림을 받아요");
     } catch (error) {
       console.error("Failed to enable push reminders", error);
       showToast("알림 설정에 실패했어요");
@@ -1246,7 +1257,7 @@ function App() {
             />
           )}
         </AnimatePresence>
-        <Toast message={toast} action={toastAction} onDismiss={dismissToast} />
+        <Toast message={toast} action={toastAction} tone={toastTone} onDismiss={dismissToast} />
       </div>
     </main>
   );
@@ -1408,6 +1419,7 @@ type ToastAction = {
   label: string;
   onClick: () => void;
 };
+type ToastTone = "default" | "notification";
 
 function TapButton(props: TapButtonProps) {
   const { children, disabled, transition, disableTapMotion, ...rest } = props;
@@ -2354,7 +2366,17 @@ function SummaryCard({ rows, flat = false, hideIcons = false }: { rows: [string,
   );
 }
 
-function Toast({ message, action, onDismiss }: { message: string; action?: ToastAction | null; onDismiss: () => void }) {
+function Toast({
+  message,
+  action,
+  tone = "default",
+  onDismiss,
+}: {
+  message: string;
+  action?: ToastAction | null;
+  tone?: ToastTone;
+  onDismiss: () => void;
+}) {
   const icon = message.includes("마감") || message.includes("진료하지") || message.includes("예약이 열리지") || message.includes("예약 당일") ? snackbarAlertIcon : snackbarCheckIcon;
 
   useEffect(() => {
@@ -2367,7 +2389,7 @@ function Toast({ message, action, onDismiss }: { message: string; action?: Toast
     <AnimatePresence>
       {message && (
         <motion.div
-          className="toast"
+          className={`toast ${tone === "notification" ? "notification-toast" : ""}`}
           initial={{ y: "calc(100% + 112px)", opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: "calc(100% + 112px)", opacity: 0 }}
@@ -3740,6 +3762,12 @@ function savePushReminderReservationId(id: string) {
   const ids = loadPushReminderReservationIds();
   ids.add(id);
   window.localStorage.setItem(pushReminderReservationIdsStorageKey, JSON.stringify([...ids]));
+}
+
+function delay(durationMs: number) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, durationMs);
+  });
 }
 
 function createReservationOwnerToken() {

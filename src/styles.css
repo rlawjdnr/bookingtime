@@ -1394,6 +1394,10 @@ textarea.selected {
   font-weight: 400;
 }
 
+.toast.notification-toast button {
+  color: #fff;
+}
+
 .sheet-dim {
   position: absolute;
   inset: 0;
