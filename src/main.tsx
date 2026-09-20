@@ -42,6 +42,8 @@ import phoneFillIcon from "./assets/figma/phone-fill.svg";
 import treatmentAcupunctureIllustration from "./assets/figma/treatment-acupuncture-illustration.svg";
 import treatmentHerbalIllustration from "./assets/figma/treatment-herbal-illustration.svg";
 import notificationBellIcon from "./assets/figma/notification-bell-fill.svg";
+import notificationBellLineIcon from "./assets/figma/notification-bell-line.svg";
+import notificationBellOffIcon from "./assets/figma/notification-bell-off-line.svg";
 
 const ADMIN_SESSION_KEY = "bookingtime-admin-authenticated";
 const ADMIN_SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
@@ -987,6 +989,44 @@ function App() {
     }
   };
 
+  const togglePushReminders = async () => {
+    if (isPushBusy) return;
+    if (!isInstalledAppMode()) return;
+    if (!canUsePushReminders()) {
+      setIsPushEnabled(false);
+      showNotificationToast("알림을 받지 않아요");
+      return;
+    }
+
+    setIsPushBusy(true);
+    try {
+      if (isPushEnabled) {
+        await disablePushReminderSubscription();
+        setIsPushEnabled(false);
+        showNotificationToast("알림을 받지 않아요");
+        return;
+      }
+
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") {
+        setIsPushEnabled(false);
+        showNotificationToast("알림을 받지 않아요");
+        return;
+      }
+
+      const reminderBookingIds = loadPushReminderReservationIds();
+      const reminderBookings = storedBookings.filter((item) => reminderBookingIds.has(item.id));
+      if (reminderBookings.length) await syncPushReminderSubscriptions(reminderBookings);
+      setIsPushEnabled(true);
+      showNotificationToast("알림을 받아요");
+    } catch (error) {
+      console.error("Failed to toggle push reminders", error);
+      showToast("알림 설정에 실패했어요");
+    } finally {
+      setIsPushBusy(false);
+    }
+  };
+
   const submitBooking = async () => {
     if (!selectedSlot || selectedSlot.closed) {
       setIsConfirmOpen(false);
@@ -1110,6 +1150,9 @@ function App() {
                     now={now}
                     bookings={storedBookings}
                     canContinue={canContinueDate}
+                    showNotificationButton={isInstalledApp}
+                    notificationEnabled={isPushEnabled}
+                    onToggleNotification={() => void togglePushReminders()}
                     onBlockedDate={(message) => showToast(message)}
                     onOpenMyBookings={() => push("myBookings")}
                     onSelectDate={(date) => {
@@ -1525,6 +1568,9 @@ function Header({
   hideTitle = false,
   upcomingBookingCount = 0,
   onOpenMyBookings,
+  showNotificationButton = false,
+  notificationEnabled = false,
+  onToggleNotification,
 }: {
   clinicSettings: ClinicSettings;
   clinicStatus?: string;
@@ -1534,6 +1580,9 @@ function Header({
   hideTitle?: boolean;
   upcomingBookingCount?: number;
   onOpenMyBookings?: () => void;
+  showNotificationButton?: boolean;
+  notificationEnabled?: boolean;
+  onToggleNotification?: () => void;
 }) {
   if (complete) {
     return (
@@ -1552,15 +1601,41 @@ function Header({
       ) : onOpenMyBookings ? (
         <MyBookingsHeaderButton upcomingBookingCount={upcomingBookingCount} onClick={onOpenMyBookings} />
       ) : (
-        <div className="clinic-title">
-          <span className="icon-18"><img className="svg-icon hospital-icon" src={hospitalIcon} alt="" /></span>
-          <strong>{clinicSettings.name}</strong>
-        </div>
+        <HomeClinicTitle clinicSettings={clinicSettings} clinicStatus={clinicStatus} />
       )}
       {back && !hideTitle && <strong className="header-title">{clinicSettings.name}</strong>}
-      {!back && <span className={upcomingBookingCount === 0 ? "clinic-status" : "header-spacer"}>{upcomingBookingCount === 0 ? clinicStatus ?? clinicSettings.status : ""}</span>}
+      {!back && !onOpenMyBookings && (
+        showNotificationButton ? (
+          <NotificationHeaderButton enabled={notificationEnabled} onClick={onToggleNotification} />
+        ) : (
+          <span className="header-spacer" />
+        )
+      )}
+      {!back && onOpenMyBookings && <span className={upcomingBookingCount === 0 ? "clinic-status" : "header-spacer"}>{upcomingBookingCount === 0 ? clinicStatus ?? clinicSettings.status : ""}</span>}
       {back && <span className="header-spacer" />}
     </header>
+  );
+}
+
+function HomeClinicTitle({ clinicSettings, clinicStatus }: { clinicSettings: ClinicSettings; clinicStatus?: string }) {
+  return (
+    <div className="home-clinic-title">
+      <span className="home-clinic-icon"><img className="svg-icon hospital-icon" src={hospitalIcon} alt="" /></span>
+      <strong>{formatHomeClinicName(clinicSettings.name)}</strong>
+      <span>{clinicStatus ?? clinicSettings.status}</span>
+    </div>
+  );
+}
+
+function NotificationHeaderButton({ enabled, onClick }: { enabled: boolean; onClick?: () => void }) {
+  return (
+    <TapButton className="notification-header-button" type="button" onClick={onClick} aria-label={enabled ? "알림 끄기" : "알림 켜기"}>
+      <img
+        className={`svg-icon notification-header-icon ${enabled ? "enabled" : "disabled"}`}
+        src={enabled ? notificationBellLineIcon : notificationBellOffIcon}
+        alt=""
+      />
+    </TapButton>
   );
 }
 
@@ -1595,6 +1670,9 @@ function DateScreen(props: {
   now: Date;
   bookings: Booking[];
   canContinue: boolean;
+  showNotificationButton: boolean;
+  notificationEnabled: boolean;
+  onToggleNotification: () => void;
   onBlockedDate: (message: string) => void;
   onOpenMyBookings: () => void;
   onSelectDate: (date: Date) => void;
@@ -1606,7 +1684,13 @@ function DateScreen(props: {
 
   return (
     <>
-      <Header clinicSettings={props.clinicSettings} clinicStatus={props.clinicStatus} />
+      <Header
+        clinicSettings={props.clinicSettings}
+        clinicStatus={props.clinicStatus}
+        showNotificationButton={props.showNotificationButton}
+        notificationEnabled={props.notificationEnabled}
+        onToggleNotification={props.onToggleNotification}
+      />
       <div className={`content date-home-content ${shouldShowBookingSummary ? "with-booking-summary" : ""}`}>
         {shouldShowBookingSummary && (
           <HomeBookingSummary
@@ -3738,6 +3822,25 @@ async function syncPushReminderSubscriptions(bookings: Booking[]) {
   return result.registered ?? 0;
 }
 
+async function disablePushReminderSubscription() {
+  const subscription = await getExistingPushSubscription();
+  if (!subscription) return;
+
+  await fetch("/api/push-unsubscribe", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      deviceId: getOrCreatePushDeviceId(),
+      subscription: subscription.toJSON(),
+      endpoint: subscription.endpoint,
+    }),
+  }).catch((error) => {
+    console.error("Failed to deactivate push subscription remotely", error);
+  });
+
+  await subscription.unsubscribe();
+}
+
 function getOrCreatePushDeviceId() {
   const savedDeviceId = window.localStorage.getItem(pushDeviceIdStorageKey);
   if (savedDeviceId) return savedDeviceId;
@@ -3927,6 +4030,10 @@ function getSlotIdByTime(time: string, date = getToday()) {
 function formatMonthDayWeek(date: Date) {
   const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
   return `${date.getMonth() + 1}월 ${date.getDate()}일 (${weekdays[date.getDay()]})`;
+}
+
+function formatHomeClinicName(name: string) {
+  return name.replace(/^이목구비\s+/, "");
 }
 
 function formatShortDate(date: Date) {

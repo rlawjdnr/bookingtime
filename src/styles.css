@@ -200,6 +200,61 @@ a {
   font-size: 0.8824rem;
 }
 
+.home-clinic-title {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 0.8235rem;
+  line-height: normal;
+  font-weight: 500;
+}
+
+.home-clinic-title strong {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.home-clinic-title span:last-child {
+  margin-left: 2px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.home-clinic-icon {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 20px;
+}
+
+.home-clinic-icon .hospital-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.notification-header-button {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  overflow: visible;
+}
+
+.notification-header-icon.enabled {
+  width: 24px;
+  height: 24px;
+}
+
+.notification-header-icon.disabled {
+  width: 32px;
+  height: 32px;
+  max-width: none;
+}
+
 .my-bookings-link {
   gap: 6px;
   color: #079171;
