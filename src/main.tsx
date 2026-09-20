@@ -32,6 +32,7 @@ import adminDropdownIcon from "./assets/figma/admin-dropdown.svg";
 import adminLogoutIcon from "./assets/figma/admin-logout.svg";
 import adminRadioEmptyIcon from "./assets/figma/admin-radio-empty.svg";
 import adminRadioSelectedIcon from "./assets/figma/admin-radio-selected.svg";
+import homeClinicLogoIcon from "./assets/figma/home-clinic-logo.svg";
 import myBookingsCalendarIcon from "./assets/figma/my-bookings-calendar.svg";
 import myBookingsCalendarEmptyIcon from "./assets/figma/my-bookings-calendar-empty.svg";
 import myBookingsChevronIcon from "./assets/figma/my-bookings-chevron.svg";
@@ -1231,7 +1232,7 @@ function App() {
                   <CompleteScreen
                     clinicSettings={clinicSettings}
                     booking={booking}
-                    showPushReminderButton={isInstalledApp && canUsePushReminders()}
+                    showPushReminderButton={isInstalledApp && canUsePushReminders() && !isPushEnabled}
                     isPushBusy={isPushBusy}
                     onEnablePushReminder={() => void enablePushReminders(booking)}
                     onConfirm={() => {
@@ -1627,7 +1628,7 @@ function Header({
 function HomeClinicTitle({ clinicSettings, clinicStatus }: { clinicSettings: ClinicSettings; clinicStatus?: string }) {
   return (
     <div className="home-clinic-title">
-      <span className="home-clinic-icon"><img className="svg-icon hospital-icon" src={hospitalIcon} alt="" /></span>
+      <span className="home-clinic-icon"><img className="svg-icon hospital-icon" src={homeClinicLogoIcon} alt="" /></span>
       <strong>{formatHomeClinicName(clinicSettings.name)}</strong>
       <span>{clinicStatus ?? clinicSettings.status}</span>
     </div>

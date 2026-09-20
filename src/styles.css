@@ -4,7 +4,7 @@
   --app-height: 100dvh;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --topbar-height: calc(55px + var(--safe-top));
+  --topbar-height: calc(56px + var(--safe-top));
   --topbar-compact-height: calc(48px + var(--safe-top));
   --complete-topbar-height: calc(43px + var(--safe-top));
   --my-bookings-nav-height: 90px;
@@ -157,7 +157,7 @@ a {
   z-index: 30;
   width: 100%;
   height: var(--topbar-height);
-  padding: calc(16px + var(--safe-top)) 16px 20px;
+  padding: calc(16px + var(--safe-top)) 16px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -205,21 +205,22 @@ a {
   display: flex;
   align-items: center;
   gap: 4px;
-  color: var(--muted);
-  font-size: 0.8235rem;
+  color: #555d6d;
   line-height: normal;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .home-clinic-title strong {
-  color: var(--muted);
+  color: #555d6d;
+  font-size: 1rem;
   font-weight: 600;
 }
 
 .home-clinic-title span:last-child {
-  margin-left: 2px;
-  color: var(--muted);
-  font-weight: 500;
+  margin-left: 1px;
+  color: #555d6d;
+  font-size: 0.9412rem;
+  font-weight: 400;
 }
 
 .home-clinic-icon {
@@ -272,8 +273,8 @@ a {
 }
 
 .notification-header-icon.disabled {
-  width: 32px;
-  height: 32px;
+  width: 22px;
+  height: 22px;
   max-width: none;
 }
 
@@ -1155,9 +1156,10 @@ textarea::placeholder {
 }
 
 .push-reminder-icon {
-  width: 16px;
-  height: 16px;
-  flex: 0 0 16px;
+  width: 12px;
+  height: 14.7px;
+  margin: 0 2px;
+  flex: 0 0 auto;
 }
 
 .complete-summary {
