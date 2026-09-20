@@ -611,15 +611,20 @@ class SyncReadyAppointmentStore implements AppointmentStore {
 
 const appointmentStore = new SyncReadyAppointmentStore();
 
+function getViewportLayoutHeight() {
+  return Math.max(window.innerHeight, window.visualViewport?.height ?? 0, document.documentElement.clientHeight);
+}
+
 function useMobileViewportHeight() {
   useLayoutEffect(() => {
     const pendingTimers: number[] = [];
-    let stableHeight = window.visualViewport?.height || window.innerHeight;
+    let stableHeight = getViewportLayoutHeight();
     let ignoreViewportShrinkUntil = 0;
 
     const setAppHeight = () => {
-      const viewportHeight = window.visualViewport?.height || window.innerHeight;
-      const isShrunkByKeyboard = viewportHeight < stableHeight - 120;
+      const viewportHeight = getViewportLayoutHeight();
+      const visualHeight = window.visualViewport?.height || window.innerHeight;
+      const isShrunkByKeyboard = visualHeight < stableHeight - 120;
       if (isTextInputFocused() || Date.now() < ignoreViewportShrinkUntil || isShrunkByKeyboard) {
         document.documentElement.style.setProperty("--app-height", `${stableHeight}px`);
         return;
@@ -641,7 +646,7 @@ function useMobileViewportHeight() {
     };
 
     const resetStableHeight = () => {
-      stableHeight = window.visualViewport?.height || window.innerHeight;
+      stableHeight = getViewportLayoutHeight();
       setAppHeight();
     };
 
@@ -1146,7 +1151,7 @@ function App() {
   }, [bookings]);
 
   return (
-    <main className="app-shell">
+    <main className={`app-shell ${isInstalledApp ? "is-installed" : ""}`}>
       <div className="phone-frame">
         <AnimatePresence custom={direction} initial={false}>
           {stack.map(({ id, route }, index) => {

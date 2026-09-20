@@ -104,6 +104,12 @@ a {
   overflow: hidden;
 }
 
+.app-shell.is-installed,
+.app-shell.is-installed .phone-frame {
+  height: 100dvh;
+  min-height: 100dvh;
+}
+
 .screen {
   position: absolute;
   inset: 0;
