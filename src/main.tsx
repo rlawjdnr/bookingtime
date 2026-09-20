@@ -179,7 +179,8 @@ const storedBookingsStorageKey = "hospital-reservation.bookings";
 const storedPatientNameStorageKey = "hospital-reservation.patientName";
 const pushDeviceIdStorageKey = "hospital-reservation.pushDeviceId";
 const pushReminderReservationIdsStorageKey = "hospital-reservation.pushReminderReservationIds";
-const vapidPublicKey = (import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined) ?? "";
+let cachedVapidPublicKey = ((import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined) ?? "").trim();
+let vapidPublicKeyRequest: Promise<string> | null = null;
 const otherTreatmentLabel = "기타";
 
 const fallbackClinic = {
@@ -1015,11 +1016,16 @@ function App() {
       }
 
       await ensurePushSubscription();
-      const reminderBookings = getPushReminderEligibleBookings(storedBookings);
-      reminderBookings.forEach((item) => savePushReminderReservationId(item.id));
-      if (reminderBookings.length) await syncPushReminderSubscriptions(reminderBookings);
       setIsPushEnabled(true);
       showNotificationToast("알림을 받아요");
+
+      const reminderBookings = getPushReminderEligibleBookings(storedBookings);
+      reminderBookings.forEach((item) => savePushReminderReservationId(item.id));
+      if (reminderBookings.length) {
+        void syncPushReminderSubscriptions(reminderBookings).catch((error) => {
+          console.error("Failed to sync push reminders", error);
+        });
+      }
     } catch (error) {
       console.error("Failed to toggle push reminders", error);
       showToast("알림 설정에 실패했어요");
@@ -3772,12 +3778,32 @@ function isInstalledAppMode() {
 
 function canUsePushReminders() {
   return Boolean(
-    vapidPublicKey &&
-      "Notification" in window &&
+    "Notification" in window &&
       "serviceWorker" in navigator &&
       "PushManager" in window &&
       window.isSecureContext,
   );
+}
+
+async function getVapidPublicKey() {
+  if (cachedVapidPublicKey) return cachedVapidPublicKey;
+
+  if (!vapidPublicKeyRequest) {
+    vapidPublicKeyRequest = fetch("/api/push-public-key")
+      .then(async (response) => {
+        if (!response.ok) return "";
+        const result = (await response.json()) as { publicKey?: unknown };
+        const publicKey = typeof result.publicKey === "string" ? result.publicKey.trim() : "";
+        cachedVapidPublicKey = publicKey;
+        return publicKey;
+      })
+      .catch(() => "")
+      .finally(() => {
+        vapidPublicKeyRequest = null;
+      });
+  }
+
+  return vapidPublicKeyRequest;
 }
 
 async function getExistingPushSubscription() {
@@ -3787,13 +3813,16 @@ async function getExistingPushSubscription() {
 }
 
 async function ensurePushSubscription() {
+  const publicKey = await getVapidPublicKey();
+  if (!publicKey) throw new Error("Missing VAPID public key");
+
   const registration = await navigator.serviceWorker.register("/service-worker.js");
   const readyRegistration = await navigator.serviceWorker.ready;
   return (
     (await readyRegistration.pushManager.getSubscription()) ??
     (await readyRegistration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+      applicationServerKey: urlBase64ToUint8Array(publicKey),
     }))
   );
 }
