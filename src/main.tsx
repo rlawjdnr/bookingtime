@@ -1674,20 +1674,20 @@ function TimeScreen(props: {
     <>
       <Header clinicSettings={props.clinicSettings} back={props.onBack} compact />
       <div className="content time-selection-content">
-        <div className="time-date-control">
+        <div className="time-date-control time-date-control-text-trigger">
           <TapButton
-            className="time-date-arrow"
+            className="time-date-side time-date-side-prev"
             disabled={!props.canMovePrevDate}
             onClick={() => props.onMoveDate(-1)}
             aria-label="이전 날짜"
           >
             <img className="svg-icon time-date-arrow-icon" src={monthPrevIcon} alt="" />
           </TapButton>
-          <TapButton className="time-date-center" onClick={props.onOpenCalendar}>
+          <TapButton className="time-date-modal-trigger" onClick={props.onOpenCalendar}>
             <span className="date-select-value">{formatMonthDayWeek(props.selectedDate)}</span>
           </TapButton>
           <TapButton
-            className="time-date-arrow"
+            className="time-date-side time-date-side-next"
             disabled={!props.canMoveNextDate}
             onClick={() => props.onMoveDate(1)}
             aria-label="다음 날짜"

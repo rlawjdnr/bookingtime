@@ -577,12 +577,12 @@ a {
 }
 
 .time-selection-content {
-  padding-top: calc(var(--topbar-compact-height) + 32px);
+  padding-top: calc(var(--topbar-compact-height) + 34px);
 }
 
 .time-date-control {
   width: 100%;
-  min-height: 50px;
+  height: 50px;
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -602,6 +602,45 @@ a {
   opacity: 0.25;
 }
 
+.time-date-control-text-trigger {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  padding: 0;
+}
+
+.time-date-side {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.time-date-side:disabled {
+  opacity: 0.25;
+}
+
+.time-date-side-prev {
+  justify-content: flex-start;
+  padding-left: 12px;
+}
+
+.time-date-side-next {
+  justify-content: flex-end;
+  padding-right: 12px;
+}
+
+.time-date-modal-trigger {
+  min-width: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  color: var(--text);
+  font-size: 0.9412rem;
+  line-height: normal;
+  font-weight: 500;
+}
+
 .time-date-arrow-icon {
   width: 7px;
   height: 12px;
@@ -618,7 +657,8 @@ a {
   font-weight: 500;
 }
 
-.time-date-center .date-select-value {
+.time-date-center .date-select-value,
+.time-date-modal-trigger .date-select-value {
   overflow: hidden;
   color: var(--text);
   font-size: 0.9412rem;
