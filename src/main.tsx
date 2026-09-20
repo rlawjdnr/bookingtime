@@ -898,6 +898,7 @@ function App() {
   const canContinueDate = isMobileOpenDate(selectedDate, clinicSettings.openDays, daySettings, baseSlots, now);
   const canBook = patientName.trim().length > 0 && Boolean(selectedSlot);
   const clinicStatus = getClinicStatus(now, baseSlots, daySettings);
+  const canShowPushUi = isInstalledApp || isLocalDevelopmentHost();
   const currentRoute = stack[stack.length - 1]?.route ?? "date";
   const previousTimeDate = useMemo(
     () => findAdjacentMobileOpenDate(selectedDate, -1, clinicSettings.openDays, daySettings, baseSlots, now),
@@ -958,7 +959,7 @@ function App() {
 
   const enablePushReminders = async (targetBooking: Booking | null) => {
     if (!targetBooking || isPushBusy) return;
-    if (!isInstalledAppMode()) return;
+    if (!canUsePushUiMode()) return;
     if (!canUsePushReminders()) {
       showNotificationToast("알림을 받지 않아요");
       return;
@@ -993,7 +994,7 @@ function App() {
 
   const togglePushReminders = async () => {
     if (isPushBusy) return;
-    if (!isInstalledAppMode()) return;
+    if (!canUsePushUiMode()) return;
     if (!canUsePushReminders()) {
       setIsPushEnabled(false);
       showNotificationToast("알림을 받지 않아요");
@@ -1066,6 +1067,12 @@ function App() {
       await appointmentStore.create(nextBooking);
       saveStoredPatientName(nextBooking.patientName);
       setStoredBookings(saveStoredBooking(nextBooking));
+      if (canShowPushUi && isPushEnabled) {
+        savePushReminderReservationId(nextBooking.id);
+        void syncPushReminderSubscriptions([nextBooking]).catch((error) => {
+          console.error("Failed to sync push reminders", error);
+        });
+      }
       setBooking(nextBooking);
       push("complete");
     } catch (error) {
@@ -1232,7 +1239,7 @@ function App() {
                   <CompleteScreen
                     clinicSettings={clinicSettings}
                     booking={booking}
-                    showPushReminderButton={isInstalledApp && canUsePushReminders() && !isPushEnabled}
+                    showPushReminderButton={canShowPushUi && !isPushEnabled}
                     isPushBusy={isPushBusy}
                     onEnablePushReminder={() => void enablePushReminders(booking)}
                     onConfirm={() => {
@@ -3775,6 +3782,14 @@ function saveStoredPatientName(name: string) {
 function isInstalledAppMode() {
   const standaloneNavigator = navigator as Navigator & { standalone?: boolean };
   return window.matchMedia("(display-mode: standalone)").matches || standaloneNavigator.standalone === true;
+}
+
+function isLocalDevelopmentHost() {
+  return ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
+}
+
+function canUsePushUiMode() {
+  return isInstalledAppMode() || isLocalDevelopmentHost();
 }
 
 function canUsePushReminders() {
