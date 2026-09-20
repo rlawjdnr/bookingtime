@@ -1014,8 +1014,9 @@ function App() {
         return;
       }
 
-      const reminderBookingIds = loadPushReminderReservationIds();
-      const reminderBookings = storedBookings.filter((item) => reminderBookingIds.has(item.id));
+      await ensurePushSubscription();
+      const reminderBookings = getPushReminderEligibleBookings(storedBookings);
+      reminderBookings.forEach((item) => savePushReminderReservationId(item.id));
       if (reminderBookings.length) await syncPushReminderSubscriptions(reminderBookings);
       setIsPushEnabled(true);
       showNotificationToast("알림을 받아요");
@@ -3785,11 +3786,28 @@ async function getExistingPushSubscription() {
   return registration?.pushManager.getSubscription() ?? null;
 }
 
+async function ensurePushSubscription() {
+  const registration = await navigator.serviceWorker.register("/service-worker.js");
+  const readyRegistration = await navigator.serviceWorker.ready;
+  return (
+    (await readyRegistration.pushManager.getSubscription()) ??
+    (await readyRegistration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+    }))
+  );
+}
+
+function getPushReminderEligibleBookings(bookings: Booking[]) {
+  return dedupeBookings(bookings).filter(
+    (booking) => booking.status === "confirmed" && !isBookingDatePassed(booking) && Boolean(booking.ownerToken),
+  );
+}
+
 async function syncPushReminderSubscriptions(bookings: Booking[]) {
   if (!canUsePushReminders() || Notification.permission !== "granted") return 0;
 
-  const reservations = dedupeBookings(bookings)
-    .filter((booking) => booking.status === "confirmed" && !isBookingDatePassed(booking) && Boolean(booking.ownerToken))
+  const reservations = getPushReminderEligibleBookings(bookings)
     .map((booking) => ({
       id: booking.id,
       ownerToken: booking.ownerToken as string,
@@ -3797,14 +3815,7 @@ async function syncPushReminderSubscriptions(bookings: Booking[]) {
 
   if (!reservations.length) return 0;
 
-  const registration = await navigator.serviceWorker.register("/service-worker.js");
-  const readyRegistration = await navigator.serviceWorker.ready;
-  const subscription =
-    (await readyRegistration.pushManager.getSubscription()) ??
-    (await readyRegistration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
-    }));
+  const subscription = await ensurePushSubscription();
 
   const response = await fetch("/api/push-subscribe", {
     method: "POST",
@@ -3813,7 +3824,6 @@ async function syncPushReminderSubscriptions(bookings: Booking[]) {
       deviceId: getOrCreatePushDeviceId(),
       subscription: subscription.toJSON(),
       reservations,
-      scope: registration.scope,
     }),
   });
 
