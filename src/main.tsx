@@ -37,7 +37,10 @@ import myBookingsCalendarEmptyIcon from "./assets/figma/my-bookings-calendar-emp
 import myBookingsChevronIcon from "./assets/figma/my-bookings-chevron.svg";
 import myBookingsChevronEmptyIcon from "./assets/figma/my-bookings-chevron-empty.svg";
 import bookingCardChevronRightIcon from "./assets/figma/booking-card-chevron-right.svg";
+import dateTitleCalendarIcon from "./assets/figma/date-title-calendar-fill.svg";
 import phoneFillIcon from "./assets/figma/phone-fill.svg";
+import treatmentAcupunctureIllustration from "./assets/figma/treatment-acupuncture-illustration.svg";
+import treatmentHerbalIllustration from "./assets/figma/treatment-herbal-illustration.svg";
 
 const ADMIN_SESSION_KEY = "bookingtime-admin-authenticated";
 const ADMIN_SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
@@ -121,6 +124,11 @@ type TreatmentOption = {
   label: Treatment;
   isOpen: boolean;
   sortOrder: number;
+};
+
+type TreatmentIllustration = {
+  type: "acupuncture" | "herbal";
+  src: string;
 };
 
 type TreatmentOptionRow = {
@@ -1484,7 +1492,10 @@ function DateScreen(props: {
           />
         )}
         <section className={`date-step ${shouldShowBookingSummary ? (featuredBooking ? "after-upcoming-summary" : "after-empty-summary") : ""}`}>
-          <h1 className="screen-title">어느 날짜에 진료를 원하시나요?</h1>
+          <h1 className="screen-title date-step-title">
+            <img className="svg-icon date-step-title-icon" src={dateTitleCalendarIcon} alt="" />
+            <span>날짜를 선택해 주세요</span>
+          </h1>
           <InlineCalendar
             daySettings={props.daySettings}
             now={props.now}
@@ -1496,7 +1507,7 @@ function DateScreen(props: {
           />
         </section>
       </div>
-      <BottomCTA disabled={!props.canContinue} onClick={props.onNext}>다음</BottomCTA>
+      <BottomCTA disabled={!props.canContinue} onClick={props.onNext}>예약 가능한 시간 보기</BottomCTA>
     </>
   );
 }
@@ -1511,24 +1522,21 @@ function HomeBookingSummary({
   onOpenMyBookings: () => void;
 }) {
   const hasUpcomingBooking = Boolean(booking);
-  const relativeDateLabel = booking ? getRelativeDateLabel(parseBookingDate(booking.date)) : "";
+  const treatmentIllustrations = booking ? getTreatmentIllustrations(booking.treatment) : [];
 
   return (
     <section className="home-booking-summary">
       <div className="home-booking-count">
         <span>내 예약</span>
-        <strong className={hasUpcomingBooking ? "has-upcoming" : ""}>{upcomingBookingCount}</strong>
+        <strong className={hasUpcomingBooking ? "has-upcoming" : ""}>{upcomingBookingCount}건</strong>
       </div>
       {booking ? (
         <div className="home-booking-featured-row">
           <div className="home-booking-featured">
-            <p>
-              <span className="home-booking-status-badge">예약 완료</span>
-              {relativeDateLabel && <span className="home-booking-relative-date">{relativeDateLabel}</span>}
-              <strong>{formatShortDate(parseBookingDate(booking.date))} {booking.time}</strong>
-            </p>
+            <p><strong>{formatShortDate(parseBookingDate(booking.date))} {booking.time}</strong></p>
             <p>{booking.treatment} · 대기 {booking.waitMinutes}분</p>
           </div>
+          {treatmentIllustrations.length > 0 && <TreatmentIllustrationGroup treatments={treatmentIllustrations} />}
         </div>
       ) : (
         <p className="home-booking-empty">예약한 진료가 없어요</p>
@@ -1540,6 +1548,18 @@ function HomeBookingSummary({
         </span>
       </TapButton>
     </section>
+  );
+}
+
+function TreatmentIllustrationGroup({ treatments }: { treatments: TreatmentIllustration[] }) {
+  return (
+    <div className="treatment-illustrations" aria-hidden="true">
+      {treatments.map((item) => (
+        <span className={`treatment-illustration ${item.type}`} key={item.type}>
+          <img className="svg-icon" src={item.src} alt="" />
+        </span>
+      ))}
+    </div>
   );
 }
 
@@ -1580,6 +1600,8 @@ function InlineCalendar(props: {
         {days.map((date, index) => {
           const dayStatus = date ? getMobileCalendarDayStatus(date, props.openDays, props.daySettings, props.slots, props.now) : "open";
           const isPicked = date && sameDay(date, props.selectedDate);
+          const isFutureUnavailableDate = Boolean(date && dayStatus === "unopened" && !isPastCalendarDate(date, props.slots, props.now));
+          const showClosedLabel = Boolean(isFutureUnavailableDate && !isPicked);
 
           return (
             <TapButton
@@ -1588,6 +1610,7 @@ function InlineCalendar(props: {
                 isPicked ? "picked" : "",
                 dayStatus === "closed" ? "closed" : "",
                 dayStatus === "unopened" ? "unopened" : "",
+                isFutureUnavailableDate ? "unavailable-future" : "",
               ].filter(Boolean).join(" ")}
               disabled={!date}
               onClick={() => {
@@ -1614,6 +1637,7 @@ function InlineCalendar(props: {
                 <>
                   {isPicked && <span className="calendar-picked-circle" />}
                   <span className="calendar-day-label">{date.getDate()}</span>
+                  {showClosedLabel && <span className="calendar-unavailable-label">마감</span>}
                 </>
               )}
             </TapButton>
@@ -1932,13 +1956,14 @@ function MyBookingCard({
   const showWaitMinutes = !isBookingDatePassed(booking);
   const dateTag = getRelativeDateLabel(parseBookingDate(booking.date));
   const statusLabel = dimmed ? "예약 취소" : isCompleted ? "진료 완료" : "예약 완료";
+  const treatmentIllustrations = getTreatmentIllustrations(booking.treatment);
   return (
     <article className={`my-booking-card ${dimmed ? "dimmed" : ""}`}>
       <div className="my-booking-main">
         <div className="my-booking-info">
           <p className="my-booking-date">
-            <span className={`my-booking-status-badge ${dimmed ? "cancelled" : isCompleted ? "completed" : ""}`}>{statusLabel}</span>
-            {!dimmed && dateTag && <span className="my-booking-relative-date">{dateTag}</span>}
+            {(dimmed || isCompleted) && <span className={`my-booking-status-badge ${dimmed ? "cancelled" : "completed"}`}>{statusLabel}</span>}
+            {!dimmed && !isCompleted && dateTag && <span className="my-booking-relative-date">{dateTag} ·</span>}
             <strong>{formatShortDate(parseBookingDate(booking.date))} {booking.time}</strong>
           </p>
           <div className="my-booking-meta">
@@ -1946,6 +1971,7 @@ function MyBookingCard({
             {showWaitMinutes && <p>예상 대기 <strong className="my-booking-wait-minutes">{booking.waitMinutes}분</strong></p>}
           </div>
         </div>
+        {!dimmed && treatmentIllustrations.length > 0 && <TreatmentIllustrationGroup treatments={treatmentIllustrations} />}
       </div>
       {isUpcoming ? (
         <TapButton className="my-booking-cancel" onClick={onCancel}>예약 취소하기</TapButton>
@@ -2058,6 +2084,8 @@ function CalendarSheet(props: {
               const dayStatus = date ? getMobileCalendarDayStatus(date, props.openDays, props.daySettings, props.slots, props.now) : "open";
               const isPicked = date && sameDay(date, focusedDate);
               const isInitialPickedDate = date && toDateKey(date) === initialFocusedDateKeyRef.current;
+              const isFutureUnavailableDate = Boolean(date && dayStatus === "unopened" && !isPastCalendarDate(date, props.slots, props.now));
+              const showClosedLabel = Boolean(isFutureUnavailableDate && !isPicked);
 
               return (
                 <TapButton
@@ -2066,6 +2094,7 @@ function CalendarSheet(props: {
                     isPicked ? "picked" : "",
                     dayStatus === "closed" ? "closed" : "",
                     dayStatus === "unopened" ? "unopened" : "",
+                    isFutureUnavailableDate ? "unavailable-future" : "",
                   ].filter(Boolean).join(" ")}
                   disabled={!date}
                   onClick={() => {
@@ -2099,6 +2128,7 @@ function CalendarSheet(props: {
                         />
                       )}
                       <span className="calendar-day-label">{date.getDate()}</span>
+                      {showClosedLabel && <span className="calendar-unavailable-label">마감</span>}
                     </>
                   )}
                 </TapButton>
@@ -3505,6 +3535,13 @@ function isVisibleStoredBooking(booking: Booking) {
 
 function isBookingDatePassed(booking: Booking) {
   return getAppointmentDateTime(booking).getTime() <= getCurrentMinute().getTime();
+}
+
+function getTreatmentIllustrations(treatment: Treatment): TreatmentIllustration[] {
+  const illustrations: TreatmentIllustration[] = [];
+  if (treatment.includes("침")) illustrations.push({ type: "acupuncture", src: treatmentAcupunctureIllustration });
+  if (treatment.includes("한약")) illustrations.push({ type: "herbal", src: treatmentHerbalIllustration });
+  return illustrations;
 }
 
 function isSameDayBooking(booking: Pick<Booking, "date">) {

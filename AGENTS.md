@@ -1,6 +1,6 @@
 # ChatGPT project context
 
-This directory is a local mirror of the ChatGPT project “병원 에약”.
+This directory is a local mirror of the ChatGPT project “병원 예약”.
 
 - Treat every file under `sources/` as read-only reference material.
 - Do not edit, rename, move, or delete synced project files.

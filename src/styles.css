@@ -186,7 +186,8 @@ a {
 }
 
 .clinic-title {
-  gap: 6px;
+  gap: 4px;
+  color: var(--muted);
   font-size: 0.9412rem;
 }
 
@@ -370,13 +371,13 @@ a {
 
 .home-booking-summary {
   width: 100%;
-  padding: 14px 16px;
+  padding: 14px 0 2px;
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: 20px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 12px;
+  gap: 8px;
   overflow: hidden;
 }
 
@@ -384,8 +385,9 @@ a {
   display: flex;
   align-items: center;
   gap: 4px;
+  padding: 0 16px;
   color: var(--text);
-  font-size: 0.9412rem;
+  font-size: 0.8824rem;
   line-height: normal;
   font-weight: 600;
 }
@@ -404,7 +406,9 @@ a {
   min-width: 0;
   display: flex;
   align-items: center;
-  padding: 4px 0;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 16px;
 }
 
 .home-booking-featured {
@@ -472,6 +476,36 @@ a {
   text-overflow: ellipsis;
 }
 
+.treatment-illustrations {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.treatment-illustration {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 0.5px solid rgba(0, 0, 0, 0.04);
+  border-radius: 12px;
+}
+
+.treatment-illustration.acupuncture {
+  background: #fff6f2;
+}
+
+.treatment-illustration.herbal {
+  background: #fffaeb;
+}
+
+.treatment-illustration img {
+  width: 54px;
+  height: 54px;
+}
+
 .home-booking-empty {
   height: 52px;
   margin: 0;
@@ -486,16 +520,17 @@ a {
 .home-booking-all {
   width: 100%;
   min-height: 38px;
-  border-radius: 8px;
+  border-top: 0.5px solid var(--line);
+  border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  background: var(--surface);
-  color: var(--text);
+  background: #fff;
+  color: var(--muted);
   font-size: 0.8824rem;
   line-height: 1.47;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .home-booking-all-icon {
@@ -517,6 +552,17 @@ a {
 
 .date-step.after-empty-summary {
   margin-top: 62px;
+}
+
+.date-step-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.date-step-title-icon {
+  width: 20px;
+  height: 20px;
 }
 
 .inline-calendar .month-control {
@@ -981,6 +1027,10 @@ textarea::placeholder {
 
 .my-booking-main {
   min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .my-booking-main p,
@@ -990,6 +1040,7 @@ textarea::placeholder {
 
 .my-booking-info {
   min-width: 0;
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1071,7 +1122,7 @@ textarea::placeholder {
 }
 
 .my-booking-cancel {
-  background: #fdf0f0;
+  background: #fff8f8;
   color: #fc6a66;
 }
 
@@ -1086,6 +1137,11 @@ textarea::placeholder {
 .my-booking-card.dimmed .my-booking-meta p,
 .my-booking-card.dimmed .my-booking-wait-minutes {
   color: #868b94;
+}
+
+.my-booking-card.dimmed .my-booking-date strong {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
 }
 
 .my-bookings-empty {
@@ -1394,6 +1450,12 @@ textarea.selected {
   color: #b0b3ba;
 }
 
+.calendar-grid button.unavailable-future .calendar-day-label {
+  color: #b0b3ba;
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
 .calendar-grid button.picked {
   color: #fff;
 }
@@ -1408,6 +1470,19 @@ textarea.selected {
 .calendar-day-label {
   position: relative;
   z-index: 1;
+}
+
+.calendar-unavailable-label {
+  position: absolute;
+  z-index: 1;
+  top: 27px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #b0b3ba;
+  font-size: 0.7647rem;
+  line-height: normal;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 @media (min-width: 600px) {
