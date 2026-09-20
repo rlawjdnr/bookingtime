@@ -4263,7 +4263,7 @@ function getMobileCalendarDayStatus(date: Date, openDays: number, daySettings: D
 }
 
 function isMobileFullyBookedDate(date: Date, openDays: number, daySettings: DaySetting[], slots: Slot[], now: Date) {
-  if (isPastCalendarDate(date, slots, now)) return false;
+  if (isBeforeToday(date, now)) return false;
   if (getAdminCalendarDayStatus(date, openDays, daySettings) !== "open") return false;
   return !hasFutureBookableSlot(date, slots, now);
 }
@@ -4281,6 +4281,10 @@ function isPastCalendarDate(date: Date, slots: Slot[], now: Date) {
 
   const openSlots = getVisibleSlotsForDate(slots, date).filter((slot) => !slot.closed);
   return openSlots.length > 0 && openSlots.every((slot) => isPastSlotTime(date, slot.time, now));
+}
+
+function isBeforeToday(date: Date, now: Date) {
+  return startOfDay(date).getTime() < startOfDay(now).getTime();
 }
 
 function findNextMobileOpenDate(openDays: number, daySettings: DaySetting[], slots: Slot[], now: Date) {
