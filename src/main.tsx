@@ -280,6 +280,8 @@ const calendarSheetItem = {
   },
 };
 const calendarPickedSpring = { type: "spring" as const, stiffness: 100, damping: 15 };
+const timeSlotSlideSpring = { type: "spring" as const, stiffness: 480, damping: 50 };
+const timeSlotSlideDistance = 44;
 const calendarWeekdays = ["일", "월", "화", "수", "목", "금", "토"];
 const screenVariants = {
   enter: (latestDirection: number) => ({ x: latestDirection > 0 ? "100%" : "-50%" }),
@@ -706,6 +708,7 @@ function App() {
   ]);
   const [direction, setDirection] = useState(1);
   const [selectedDate, setSelectedDate] = useState(getToday());
+  const [timeDateSlideDirection, setTimeDateSlideDirection] = useState<-1 | 0 | 1>(0);
   const [selectedSlotId, setSelectedSlotId] = useState(defaultSlotId);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [patientName, setPatientName] = useState(loadStoredPatientName);
@@ -835,6 +838,7 @@ function App() {
   const canContinueDate = isMobileOpenDate(selectedDate, clinicSettings.openDays, daySettings, baseSlots, now);
   const canBook = patientName.trim().length > 0 && Boolean(selectedSlot);
   const clinicStatus = getClinicStatus(now, baseSlots, daySettings);
+  const currentRoute = stack[stack.length - 1]?.route ?? "date";
   const previousTimeDate = useMemo(
     () => findAdjacentMobileOpenDate(selectedDate, -1, clinicSettings.openDays, daySettings, baseSlots, now),
     [baseSlots, clinicSettings.openDays, daySettings, now, selectedDate],
@@ -843,6 +847,16 @@ function App() {
     () => findAdjacentMobileOpenDate(selectedDate, 1, clinicSettings.openDays, daySettings, baseSlots, now),
     [baseSlots, clinicSettings.openDays, daySettings, now, selectedDate],
   );
+
+  useEffect(() => {
+    if (currentRoute !== "date") return;
+    if (isMobileOpenDate(selectedDate, clinicSettings.openDays, daySettings, baseSlots, now)) return;
+
+    const nextOpenDate = findNextMobileOpenDate(clinicSettings.openDays, daySettings, baseSlots, now);
+    if (!nextOpenDate || sameDay(nextOpenDate, selectedDate)) return;
+    setTimeDateSlideDirection(0);
+    setSelectedDate(nextOpenDate);
+  }, [baseSlots, clinicSettings.openDays, currentRoute, daySettings, now, selectedDate]);
 
   const dismissToast = () => {
     setToast("");
@@ -1001,6 +1015,7 @@ function App() {
                     onOpenMyBookings={() => push("myBookings")}
                     onSelectDate={(date) => {
                       dismissToast();
+                      setTimeDateSlideDirection(0);
                       setSelectedDate(date);
                     }}
                     onNext={() => {
@@ -1013,6 +1028,7 @@ function App() {
                   <TimeScreen
                     clinicSettings={clinicSettings}
                     selectedDate={selectedDate}
+                    dateSlideDirection={timeDateSlideDirection}
 	                    selectedSlotId={selectedSlotId}
 	                    slots={slots}
 	                    onBack={back}
@@ -1023,6 +1039,7 @@ function App() {
 	                      const nextDate = dateDirection === -1 ? previousTimeDate : nextTimeDate;
 	                      if (!nextDate) return;
 	                      dismissToast();
+                        setTimeDateSlideDirection(dateDirection);
 	                      setSelectedDate(nextDate);
 	                    }}
 	                    onSelectSlot={(slot) => {
@@ -1131,6 +1148,7 @@ function App() {
               onClose={() => setIsCalendarOpen(false)}
               onBlockedDate={(message) => showToast(message)}
               onSelect={(date) => {
+                setTimeDateSlideDirection(0);
                 setSelectedDate(date);
                 setIsCalendarOpen(false);
               }}
@@ -1600,8 +1618,8 @@ function InlineCalendar(props: {
         {days.map((date, index) => {
           const dayStatus = date ? getMobileCalendarDayStatus(date, props.openDays, props.daySettings, props.slots, props.now) : "open";
           const isPicked = date && sameDay(date, props.selectedDate);
-          const isFutureUnavailableDate = Boolean(date && dayStatus === "unopened" && !isPastCalendarDate(date, props.slots, props.now));
-          const showClosedLabel = Boolean(isFutureUnavailableDate && !isPicked);
+          const isFullyBookedDate = Boolean(date && isMobileFullyBookedDate(date, props.openDays, props.daySettings, props.slots, props.now));
+          const showClosedLabel = Boolean(isFullyBookedDate && !isPicked);
 
           return (
             <TapButton
@@ -1610,7 +1628,7 @@ function InlineCalendar(props: {
                 isPicked ? "picked" : "",
                 dayStatus === "closed" ? "closed" : "",
                 dayStatus === "unopened" ? "unopened" : "",
-                isFutureUnavailableDate ? "unavailable-future" : "",
+                isFullyBookedDate ? "unavailable-future" : "",
               ].filter(Boolean).join(" ")}
               disabled={!date}
               onClick={() => {
@@ -1622,6 +1640,11 @@ function InlineCalendar(props: {
 
                 if (dayStatus === "closed") {
                   props.onBlockedDate("진료하지 않는 날이에요");
+                  return;
+                }
+
+                if (isFullyBookedDate) {
+                  props.onBlockedDate("예약이 마감된 날이에요");
                   return;
                 }
 
@@ -1655,6 +1678,7 @@ function InlineCalendar(props: {
 function TimeScreen(props: {
   clinicSettings: ClinicSettings;
   selectedDate: Date;
+  dateSlideDirection: -1 | 0 | 1;
   selectedSlotId: string;
   slots: Slot[];
   onBack: () => void;
@@ -1699,8 +1723,25 @@ function TimeScreen(props: {
             <img className="svg-icon time-date-arrow-icon" src={monthNextIcon} alt="" />
           </TapButton>
         </div>
-        <SlotGroup title="오전" slots={morning} selectedDate={props.selectedDate} selectedId={props.selectedSlotId} onSelect={props.onSelectSlot} />
-        <SlotGroup title="오후" slots={afternoon} selectedDate={props.selectedDate} selectedId={props.selectedSlotId} onSelect={props.onSelectSlot} />
+        <div className="time-slot-motion-wrap">
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.div
+              className="time-slot-motion"
+              key={toDateKey(props.selectedDate)}
+              initial={props.dateSlideDirection === 0 ? false : { x: props.dateSlideDirection * timeSlotSlideDistance, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={
+                props.dateSlideDirection === 0
+                  ? { x: 0, opacity: 1, transition: { duration: 0 } }
+                  : { x: props.dateSlideDirection * -timeSlotSlideDistance, opacity: 0 }
+              }
+              transition={{ x: timeSlotSlideSpring, opacity: { duration: 0.12 } }}
+            >
+              <SlotGroup title="오전" slots={morning} selectedDate={props.selectedDate} selectedId={props.selectedSlotId} onSelect={props.onSelectSlot} />
+              <SlotGroup title="오후" slots={afternoon} selectedDate={props.selectedDate} selectedId={props.selectedSlotId} onSelect={props.onSelectSlot} />
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
       <BottomCTA disabled={!selectedSlot || selectedSlot.closed} onClick={props.onNext}>
         {selectedSlot && !selectedSlot.closed ? `${selectedSlot.time} 진료 예약하기` : "원하는 시간을 선택해주세요"}
@@ -2082,8 +2123,8 @@ function CalendarSheet(props: {
               const dayStatus = date ? getMobileCalendarDayStatus(date, props.openDays, props.daySettings, props.slots, props.now) : "open";
               const isPicked = date && sameDay(date, focusedDate);
               const isInitialPickedDate = date && toDateKey(date) === initialFocusedDateKeyRef.current;
-              const isFutureUnavailableDate = Boolean(date && dayStatus === "unopened" && !isPastCalendarDate(date, props.slots, props.now));
-              const showClosedLabel = Boolean(isFutureUnavailableDate && !isPicked);
+              const isFullyBookedDate = Boolean(date && isMobileFullyBookedDate(date, props.openDays, props.daySettings, props.slots, props.now));
+              const showClosedLabel = Boolean(isFullyBookedDate && !isPicked);
 
               return (
                 <TapButton
@@ -2092,7 +2133,7 @@ function CalendarSheet(props: {
                     isPicked ? "picked" : "",
                     dayStatus === "closed" ? "closed" : "",
                     dayStatus === "unopened" ? "unopened" : "",
-                    isFutureUnavailableDate ? "unavailable-future" : "",
+                    isFullyBookedDate ? "unavailable-future" : "",
                   ].filter(Boolean).join(" ")}
                   disabled={!date}
                   onClick={() => {
@@ -2104,6 +2145,11 @@ function CalendarSheet(props: {
 
                     if (dayStatus === "closed") {
                       props.onBlockedDate("진료하지 않는 날이에요");
+                      return;
+                    }
+
+                    if (isFullyBookedDate) {
+                      props.onBlockedDate("예약이 마감된 날이에요");
                       return;
                     }
 
@@ -3748,6 +3794,12 @@ function getMobileCalendarDayStatus(date: Date, openDays: number, daySettings: D
   const dayStatus = getAdminCalendarDayStatus(date, openDays, daySettings);
   if (dayStatus !== "open") return dayStatus;
   return hasFutureBookableSlot(date, slots, now) ? "open" : "unopened";
+}
+
+function isMobileFullyBookedDate(date: Date, openDays: number, daySettings: DaySetting[], slots: Slot[], now: Date) {
+  if (isPastCalendarDate(date, slots, now)) return false;
+  if (getAdminCalendarDayStatus(date, openDays, daySettings) !== "open") return false;
+  return !hasFutureBookableSlot(date, slots, now);
 }
 
 function hasFutureBookableSlot(date: Date, slots: Slot[], now: Date) {

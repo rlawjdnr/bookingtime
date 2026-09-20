@@ -687,6 +687,15 @@ a {
   height: 20px;
 }
 
+.time-slot-motion-wrap {
+  position: relative;
+  overflow: hidden;
+}
+
+.time-slot-motion {
+  width: 100%;
+}
+
 .time-selection-content .slot-section {
   margin-top: 22px;
 }
