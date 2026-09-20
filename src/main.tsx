@@ -20,6 +20,7 @@ import radioEmptyIcon from "./assets/figma/radio-empty.svg";
 import radioSelectedIcon from "./assets/figma/radio-selected.svg";
 import snackbarAlertIcon from "./assets/figma/snackbar-alert.svg";
 import snackbarCheckIcon from "./assets/figma/snackbar-check.svg";
+import confirmAlertIcon from "./assets/figma/confirm-alert.svg";
 import treatmentIcon from "./assets/figma/treatment-fill.svg";
 import timeCalendarIcon from "./assets/figma/time-calendar-fill.svg";
 import waitIcon from "./assets/figma/wait-fill.svg";
@@ -975,15 +976,14 @@ function App() {
         return;
       }
 
-      if (shouldShowPermissionToast) {
-        showNotificationToast("알림을 받아요");
-        await delay(700);
-      }
-
-      const registeredCount = await syncPushReminderSubscriptions([targetBooking]);
-      if (registeredCount > 0) savePushReminderReservationId(targetBooking.id);
+      await ensurePushSubscription();
+      savePushReminderReservationId(targetBooking.id);
       setIsPushEnabled(true);
-      showNotificationToast(registeredCount > 0 ? "진료일 하루 전에 알려드릴게요." : "알림을 받아요");
+      showNotificationToast(shouldShowPermissionToast ? "알림을 받아요" : "진료일 하루 전에 알려드릴게요.");
+
+      void syncPushReminderSubscriptions([targetBooking]).catch((error) => {
+        console.error("Failed to sync push reminders", error);
+      });
     } catch (error) {
       console.error("Failed to enable push reminders", error);
       showToast("알림 설정에 실패했어요");
@@ -1397,7 +1397,7 @@ function ConfirmBookingSheet({
               <motion.span variants={confirmSheetItem}>확인해주세요</motion.span>
             </h1>
             <motion.div className="confirm-sheet-note" variants={confirmSheetItem}>
-              <img className="svg-icon confirm-sheet-note-icon" src={snackbarAlertIcon} alt="" />
+              <img className="svg-icon confirm-sheet-note-icon" src={confirmAlertIcon} alt="" />
               <span>당일 예약 취소는 어려워요</span>
             </motion.div>
           </div>
