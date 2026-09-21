@@ -2,7 +2,7 @@ const crypto = require("crypto");
 const webpush = require("web-push");
 
 const DEFAULT_SUPABASE_URL = "https://ohwvtwywwjbwlkknwjxe.supabase.co";
-const REMINDER_BODY = "1시간 뒤 예약한 진료 시간이에요. 약속된 일정에 맞춰 조심히 내원해주세요.";
+const REMINDER_BODY = "곧 진료 시간이에요. 약속된 일정에 맞춰 조심히 내원해주세요.";
 
 module.exports = async function handler(request, response) {
   if (request.method !== "POST") {

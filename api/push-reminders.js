@@ -2,8 +2,9 @@ const webpush = require("web-push");
 
 const DEFAULT_SUPABASE_URL = "https://ohwvtwywwjbwlkknwjxe.supabase.co";
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
-const REMINDER_LOOKAHEAD_MINUTES = 60;
-const REMINDER_BODY = "1시간 뒤 예약한 진료 시간이에요. 약속된 일정에 맞춰 조심히 내원해주세요.";
+const REMINDER_LOOKAHEAD_MINUTES = 100;
+const REMINDER_WINDOW_MINUTES = 60;
+const REMINDER_BODY = "곧 진료 시간이에요. 약속된 일정에 맞춰 조심히 내원해주세요.";
 
 module.exports = async function handler(request, response) {
   if (!["GET", "POST"].includes(request.method)) {
@@ -30,19 +31,18 @@ module.exports = async function handler(request, response) {
 
   webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
 
-  const reminderTarget = getReminderTarget();
-  const targetDate = reminderTarget.dateKey;
+  const reminderWindow = getReminderWindow();
 
   try {
-    const reservations = (await fetchDueReservations(targetDate, serviceRoleKey))
-      .filter((reservation) => parseAppointmentMinute(reservation.appointment_time) === reminderTarget.minuteOfDay);
+    const reservations = (await fetchDueReservations(reminderWindow.dateKeys, serviceRoleKey))
+      .filter((reservation) => isReservationInReminderWindow(reservation, reminderWindow));
     const reservationIds = reservations.map((reservation) => reservation.id);
 
     if (!reservationIds.length) {
       sendJson(response, 200, {
         ok: true,
-        targetDate,
-        targetTime: formatMinuteOfDay(reminderTarget.minuteOfDay),
+        windowStart: formatKstDateTime(reminderWindow.start),
+        windowEnd: formatKstDateTime(reminderWindow.end),
         sent: 0,
         skipped: 0,
       });
@@ -55,13 +55,13 @@ module.exports = async function handler(request, response) {
     let skipped = 0;
 
     for (const subscription of subscriptions) {
-      if (subscription.last_reminded_for === targetDate) {
+      const reservation = reservationById.get(subscription.reservation_id);
+      if (!reservation) {
         skipped += 1;
         continue;
       }
 
-      const reservation = reservationById.get(subscription.reservation_id);
-      if (!reservation) {
+      if (subscription.last_reminded_for === reservation.appointment_date) {
         skipped += 1;
         continue;
       }
@@ -82,7 +82,7 @@ module.exports = async function handler(request, response) {
           }),
         );
         sent += 1;
-        await markReminderSent(subscription.id, targetDate, serviceRoleKey);
+        await markReminderSent(subscription.id, reservation.appointment_date, serviceRoleKey);
       } catch (error) {
         if (error && [404, 410].includes(error.statusCode)) {
           await deactivateSubscription(subscription.id, serviceRoleKey);
@@ -96,8 +96,8 @@ module.exports = async function handler(request, response) {
 
     sendJson(response, 200, {
       ok: true,
-      targetDate,
-      targetTime: formatMinuteOfDay(reminderTarget.minuteOfDay),
+      windowStart: formatKstDateTime(reminderWindow.start),
+      windowEnd: formatKstDateTime(reminderWindow.end),
       sent,
       skipped,
     });
@@ -107,9 +107,9 @@ module.exports = async function handler(request, response) {
   }
 };
 
-async function fetchDueReservations(targetDate, serviceRoleKey) {
+async function fetchDueReservations(targetDates, serviceRoleKey) {
   const query = new URLSearchParams({
-    appointment_date: `eq.${targetDate}`,
+    appointment_date: targetDates.length === 1 ? `eq.${targetDates[0]}` : `in.(${targetDates.join(",")})`,
     status: "eq.confirmed",
     select: "id,appointment_date,appointment_time",
   });
@@ -169,13 +169,17 @@ async function supabaseRest(path, serviceRoleKey, options = {}) {
   return JSON.parse(text);
 }
 
-function getReminderTarget() {
+function getReminderWindow() {
   const kstNow = new Date(Date.now() + KST_OFFSET_MS);
   kstNow.setUTCSeconds(0, 0);
-  const target = new Date(kstNow.getTime() + REMINDER_LOOKAHEAD_MINUTES * 60 * 1000);
+  kstNow.setUTCMinutes(0, 0, 0);
+  const start = new Date(kstNow.getTime() + REMINDER_LOOKAHEAD_MINUTES * 60 * 1000);
+  const end = new Date(start.getTime() + REMINDER_WINDOW_MINUTES * 60 * 1000);
+  const dateKeys = [...new Set([formatKstDateKey(start), formatKstDateKey(end)])];
   return {
-    dateKey: formatKstDateKey(target),
-    minuteOfDay: target.getUTCHours() * 60 + target.getUTCMinutes(),
+    start,
+    end,
+    dateKeys,
   };
 }
 
@@ -186,16 +190,21 @@ function formatKstDateKey(kstDate) {
   return `${year}-${month}-${day}`;
 }
 
-function parseAppointmentMinute(timeValue) {
-  const match = String(timeValue || "").match(/^(\d{1,2}):(\d{2})$/);
-  if (!match) return -1;
-  return Number(match[1]) * 60 + Number(match[2]);
+function isReservationInReminderWindow(reservation, reminderWindow) {
+  const appointment = parseAppointmentKstDate(reservation.appointment_date, reservation.appointment_time);
+  if (!appointment) return false;
+  return appointment.getTime() >= reminderWindow.start.getTime() && appointment.getTime() < reminderWindow.end.getTime();
 }
 
-function formatMinuteOfDay(minuteOfDay) {
-  const hour = String(Math.floor(minuteOfDay / 60)).padStart(2, "0");
-  const minute = String(minuteOfDay % 60).padStart(2, "0");
-  return `${hour}:${minute}`;
+function parseAppointmentKstDate(dateValue, timeValue) {
+  const [year, month, day] = String(dateValue || "").split("-").map(Number);
+  const match = String(timeValue || "").match(/^(\d{1,2}):(\d{2})$/);
+  if (!year || !month || !day || !match) return null;
+  return new Date(Date.UTC(year, month - 1, day, Number(match[1]), Number(match[2])));
+}
+
+function formatKstDateTime(kstDate) {
+  return `${formatKstDateKey(kstDate)} ${String(kstDate.getUTCHours()).padStart(2, "0")}:${String(kstDate.getUTCMinutes()).padStart(2, "0")}`;
 }
 
 function formatReminderTitle(dateValue, timeValue) {
