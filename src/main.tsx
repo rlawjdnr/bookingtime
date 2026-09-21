@@ -949,6 +949,42 @@ function App() {
 
   const showNotificationToast = (message: string) => showToast(message, null, "notification");
 
+  const sendCurrentDeviceTestPush = async () => {
+    if (isPushBusy) return;
+    if (!canUsePushReminders() || Notification.permission !== "granted") {
+      showNotificationToast("알림을 먼저 켜주세요");
+      return;
+    }
+
+    const reminderBookingIds = loadPushReminderReservationIds();
+    const reminderBookings = getPushReminderEligibleBookings(storedBookings).filter((item) => reminderBookingIds.has(item.id));
+    if (!reminderBookings.length) {
+      showToast("알림 켠 예약이 없어요");
+      return;
+    }
+
+    setIsPushBusy(true);
+    try {
+      await sendPushReminderTest(reminderBookings);
+      showNotificationToast("테스트 알림을 보냈어요");
+    } catch (error) {
+      console.error("Failed to send test push", error);
+      showToast("테스트 알림 전송에 실패했어요");
+    } finally {
+      setIsPushBusy(false);
+    }
+  };
+
+  const showPushEnabledToast = (message: string) => {
+    showToast(message, {
+      label: "테스트",
+      onClick: () => {
+        dismissToast();
+        void sendCurrentDeviceTestPush();
+      },
+    }, "notification");
+  };
+
   useEffect(() => {
     const url = new URL(window.location.href);
     if (url.searchParams.get("pushTest") !== "1" || pushTestHandledRef.current) return;
@@ -1032,7 +1068,7 @@ function App() {
 
       await registerPushReminderBookings([targetBooking]);
       setIsPushEnabled(true);
-      showNotificationToast(shouldShowPermissionToast ? "알림을 받아요" : "진료일 하루 전에 알려드릴게요.");
+      showPushEnabledToast(shouldShowPermissionToast ? "알림을 받아요" : "진료일 하루 전에 알려드릴게요.");
     } catch (error) {
       console.error("Failed to enable push reminders", error);
       setIsPushEnabled(false);
@@ -1079,7 +1115,7 @@ function App() {
 
       await registerPushReminderBookings(reminderBookings);
       setIsPushEnabled(true);
-      showNotificationToast("알림을 받아요");
+      showPushEnabledToast("알림을 받아요");
     } catch (error) {
       console.error("Failed to toggle push reminders", error);
       setIsPushEnabled(false);
