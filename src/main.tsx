@@ -752,6 +752,7 @@ function App() {
   const [isInstalledApp, setIsInstalledApp] = useState(() => isInstalledAppMode());
   const [isPushEnabled, setIsPushEnabled] = useState(false);
   const [isPushBusy, setIsPushBusy] = useState(false);
+  const pushTestHandledRef = useRef(false);
 
   const slots = useMemo(() => {
     const daySetting = getDaySetting(daySettings, selectedDate);
@@ -947,6 +948,45 @@ function App() {
   };
 
   const showNotificationToast = (message: string) => showToast(message, null, "notification");
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("pushTest") !== "1" || pushTestHandledRef.current) return;
+    pushTestHandledRef.current = true;
+    url.searchParams.delete("pushTest");
+    const nextUrl = `${url.pathname}${url.search}${url.hash}`;
+    window.history.replaceState(null, "", nextUrl || "/");
+
+    if (!canUsePushUiMode()) {
+      showToast("홈화면에 추가한 앱에서 테스트해주세요");
+      return;
+    }
+
+    if (!canUsePushReminders() || Notification.permission !== "granted") {
+      showNotificationToast("알림을 먼저 켜주세요");
+      return;
+    }
+
+    const reminderBookingIds = loadPushReminderReservationIds();
+    const reminderBookings = getPushReminderEligibleBookings(storedBookings).filter((item) => reminderBookingIds.has(item.id));
+    if (!reminderBookings.length) {
+      showToast("알림 켠 예약이 없어요");
+      return;
+    }
+
+    setIsPushBusy(true);
+    void sendPushReminderTest(reminderBookings)
+      .then(() => {
+        showNotificationToast("테스트 알림을 보냈어요");
+      })
+      .catch((error) => {
+        console.error("Failed to send test push", error);
+        showToast("테스트 알림 전송에 실패했어요");
+      })
+      .finally(() => {
+        setIsPushBusy(false);
+      });
+  }, [storedBookings]);
 
   const findDuplicateStoredBooking = (slot = selectedSlot, name = patientName) => {
     if (!slot) return null;
@@ -3907,6 +3947,34 @@ async function syncPushReminderSubscriptions(bookings: Booking[]) {
   if (!response.ok) throw new Error("Push subscription failed");
   const result = (await response.json()) as { registered?: number };
   return result.registered ?? 0;
+}
+
+async function sendPushReminderTest(bookings: Booking[]) {
+  if (!canUsePushReminders() || Notification.permission !== "granted") {
+    throw new Error("Push reminders unavailable");
+  }
+
+  const reservations = getPushReminderEligibleBookings(bookings)
+    .map((booking) => ({
+      id: booking.id,
+      ownerToken: booking.ownerToken as string,
+    }));
+
+  if (!reservations.length) throw new Error("No eligible push reminder bookings");
+
+  const subscription = await ensurePushSubscription();
+  const response = await fetch("/api/push-test", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      subscription: subscription.toJSON(),
+      reservations,
+    }),
+  });
+
+  if (!response.ok) throw new Error("Push test failed");
+  const result = (await response.json()) as { sent?: number };
+  if ((result.sent ?? 0) < 1) throw new Error("Push test not sent");
 }
 
 async function disablePushReminderSubscription() {
