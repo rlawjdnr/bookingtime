@@ -983,13 +983,19 @@ function App() {
   };
 
   const showPushEnabledToast = (message: string) => {
-    showToast(message, {
-      label: "테스트",
-      onClick: () => {
-        dismissToast();
-        void sendCurrentDeviceTestPush();
-      },
-    }, "notification");
+    showToast(
+      message,
+      isLocalDevelopmentHost()
+        ? {
+            label: "테스트",
+            onClick: () => {
+              dismissToast();
+              void sendCurrentDeviceTestPush();
+            },
+          }
+        : null,
+      "notification",
+    );
   };
 
   useEffect(() => {
