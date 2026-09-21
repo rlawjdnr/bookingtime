@@ -180,6 +180,7 @@ const activeBookingStorageKey = "hospital-reservation.activeBooking";
 const storedBookingsStorageKey = "hospital-reservation.bookings";
 const storedPatientNameStorageKey = "hospital-reservation.patientName";
 const pushDeviceIdStorageKey = "hospital-reservation.pushDeviceId";
+const pushReminderEnabledStorageKey = "hospital-reservation.pushReminderEnabled";
 const pushReminderReservationIdsStorageKey = "hospital-reservation.pushReminderReservationIds";
 let cachedVapidPublicKey = ((import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined) ?? "").trim();
 let vapidPublicKeyRequest: Promise<string> | null = null;
@@ -836,7 +837,11 @@ function App() {
     void getExistingPushSubscription()
       .then((subscription) => {
         if (!isMounted) return;
-        setIsPushEnabled(Notification.permission === "granted" && Boolean(subscription) && hasSavedPushReminderBooking(storedBookings));
+        setIsPushEnabled(
+          Notification.permission === "granted" &&
+            Boolean(subscription) &&
+            (loadPushReminderEnabled() || hasSavedPushReminderBooking(storedBookings)),
+        );
       })
       .catch(() => {
         if (isMounted) setIsPushEnabled(false);
@@ -848,18 +853,20 @@ function App() {
 
   useEffect(() => {
     if (!isInstalledApp || !isPushEnabled) return;
-    const reminderBookingIds = loadPushReminderReservationIds();
-    const reminderBookings = getPushReminderEligibleBookings(storedBookings).filter((item) => reminderBookingIds.has(item.id));
-    if (!reminderBookings.length) {
-      setIsPushEnabled(false);
-      return;
-    }
+    const reminderBookings = getPushReminderEligibleBookings(storedBookings);
+    if (!reminderBookings.length) return;
     void syncPushReminderSubscriptions(reminderBookings)
       .then((registered) => {
-        if (registered < reminderBookings.length) setIsPushEnabled(false);
+        if (registered < reminderBookings.length) {
+          savePushReminderEnabled(false);
+          setIsPushEnabled(false);
+        } else {
+          reminderBookings.forEach((booking) => savePushReminderReservationId(booking.id));
+        }
       })
       .catch((error) => {
         console.error("Failed to sync push reminders", error);
+        savePushReminderEnabled(false);
         setIsPushEnabled(false);
       });
   }, [isInstalledApp, isPushEnabled, storedBookings]);
@@ -1061,16 +1068,19 @@ function App() {
       const shouldShowPermissionToast = Notification.permission !== "granted";
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
+        savePushReminderEnabled(false);
         setIsPushEnabled(false);
         showNotificationToast("알림을 받지 않아요");
         return;
       }
 
       await registerPushReminderBookings([targetBooking]);
+      savePushReminderEnabled(true);
       setIsPushEnabled(true);
-      showPushEnabledToast(shouldShowPermissionToast ? "알림을 받아요" : "진료일 하루 전에 알려드릴게요.");
+      showPushEnabledToast(shouldShowPermissionToast ? "알림을 받아요" : "진료 전에 알려드릴게요.");
     } catch (error) {
       console.error("Failed to enable push reminders", error);
+      savePushReminderEnabled(false);
       setIsPushEnabled(false);
       await disablePushReminderSubscription().catch((disableError) => {
         console.error("Failed to roll back push subscription", disableError);
@@ -1094,6 +1104,8 @@ function App() {
     try {
       if (isPushEnabled) {
         await disablePushReminderSubscription();
+        savePushReminderEnabled(false);
+        clearPushReminderReservationIds();
         setIsPushEnabled(false);
         showNotificationToast("알림을 받지 않아요");
         return;
@@ -1101,23 +1113,21 @@ function App() {
 
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
+        savePushReminderEnabled(false);
         setIsPushEnabled(false);
         showNotificationToast("알림을 받지 않아요");
         return;
       }
 
+      await ensurePushSubscription();
       const reminderBookings = getPushReminderEligibleBookings(storedBookings);
-      if (!reminderBookings.length) {
-        setIsPushEnabled(false);
-        showToast("알림 받을 예약이 없어요");
-        return;
-      }
-
-      await registerPushReminderBookings(reminderBookings);
+      if (reminderBookings.length) await registerPushReminderBookings(reminderBookings);
+      savePushReminderEnabled(true);
       setIsPushEnabled(true);
       showPushEnabledToast("알림을 받아요");
     } catch (error) {
       console.error("Failed to toggle push reminders", error);
+      savePushReminderEnabled(false);
       setIsPushEnabled(false);
       await disablePushReminderSubscription().catch((disableError) => {
         console.error("Failed to roll back push subscription", disableError);
@@ -1162,6 +1172,7 @@ function App() {
       if (canShowPushUi && isPushEnabled) {
         void registerPushReminderBookings([nextBooking]).catch((error) => {
           console.error("Failed to sync push reminders", error);
+          savePushReminderEnabled(false);
           setIsPushEnabled(false);
           showToast("알림 설정에 실패했어요");
         });
@@ -4041,6 +4052,19 @@ function getOrCreatePushDeviceId() {
   return nextDeviceId;
 }
 
+function loadPushReminderEnabled() {
+  return window.localStorage.getItem(pushReminderEnabledStorageKey) === "true";
+}
+
+function savePushReminderEnabled(enabled: boolean) {
+  if (enabled) {
+    window.localStorage.setItem(pushReminderEnabledStorageKey, "true");
+    return;
+  }
+
+  window.localStorage.removeItem(pushReminderEnabledStorageKey);
+}
+
 function loadPushReminderReservationIds() {
   try {
     const parsed = JSON.parse(window.localStorage.getItem(pushReminderReservationIdsStorageKey) || "[]");
@@ -4056,6 +4080,10 @@ function savePushReminderReservationId(id: string) {
   const ids = loadPushReminderReservationIds();
   ids.add(id);
   window.localStorage.setItem(pushReminderReservationIdsStorageKey, JSON.stringify([...ids]));
+}
+
+function clearPushReminderReservationIds() {
+  window.localStorage.removeItem(pushReminderReservationIdsStorageKey);
 }
 
 function delay(durationMs: number) {
