@@ -2,6 +2,7 @@ const crypto = require("crypto");
 const webpush = require("web-push");
 
 const DEFAULT_SUPABASE_URL = "https://ohwvtwywwjbwlkknwjxe.supabase.co";
+const REMINDER_BODY = "1시간 뒤 예약한 진료 시간이에요. 약속된 일정에 맞춰 조심히 내원해주세요.";
 
 module.exports = async function handler(request, response) {
   if (request.method !== "POST") {
@@ -42,8 +43,8 @@ module.exports = async function handler(request, response) {
         keys: subscription.keys,
       },
       JSON.stringify({
-        title: "김한의원",
-        body: `내일은 진료일입니다. ${formatKoreanDate(reservation.appointment_date)} ${reservation.appointment_time}`,
+        title: formatReminderTitle(reservation.appointment_date, reservation.appointment_time),
+        body: REMINDER_BODY,
         url: "/?view=myBookings",
       }),
     );
@@ -136,11 +137,15 @@ function hashOwnerToken(token) {
   return crypto.createHash("sha256").update(token).digest("base64url");
 }
 
+function formatReminderTitle(dateValue, timeValue) {
+  return `${formatKoreanDate(dateValue)} ${timeValue} 진료`;
+}
+
 function formatKoreanDate(dateValue) {
   const [year, month, day] = dateValue.split("-").map(Number);
   const date = new Date(year, month - 1, day);
   const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
-  return `${month}월 ${day}일(${weekdays[date.getDay()]})`;
+  return `${month}월 ${day}일 (${weekdays[date.getDay()]})`;
 }
 
 function sendJson(response, statusCode, body) {

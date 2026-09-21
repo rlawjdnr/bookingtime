@@ -2,6 +2,8 @@ const webpush = require("web-push");
 
 const DEFAULT_SUPABASE_URL = "https://ohwvtwywwjbwlkknwjxe.supabase.co";
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+const REMINDER_LOOKAHEAD_MINUTES = 60;
+const REMINDER_BODY = "1시간 뒤 예약한 진료 시간이에요. 약속된 일정에 맞춰 조심히 내원해주세요.";
 
 module.exports = async function handler(request, response) {
   if (!["GET", "POST"].includes(request.method)) {
@@ -13,11 +15,6 @@ module.exports = async function handler(request, response) {
   const isManualAuthorized = Boolean(cronSecret && request.headers.authorization === `Bearer ${cronSecret}`);
   if (cronSecret && request.headers.authorization && !isManualAuthorized) {
     sendJson(response, 401, { ok: false });
-    return;
-  }
-
-  if (!isManualAuthorized && !isKstReminderTime()) {
-    sendJson(response, 200, { ok: true, skipped: true, reason: "outside_reminder_time" });
     return;
   }
 
@@ -33,14 +30,22 @@ module.exports = async function handler(request, response) {
 
   webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
 
-  const targetDate = getKstDateKey(1);
+  const reminderTarget = getReminderTarget();
+  const targetDate = reminderTarget.dateKey;
 
   try {
-    const reservations = await fetchTomorrowReservations(targetDate, serviceRoleKey);
+    const reservations = (await fetchDueReservations(targetDate, serviceRoleKey))
+      .filter((reservation) => parseAppointmentMinute(reservation.appointment_time) === reminderTarget.minuteOfDay);
     const reservationIds = reservations.map((reservation) => reservation.id);
 
     if (!reservationIds.length) {
-      sendJson(response, 200, { ok: true, targetDate, sent: 0, skipped: 0 });
+      sendJson(response, 200, {
+        ok: true,
+        targetDate,
+        targetTime: formatMinuteOfDay(reminderTarget.minuteOfDay),
+        sent: 0,
+        skipped: 0,
+      });
       return;
     }
 
@@ -71,8 +76,8 @@ module.exports = async function handler(request, response) {
             },
           },
           JSON.stringify({
-            title: "김한의원",
-            body: `내일은 진료일입니다. ${formatKoreanDate(reservation.appointment_date)} ${reservation.appointment_time}`,
+            title: formatReminderTitle(reservation.appointment_date, reservation.appointment_time),
+            body: REMINDER_BODY,
             url: "/?view=myBookings",
           }),
         );
@@ -89,14 +94,20 @@ module.exports = async function handler(request, response) {
       }
     }
 
-    sendJson(response, 200, { ok: true, targetDate, sent, skipped });
+    sendJson(response, 200, {
+      ok: true,
+      targetDate,
+      targetTime: formatMinuteOfDay(reminderTarget.minuteOfDay),
+      sent,
+      skipped,
+    });
   } catch (error) {
     console.error("Failed to send push reminders", error);
     sendJson(response, 500, { ok: false });
   }
 };
 
-async function fetchTomorrowReservations(targetDate, serviceRoleKey) {
+async function fetchDueReservations(targetDate, serviceRoleKey) {
   const query = new URLSearchParams({
     appointment_date: `eq.${targetDate}`,
     status: "eq.confirmed",
@@ -158,25 +169,44 @@ async function supabaseRest(path, serviceRoleKey, options = {}) {
   return JSON.parse(text);
 }
 
-function getKstDateKey(daysFromToday) {
+function getReminderTarget() {
   const kstNow = new Date(Date.now() + KST_OFFSET_MS);
-  kstNow.setUTCDate(kstNow.getUTCDate() + daysFromToday);
-  const year = kstNow.getUTCFullYear();
-  const month = String(kstNow.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(kstNow.getUTCDate()).padStart(2, "0");
+  kstNow.setUTCSeconds(0, 0);
+  const target = new Date(kstNow.getTime() + REMINDER_LOOKAHEAD_MINUTES * 60 * 1000);
+  return {
+    dateKey: formatKstDateKey(target),
+    minuteOfDay: target.getUTCHours() * 60 + target.getUTCMinutes(),
+  };
+}
+
+function formatKstDateKey(kstDate) {
+  const year = kstDate.getUTCFullYear();
+  const month = String(kstDate.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(kstDate.getUTCDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
 
-function isKstReminderTime() {
-  const kstNow = new Date(Date.now() + KST_OFFSET_MS);
-  return kstNow.getUTCHours() === 10 && kstNow.getUTCMinutes() === 30;
+function parseAppointmentMinute(timeValue) {
+  const match = String(timeValue || "").match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return -1;
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
+function formatMinuteOfDay(minuteOfDay) {
+  const hour = String(Math.floor(minuteOfDay / 60)).padStart(2, "0");
+  const minute = String(minuteOfDay % 60).padStart(2, "0");
+  return `${hour}:${minute}`;
+}
+
+function formatReminderTitle(dateValue, timeValue) {
+  return `${formatKoreanDate(dateValue)} ${timeValue} 진료`;
 }
 
 function formatKoreanDate(dateValue) {
   const [year, month, day] = dateValue.split("-").map(Number);
   const date = new Date(year, month - 1, day);
   const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
-  return `${month}월 ${day}일(${weekdays[date.getDay()]})`;
+  return `${month}월 ${day}일 (${weekdays[date.getDay()]})`;
 }
 
 function sendJson(response, statusCode, body) {
