@@ -247,8 +247,9 @@ a {
 
 .notification-header-button {
   position: relative;
-  width: 24px;
-  height: 24px;
+  width: 40px;
+  height: 40px;
+  margin: -8px;
   padding: 0;
   display: grid;
   place-items: center;
@@ -258,8 +259,8 @@ a {
 .notification-header-button::before {
   position: absolute;
   inset: 50% auto auto 50%;
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   border-radius: 11px;
   background: #f7f8f9;
   opacity: 0;
