@@ -852,7 +852,7 @@ function App() {
   }, [isInstalledApp, storedBookings]);
 
   useEffect(() => {
-    if (!isInstalledApp || !isPushEnabled) return;
+    if (!isInstalledApp || !isPushEnabled || isPushBusy) return;
     const reminderBookings = getPushReminderEligibleBookings(storedBookings);
     if (!reminderBookings.length) return;
     void syncPushReminderSubscriptions(reminderBookings)
@@ -869,7 +869,7 @@ function App() {
         savePushReminderEnabled(false);
         setIsPushEnabled(false);
       });
-  }, [isInstalledApp, isPushEnabled, storedBookings]);
+  }, [isInstalledApp, isPushBusy, isPushEnabled, storedBookings]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -1080,10 +1080,10 @@ function App() {
         return;
       }
 
-      await registerPushReminderBookings([targetBooking]);
       savePushReminderEnabled(true);
       setIsPushEnabled(true);
       showPushEnabledToast(shouldShowPermissionToast ? "알림을 받아요" : "진료 전에 알려드릴게요.");
+      await registerPushReminderBookings([targetBooking]);
     } catch (error) {
       console.error("Failed to enable push reminders", error);
       savePushReminderEnabled(false);
@@ -1109,11 +1109,11 @@ function App() {
     setIsPushBusy(true);
     try {
       if (isPushEnabled) {
-        await disablePushReminderSubscription();
         savePushReminderEnabled(false);
         clearPushReminderReservationIds();
         setIsPushEnabled(false);
         showNotificationToast("알림을 받지 않아요");
+        await disablePushReminderSubscription();
         return;
       }
 
@@ -1125,14 +1125,21 @@ function App() {
         return;
       }
 
-      await ensurePushSubscription();
-      const reminderBookings = getPushReminderEligibleBookings(storedBookings);
-      if (reminderBookings.length) await registerPushReminderBookings(reminderBookings);
       savePushReminderEnabled(true);
       setIsPushEnabled(true);
       showPushEnabledToast("알림을 받아요");
+      await ensurePushSubscription();
+      const reminderBookings = getPushReminderEligibleBookings(storedBookings);
+      if (reminderBookings.length) await registerPushReminderBookings(reminderBookings);
     } catch (error) {
       console.error("Failed to toggle push reminders", error);
+      if (isPushEnabled) {
+        savePushReminderEnabled(true);
+        setIsPushEnabled(true);
+        showToast("알림 해제에 실패했어요");
+        return;
+      }
+
       savePushReminderEnabled(false);
       setIsPushEnabled(false);
       await disablePushReminderSubscription().catch((disableError) => {
