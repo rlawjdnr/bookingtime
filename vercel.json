@@ -15,7 +15,7 @@
   "crons": [
     {
       "path": "/api/push-reminders",
-      "schedule": "0 1 * * *"
+      "schedule": "30 1 * * *"
     }
   ]
 }

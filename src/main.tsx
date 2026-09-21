@@ -835,7 +835,7 @@ function App() {
     void getExistingPushSubscription()
       .then((subscription) => {
         if (!isMounted) return;
-        setIsPushEnabled(Notification.permission === "granted" && Boolean(subscription));
+        setIsPushEnabled(Notification.permission === "granted" && Boolean(subscription) && hasSavedPushReminderBooking(storedBookings));
       })
       .catch(() => {
         if (isMounted) setIsPushEnabled(false);
@@ -843,15 +843,24 @@ function App() {
     return () => {
       isMounted = false;
     };
-  }, [isInstalledApp]);
+  }, [isInstalledApp, storedBookings]);
 
   useEffect(() => {
     if (!isInstalledApp || !isPushEnabled) return;
     const reminderBookingIds = loadPushReminderReservationIds();
-    const reminderBookings = storedBookings.filter((item) => reminderBookingIds.has(item.id));
-    void syncPushReminderSubscriptions(reminderBookings).catch((error) => {
-      console.error("Failed to sync push reminders", error);
-    });
+    const reminderBookings = getPushReminderEligibleBookings(storedBookings).filter((item) => reminderBookingIds.has(item.id));
+    if (!reminderBookings.length) {
+      setIsPushEnabled(false);
+      return;
+    }
+    void syncPushReminderSubscriptions(reminderBookings)
+      .then((registered) => {
+        if (registered < reminderBookings.length) setIsPushEnabled(false);
+      })
+      .catch((error) => {
+        console.error("Failed to sync push reminders", error);
+        setIsPushEnabled(false);
+      });
   }, [isInstalledApp, isPushEnabled, storedBookings]);
 
   useEffect(() => {
@@ -981,16 +990,15 @@ function App() {
         return;
       }
 
-      await ensurePushSubscription();
-      savePushReminderReservationId(targetBooking.id);
+      await registerPushReminderBookings([targetBooking]);
       setIsPushEnabled(true);
       showNotificationToast(shouldShowPermissionToast ? "알림을 받아요" : "진료일 하루 전에 알려드릴게요.");
-
-      void syncPushReminderSubscriptions([targetBooking]).catch((error) => {
-        console.error("Failed to sync push reminders", error);
-      });
     } catch (error) {
       console.error("Failed to enable push reminders", error);
+      setIsPushEnabled(false);
+      await disablePushReminderSubscription().catch((disableError) => {
+        console.error("Failed to roll back push subscription", disableError);
+      });
       showToast("알림 설정에 실패했어요");
     } finally {
       setIsPushBusy(false);
@@ -1022,19 +1030,22 @@ function App() {
         return;
       }
 
-      await ensurePushSubscription();
+      const reminderBookings = getPushReminderEligibleBookings(storedBookings);
+      if (!reminderBookings.length) {
+        setIsPushEnabled(false);
+        showToast("알림 받을 예약이 없어요");
+        return;
+      }
+
+      await registerPushReminderBookings(reminderBookings);
       setIsPushEnabled(true);
       showNotificationToast("알림을 받아요");
-
-      const reminderBookings = getPushReminderEligibleBookings(storedBookings);
-      reminderBookings.forEach((item) => savePushReminderReservationId(item.id));
-      if (reminderBookings.length) {
-        void syncPushReminderSubscriptions(reminderBookings).catch((error) => {
-          console.error("Failed to sync push reminders", error);
-        });
-      }
     } catch (error) {
       console.error("Failed to toggle push reminders", error);
+      setIsPushEnabled(false);
+      await disablePushReminderSubscription().catch((disableError) => {
+        console.error("Failed to roll back push subscription", disableError);
+      });
       showToast("알림 설정에 실패했어요");
     } finally {
       setIsPushBusy(false);
@@ -1073,9 +1084,10 @@ function App() {
       saveStoredPatientName(nextBooking.patientName);
       setStoredBookings(saveStoredBooking(nextBooking));
       if (canShowPushUi && isPushEnabled) {
-        savePushReminderReservationId(nextBooking.id);
-        void syncPushReminderSubscriptions([nextBooking]).catch((error) => {
+        void registerPushReminderBookings([nextBooking]).catch((error) => {
           console.error("Failed to sync push reminders", error);
+          setIsPushEnabled(false);
+          showToast("알림 설정에 실패했어요");
         });
       }
       setBooking(nextBooking);
@@ -3849,6 +3861,24 @@ function getPushReminderEligibleBookings(bookings: Booking[]) {
   return dedupeBookings(bookings).filter(
     (booking) => booking.status === "confirmed" && !isBookingDatePassed(booking) && Boolean(booking.ownerToken),
   );
+}
+
+function hasSavedPushReminderBooking(bookings: Booking[]) {
+  const reminderBookingIds = loadPushReminderReservationIds();
+  return getPushReminderEligibleBookings(bookings).some((booking) => reminderBookingIds.has(booking.id));
+}
+
+async function registerPushReminderBookings(bookings: Booking[]) {
+  const eligibleBookings = getPushReminderEligibleBookings(bookings);
+  if (!eligibleBookings.length) throw new Error("No eligible push reminder bookings");
+
+  const registered = await syncPushReminderSubscriptions(eligibleBookings);
+  if (registered < eligibleBookings.length) {
+    throw new Error(`Push subscription partially registered: ${registered}/${eligibleBookings.length}`);
+  }
+
+  eligibleBookings.forEach((booking) => savePushReminderReservationId(booking.id));
+  return registered;
 }
 
 async function syncPushReminderSubscriptions(bookings: Booking[]) {

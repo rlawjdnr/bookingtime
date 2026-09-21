@@ -16,8 +16,8 @@ module.exports = async function handler(request, response) {
     return;
   }
 
-  if (!isManualAuthorized && !isKstReminderHour()) {
-    sendJson(response, 200, { ok: true, skipped: true, reason: "outside_reminder_hour" });
+  if (!isManualAuthorized && !isKstReminderTime()) {
+    sendJson(response, 200, { ok: true, skipped: true, reason: "outside_reminder_time" });
     return;
   }
 
@@ -165,9 +165,9 @@ function getKstDateKey(daysFromToday) {
   return `${year}-${month}-${day}`;
 }
 
-function isKstReminderHour() {
+function isKstReminderTime() {
   const kstNow = new Date(Date.now() + KST_OFFSET_MS);
-  return kstNow.getUTCHours() === 10;
+  return kstNow.getUTCHours() === 10 && kstNow.getUTCMinutes() === 30;
 }
 
 function formatKoreanDate(dateValue) {
