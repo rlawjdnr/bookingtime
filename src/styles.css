@@ -1504,12 +1504,12 @@ textarea.selected {
 .toast button {
   flex: 0 0 auto;
   margin-left: 12px;
-  color: #22c55e;
+  color: #4ade80;
   font-weight: 400;
 }
 
 .toast.notification-toast button {
-  color: #fff;
+  color: #4ade80;
 }
 
 .sheet-dim {
