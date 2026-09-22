@@ -1875,11 +1875,11 @@ function HomeBookingSummary({
 
   return (
     <section className="home-booking-summary">
+      <div className="home-booking-count">
+        <span>내 예약</span>
+        <strong className={hasUpcomingBooking ? "has-upcoming" : ""}>{upcomingBookingCount}건</strong>
+      </div>
       <TapButton className="home-booking-list-button" type="button" onClick={onOpenMyBookings}>
-        <div className="home-booking-count">
-          <span>내 예약</span>
-          <strong className={hasUpcomingBooking ? "has-upcoming" : ""}>{upcomingBookingCount}건</strong>
-        </div>
         {booking ? (
           <div className="home-booking-featured-row">
             <div className="home-booking-featured">
