@@ -2354,14 +2354,19 @@ function MyBookingsScreen({
           )}
         </div>
       </div>
-      <div className="bottom-cta my-bookings-cta">
+      <motion.div
+        className="bottom-cta my-bookings-cta"
+        initial={{ y: 150, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={screenSpring}
+      >
         <a className="light-button phone-button" href={toPhoneHref(clinicSettings.phone)}>
           <span className="phone-button-icon">
             <img className="svg-icon" src={phoneFillIcon} alt="" />
           </span>
           전화 문의
         </a>
-      </div>
+      </motion.div>
     </>
   );
 }
@@ -2646,7 +2651,12 @@ function Toast({
 
 function BottomCTA(props: { children: React.ReactNode; disabled?: boolean; variant?: "default" | "danger"; inSheet?: boolean; onClick: () => void }) {
   return (
-    <div className={props.inSheet ? "bottom-cta in-sheet" : "bottom-cta"}>
+    <motion.div
+      className={props.inSheet ? "bottom-cta in-sheet" : "bottom-cta"}
+      initial={props.inSheet ? false : { y: 150, opacity: 0 }}
+      animate={props.inSheet ? undefined : { y: 0, opacity: 1 }}
+      transition={props.inSheet ? undefined : screenSpring}
+    >
       <TapButton
         className={props.variant === "danger" ? "danger-button" : "primary-button"}
         disabled={props.disabled}
@@ -2654,7 +2664,7 @@ function BottomCTA(props: { children: React.ReactNode; disabled?: boolean; varia
       >
         {props.children}
       </TapButton>
-    </div>
+    </motion.div>
   );
 }
 
