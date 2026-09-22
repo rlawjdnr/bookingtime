@@ -4,7 +4,7 @@
   --app-height: 100dvh;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --bottom-cta-padding-bottom: max(26px, var(--safe-bottom));
+  --bottom-cta-padding-bottom: calc(max(26px, var(--safe-bottom)) + 8px);
   --bottom-cta-content-padding: calc(77px + var(--bottom-cta-padding-bottom));
   --complete-summary-bottom: calc(73px + var(--bottom-cta-padding-bottom));
   --topbar-height: calc(56px + var(--safe-top));
