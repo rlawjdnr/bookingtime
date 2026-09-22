@@ -2,7 +2,7 @@
 
 :root {
   --app-height: 100dvh;
-  --safe-top: calc(env(safe-area-inset-top, 0px) + 8px);
+  --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --bottom-cta-padding-bottom: max(26px, var(--safe-bottom));
   --bottom-cta-content-padding: calc(77px + var(--bottom-cta-padding-bottom));
