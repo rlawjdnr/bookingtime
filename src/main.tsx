@@ -1856,7 +1856,7 @@ function DateScreen(props: {
           />
         </section>
       </div>
-      <BottomCTA disabled={!props.canContinue} onClick={props.onNext}>예약 가능한 시간 보기</BottomCTA>
+      <BottomCTA animateEntrance disabled={!props.canContinue} onClick={props.onNext}>예약 가능한 시간 보기</BottomCTA>
     </>
   );
 }
@@ -2354,19 +2354,14 @@ function MyBookingsScreen({
           )}
         </div>
       </div>
-      <motion.div
-        className="bottom-cta my-bookings-cta"
-        initial={{ y: 150, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={screenSpring}
-      >
+      <div className="bottom-cta my-bookings-cta">
         <a className="light-button phone-button" href={toPhoneHref(clinicSettings.phone)}>
           <span className="phone-button-icon">
             <img className="svg-icon" src={phoneFillIcon} alt="" />
           </span>
           전화 문의
         </a>
-      </motion.div>
+      </div>
     </>
   );
 }
@@ -2649,13 +2644,17 @@ function Toast({
   );
 }
 
-function BottomCTA(props: { children: React.ReactNode; disabled?: boolean; variant?: "default" | "danger"; inSheet?: boolean; onClick: () => void }) {
+function BottomCTA(props: { children: React.ReactNode; animateEntrance?: boolean; disabled?: boolean; variant?: "default" | "danger"; inSheet?: boolean; onClick: () => void }) {
+  const Container = props.animateEntrance ? motion.div : "div";
+
   return (
-    <motion.div
+    <Container
       className={props.inSheet ? "bottom-cta in-sheet" : "bottom-cta"}
-      initial={props.inSheet ? false : { y: 150, opacity: 0 }}
-      animate={props.inSheet ? undefined : { y: 0, opacity: 1 }}
-      transition={props.inSheet ? undefined : screenSpring}
+      {...(props.animateEntrance ? {
+        initial: { y: 150, opacity: 0 },
+        animate: { y: 0, opacity: 1 },
+        transition: screenSpring,
+      } : {})}
     >
       <TapButton
         className={props.variant === "danger" ? "danger-button" : "primary-button"}
@@ -2664,7 +2663,7 @@ function BottomCTA(props: { children: React.ReactNode; disabled?: boolean; varia
       >
         {props.children}
       </TapButton>
-    </motion.div>
+    </Container>
   );
 }
 
