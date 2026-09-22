@@ -1589,9 +1589,7 @@ function ScreenMotion({
   );
 }
 
-type TapButtonProps = React.ComponentProps<typeof motion.button> & {
-  disableTapMotion?: boolean;
-};
+type TapButtonProps = React.ComponentProps<typeof motion.button>;
 
 type ToastAction = {
   label: string;
@@ -1600,12 +1598,12 @@ type ToastAction = {
 type ToastTone = "default" | "notification";
 
 function TapButton(props: TapButtonProps) {
-  const { children, disabled, transition, disableTapMotion, ...rest } = props;
+  const { children, disabled, transition, ...rest } = props;
 
   return (
     <motion.button
       animate={{ scale: 1 }}
-      whileTap={disabled || disableTapMotion ? undefined : { scale: 0.98, transition: tapSpring }}
+      whileTap={disabled ? undefined : { scale: 0.97, transition: tapSpring }}
       transition={transition ?? tapReleaseSpring}
       disabled={disabled}
       {...rest}
@@ -1876,7 +1874,7 @@ function HomeBookingSummary({
   const treatmentIllustrations = booking ? getTreatmentIllustrations(booking.treatment) : [];
 
   return (
-    <TapButton className="home-booking-summary" type="button" onClick={onOpenMyBookings} disableTapMotion>
+    <TapButton className="home-booking-summary" type="button" onClick={onOpenMyBookings}>
       <div className="home-booking-count">
         <span>내 예약</span>
         <strong className={hasUpcomingBooking ? "has-upcoming" : ""}>{upcomingBookingCount}건</strong>
@@ -3107,8 +3105,6 @@ function AdminCalendarPanel(props: {
                 key={date ? date.toISOString() : `admin-empty-${index}`}
                 className={[isPicked ? "picked" : "", dayStatus === "closed" ? "closed" : "", dayStatus === "unopened" ? "unopened" : ""].filter(Boolean).join(" ")}
                 disabled={!date}
-                disableTapMotion
-                transition={{ duration: 0 }}
                 onClick={() => date && props.onSelectDate(date)}
               >
                 {date?.getDate()}
