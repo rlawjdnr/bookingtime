@@ -1822,6 +1822,12 @@ function DateScreen(props: {
   const upcomingBookings = props.bookings.filter(isUpcomingBooking).sort(compareBookingsByAppointmentTime);
   const featuredBooking = upcomingBookings[0] ?? null;
   const shouldShowBookingSummary = props.bookings.length > 0;
+  const [showHomeCta, setShowHomeCta] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setShowHomeCta(true), 80);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   return (
     <>
@@ -1856,7 +1862,7 @@ function DateScreen(props: {
           />
         </section>
       </div>
-      <BottomCTA animateEntrance disabled={!props.canContinue} onClick={props.onNext}>예약 가능한 시간 보기</BottomCTA>
+      {showHomeCta && <BottomCTA animateEntrance disabled={!props.canContinue} onClick={props.onNext}>예약 가능한 시간 보기</BottomCTA>}
     </>
   );
 }
