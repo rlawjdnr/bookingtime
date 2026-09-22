@@ -1874,29 +1874,31 @@ function HomeBookingSummary({
   const treatmentIllustrations = booking ? getTreatmentIllustrations(booking.treatment) : [];
 
   return (
-    <TapButton className="home-booking-summary" type="button" onClick={onOpenMyBookings}>
-      <div className="home-booking-count">
-        <span>내 예약</span>
-        <strong className={hasUpcomingBooking ? "has-upcoming" : ""}>{upcomingBookingCount}건</strong>
-      </div>
-      {booking ? (
-        <div className="home-booking-featured-row">
-          <div className="home-booking-featured">
-            <p><strong>{formatShortDate(parseBookingDate(booking.date))} {booking.time}</strong></p>
-            <p>{booking.treatment} · 대기 {booking.waitMinutes}분</p>
-          </div>
-          {treatmentIllustrations.length > 0 && <TreatmentIllustrationGroup treatments={treatmentIllustrations} />}
+    <section className="home-booking-summary">
+      <TapButton className="home-booking-list-button" type="button" onClick={onOpenMyBookings}>
+        <div className="home-booking-count">
+          <span>내 예약</span>
+          <strong className={hasUpcomingBooking ? "has-upcoming" : ""}>{upcomingBookingCount}건</strong>
         </div>
-      ) : (
-        <p className="home-booking-empty">예약한 진료가 없어요</p>
-      )}
-      <div className="home-booking-all" aria-hidden="true">
+        {booking ? (
+          <div className="home-booking-featured-row">
+            <div className="home-booking-featured">
+              <p><strong>{formatShortDate(parseBookingDate(booking.date))} {booking.time}</strong></p>
+              <p>{booking.treatment} · 대기 {booking.waitMinutes}분</p>
+            </div>
+            {treatmentIllustrations.length > 0 && <TreatmentIllustrationGroup treatments={treatmentIllustrations} />}
+          </div>
+        ) : (
+          <p className="home-booking-empty">예약한 진료가 없어요</p>
+        )}
+      </TapButton>
+      <TapButton className="home-booking-all" type="button" onClick={onOpenMyBookings}>
         <span>전체 보기</span>
         <span className="home-booking-all-icon">
           <img className="svg-icon" src={bookingCardChevronRightIcon} alt="" />
         </span>
-      </div>
-    </TapButton>
+      </TapButton>
+    </section>
   );
 }
 

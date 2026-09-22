@@ -459,18 +459,28 @@ a {
 
 .home-booking-summary {
   width: 100%;
-  padding: 14px 0 2px;
+  padding: 0 0 2px;
   border: 1px solid var(--line);
   border-radius: 20px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 8px;
   overflow: hidden;
   text-align: left;
 }
 
-.home-booking-summary:focus-visible {
+.home-booking-list-button {
+  width: 100%;
+  padding: 14px 0 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  text-align: left;
+}
+
+.home-booking-list-button:focus-visible,
+.home-booking-all:focus-visible {
   outline: 2px solid rgba(7, 145, 113, 0.28);
   outline-offset: 2px;
 }
