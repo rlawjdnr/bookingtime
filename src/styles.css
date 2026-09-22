@@ -925,8 +925,8 @@ a {
 
 .app-shell.is-installed .bottom-cta:not(.in-sheet),
 .app-shell.is-installed .bottom-stack {
-  bottom: calc((var(--safe-bottom) + 16px) * -1);
-  padding-bottom: calc(26px + var(--safe-bottom));
+  bottom: 0;
+  padding-bottom: var(--bottom-cta-padding-bottom);
 }
 
 .app-shell.is-installed .toast {
@@ -944,8 +944,8 @@ a {
 @media (display-mode: standalone) {
   .bottom-cta:not(.in-sheet),
   .bottom-stack {
-    bottom: calc((var(--safe-bottom) + 16px) * -1);
-    padding-bottom: calc(26px + var(--safe-bottom));
+    bottom: 0;
+    padding-bottom: var(--bottom-cta-padding-bottom);
   }
 
   .toast {
@@ -1662,7 +1662,7 @@ textarea.selected {
 }
 
 .app-shell.is-installed .confirm-sheet {
-  bottom: calc((var(--safe-bottom) + 16px) * -1);
+  bottom: 0;
 }
 
 .app-shell.is-installed .confirm-actions {
@@ -1671,7 +1671,7 @@ textarea.selected {
 
 @media (display-mode: standalone) {
   .confirm-sheet {
-    bottom: calc((var(--safe-bottom) + 16px) * -1);
+    bottom: 0;
   }
 
   .confirm-actions {
