@@ -1372,6 +1372,9 @@ function App() {
 	                    clinicSettings={clinicSettings}
 	                    bookings={storedBookings}
 	                    onBack={back}
+                      showNotificationButton={isInstalledApp}
+                      notificationEnabled={isPushEnabled}
+                      onToggleNotification={() => void togglePushReminders()}
 	                    onCancel={(targetBooking) => {
 	                      if (isSameDayBooking(targetBooking)) {
 	                        showToast(sameDayCancelBlockedMessage);
@@ -1716,6 +1719,8 @@ function Header({
   notificationEnabled?: boolean;
   onToggleNotification?: () => void;
 }) {
+  const shouldShowNotificationButton = showNotificationButton && Boolean(onToggleNotification);
+
   if (complete) {
     return (
       <header className="topbar complete-topbar">
@@ -1737,14 +1742,20 @@ function Header({
       )}
       {back && !hideTitle && <strong className="header-title">{clinicSettings.name}</strong>}
       {!back && !onOpenMyBookings && (
-        showNotificationButton ? (
+        shouldShowNotificationButton ? (
           <NotificationHeaderButton enabled={notificationEnabled} onClick={onToggleNotification} />
         ) : (
           <span className="header-spacer" />
         )
       )}
       {!back && onOpenMyBookings && <span className={upcomingBookingCount === 0 ? "clinic-status" : "header-spacer"}>{upcomingBookingCount === 0 ? clinicStatus ?? clinicSettings.status : ""}</span>}
-      {back && <span className="header-spacer" />}
+      {back && (
+        shouldShowNotificationButton ? (
+          <NotificationHeaderButton enabled={notificationEnabled} onClick={onToggleNotification} />
+        ) : (
+          <span className="header-spacer" />
+        )
+      )}
     </header>
   );
 }
@@ -2277,12 +2288,18 @@ function MyBookingsScreen({
   clinicSettings,
   bookings,
   onBack,
+  showNotificationButton,
+  notificationEnabled,
+  onToggleNotification,
   onCancel,
   onDelete,
 }: {
   clinicSettings: ClinicSettings;
   bookings: Booking[];
   onBack: () => void;
+  showNotificationButton: boolean;
+  notificationEnabled: boolean;
+  onToggleNotification: () => void;
   onCancel: (booking: Booking) => void;
   onDelete: (booking: Booking) => void;
 }) {
@@ -2293,7 +2310,15 @@ function MyBookingsScreen({
 
   return (
     <>
-      <Header clinicSettings={clinicSettings} back={onBack} compact hideTitle />
+      <Header
+        clinicSettings={clinicSettings}
+        back={onBack}
+        compact
+        hideTitle
+        showNotificationButton={showNotificationButton}
+        notificationEnabled={notificationEnabled}
+        onToggleNotification={onToggleNotification}
+      />
       <div className="my-bookings-sticky">
         <h1>내 예약</h1>
         <div className="my-bookings-tabs" role="tablist">
