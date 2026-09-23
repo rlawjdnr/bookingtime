@@ -457,6 +457,125 @@ a {
   padding-top: var(--topbar-height);
 }
 
+.date-home-content.with-holiday-nudge {
+  padding-top: var(--topbar-height);
+}
+
+.holiday-nudge {
+  width: 100%;
+  margin: 0 0 30px;
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+
+.holiday-nudge-inner {
+  position: relative;
+  width: 100%;
+  padding: 92px 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.holiday-nudge-close {
+  position: absolute;
+  top: -2px;
+  right: -8px;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  z-index: 1;
+}
+
+.holiday-nudge-close img {
+  width: 24px;
+  height: 24px;
+  opacity: 0.9;
+}
+
+.holiday-moon-slot {
+  position: relative;
+  width: 140px;
+  overflow: visible;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+}
+
+.holiday-moon {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  overflow: visible;
+  transform-origin: center center;
+}
+
+.holiday-moon img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 340px;
+  height: 340px;
+  max-width: none;
+  transform: translate(-50%, -50%);
+}
+
+.holiday-nudge-copy {
+  margin-top: 17px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.holiday-nudge-copy h2 {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #ebb847 0%, #b68c31 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-size: 1.6471rem;
+  line-height: 1.32;
+  font-weight: 700;
+}
+
+.holiday-nudge-copy p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8824rem;
+  line-height: normal;
+  font-weight: 500;
+}
+
+.holiday-nudge-confirm {
+  width: 100%;
+  min-height: 50px;
+  padding: 12px 32px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e4af38;
+  box-shadow: 0 16px 9.5px rgba(238, 211, 152, 0.3);
+  color: #fff;
+  font-size: 1rem;
+  line-height: 1.47;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.holiday-nudge-confirm-wrap {
+  width: 85%;
+  margin-top: 18px;
+  border-radius: 12px;
+  display: flex;
+}
+
 .home-booking-summary {
   width: 100%;
   padding: 14px 0 2px;

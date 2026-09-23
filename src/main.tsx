@@ -46,6 +46,7 @@ import treatmentHerbalIllustration from "./assets/figma/treatment-herbal-illustr
 import notificationBellIcon from "./assets/figma/notification-bell-fill.svg";
 import notificationBellLineIcon from "./assets/figma/notification-bell-line.svg";
 import notificationBellOffIcon from "./assets/figma/notification-bell-off-line.svg";
+import chuseokMoonIcon from "./assets/figma/chuseok-moon.svg";
 
 const ADMIN_SESSION_KEY = "bookingtime-admin-authenticated";
 const ADMIN_SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
@@ -182,6 +183,8 @@ const storedPatientNameStorageKey = "hospital-reservation.patientName";
 const pushDeviceIdStorageKey = "hospital-reservation.pushDeviceId";
 const pushReminderEnabledStorageKey = "hospital-reservation.pushReminderEnabled";
 const pushReminderReservationIdsStorageKey = "hospital-reservation.pushReminderReservationIds";
+const chuseokNudgeSeenStorageKey = "hospital-reservation.chuseokNudgeSeen.2026";
+const chuseokNudgeEndDateKey = "2026-09-26";
 let cachedVapidPublicKey = ((import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined) ?? "").trim();
 let vapidPublicKeyRequest: Promise<string> | null = null;
 const otherTreatmentLabel = "기타";
@@ -228,6 +231,7 @@ const screenSpring = { type: "spring" as const, stiffness: 480, damping: 50 };
 const tabSpring = { type: "spring" as const, stiffness: 800, damping: 55 };
 const snackbarSpring = { type: "spring" as const, stiffness: 800, damping: 55 };
 const overlaySpring = { type: "spring" as const, stiffness: 800, damping: 55 };
+const holidayNudgeExitSpring = { type: "spring" as const, stiffness: 800, damping: 55 };
 const tapSpring = { type: "spring" as const, stiffness: 1000, damping: 55 };
 const tapReleaseSpring = { type: "spring" as const, stiffness: 800, damping: 55 };
 const confirmSheetItemSpring = { type: "spring" as const, stiffness: 480, damping: 50 };
@@ -754,6 +758,7 @@ function App() {
   const [isPushEnabled, setIsPushEnabled] = useState(false);
   const [isPushBusy, setIsPushBusy] = useState(false);
   const pushTestHandledRef = useRef(false);
+  const displayStoredBookings = useMemo(() => withChuseokMockBooking(storedBookings), [storedBookings]);
 
   const slots = useMemo(() => {
     const daySetting = getDaySetting(daySettings, selectedDate);
@@ -1280,7 +1285,7 @@ function App() {
                     daySettings={daySettings}
                     slots={baseSlots}
                     now={now}
-                    bookings={storedBookings}
+                    bookings={displayStoredBookings}
                     canContinue={canContinueDate}
                     showNotificationButton={isInstalledApp}
                     notificationEnabled={isPushEnabled}
@@ -1370,7 +1375,7 @@ function App() {
                 {route === "myBookings" && (
                   <MyBookingsScreen
 	                    clinicSettings={clinicSettings}
-	                    bookings={storedBookings}
+	                    bookings={displayStoredBookings}
 	                    onBack={back}
                       showNotificationButton={isInstalledApp}
                       notificationEnabled={isPushEnabled}
@@ -1822,12 +1827,33 @@ function DateScreen(props: {
   const upcomingBookings = props.bookings.filter(isUpcomingBooking).sort(compareBookingsByAppointmentTime);
   const featuredBooking = upcomingBookings[0] ?? null;
   const shouldShowBookingSummary = props.bookings.length > 0;
+  const isHolidayNudgeTest = useMemo(() => isChuseokNudgeTestMode(), []);
+  const shouldMountHolidayNudge = useMemo(() => isHolidayNudgeTest || shouldShowChuseokNudge(), [isHolidayNudgeTest]);
+  const [showHolidayNudge, setShowHolidayNudge] = useState(shouldMountHolidayNudge);
+  const [isHolidayNudgeLayoutActive, setIsHolidayNudgeLayoutActive] = useState(shouldMountHolidayNudge);
+  const [isHolidayNudgeExpanded, setIsHolidayNudgeExpanded] = useState(false);
   const [showHomeCta, setShowHomeCta] = useState(false);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setShowHomeCta(true), 80);
     return () => window.clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (!shouldMountHolidayNudge) return;
+
+    setIsHolidayNudgeLayoutActive(true);
+    const timer = window.setTimeout(() => {
+      setIsHolidayNudgeExpanded(true);
+      if (!isHolidayNudgeTest) saveChuseokNudgeSeen();
+    }, 120);
+    return () => window.clearTimeout(timer);
+  }, [isHolidayNudgeTest, shouldMountHolidayNudge]);
+
+  function dismissHolidayNudge() {
+    setShowHolidayNudge(false);
+    if (!isHolidayNudgeTest) saveChuseokNudgeSeen();
+  }
 
   return (
     <>
@@ -1838,15 +1864,37 @@ function DateScreen(props: {
         notificationEnabled={props.notificationEnabled}
         onToggleNotification={props.onToggleNotification}
       />
-      <div className={`content date-home-content ${shouldShowBookingSummary ? "with-booking-summary" : ""}`}>
+      <div className={[
+        "content date-home-content",
+        shouldShowBookingSummary ? "with-booking-summary" : "",
+        isHolidayNudgeLayoutActive ? "with-holiday-nudge" : "",
+      ].filter(Boolean).join(" ")}>
+        <AnimatePresence initial={false} onExitComplete={() => setIsHolidayNudgeLayoutActive(false)}>
+          {showHolidayNudge && (
+            <ChuseokNudge
+              exitHeight={shouldShowBookingSummary ? 0 : 48}
+              isExpanded={isHolidayNudgeExpanded}
+              onDismiss={dismissHolidayNudge}
+            />
+          )}
+        </AnimatePresence>
         {shouldShowBookingSummary && (
-          <HomeBookingSummary
-            booking={featuredBooking}
-            upcomingBookingCount={upcomingBookings.length}
-            onOpenMyBookings={props.onOpenMyBookings}
-          />
+          <motion.div layout transition={holidayNudgeExitSpring}>
+            <HomeBookingSummary
+              booking={featuredBooking}
+              upcomingBookingCount={upcomingBookings.length}
+              onOpenMyBookings={() => {
+                dismissHolidayNudge();
+                props.onOpenMyBookings();
+              }}
+            />
+          </motion.div>
         )}
-        <section className={`date-step ${shouldShowBookingSummary ? (featuredBooking ? "after-upcoming-summary" : "after-empty-summary") : ""}`}>
+        <motion.section
+          layout
+          transition={holidayNudgeExitSpring}
+          className={`date-step ${shouldShowBookingSummary ? (featuredBooking ? "after-upcoming-summary" : "after-empty-summary") : ""}`}
+        >
           <h1 className="screen-title date-step-title">
             <img className="svg-icon date-step-title-icon" src={dateTitleCalendarIcon} alt="" />
             <span>날짜를 선택해 주세요</span>
@@ -1860,10 +1908,68 @@ function DateScreen(props: {
             onBlockedDate={props.onBlockedDate}
             onSelect={props.onSelectDate}
           />
-        </section>
+        </motion.section>
       </div>
-      {showHomeCta && <BottomCTA animateEntrance disabled={!props.canContinue} onClick={props.onNext}>예약 가능한 시간 보기</BottomCTA>}
+      {showHomeCta && (
+        <BottomCTA
+          animateEntrance
+          disabled={!props.canContinue}
+          onClick={() => {
+            dismissHolidayNudge();
+            props.onNext();
+          }}
+        >
+          예약 가능한 시간 보기
+        </BottomCTA>
+      )}
     </>
+  );
+}
+
+function ChuseokNudge({
+  exitHeight,
+  isExpanded,
+  onDismiss,
+}: {
+  exitHeight: number;
+  isExpanded: boolean;
+  onDismiss: () => void;
+}) {
+  return (
+    <motion.section
+      className="holiday-nudge"
+      initial={false}
+      exit={{ height: exitHeight, opacity: 0 }}
+      transition={holidayNudgeExitSpring}
+    >
+      <div className="holiday-nudge-inner">
+        <TapButton className="holiday-nudge-close" type="button" onClick={onDismiss} aria-label="한가위 휴진 안내 닫기">
+          <img className="svg-icon" src={closeIcon} alt="" />
+        </TapButton>
+        <motion.div className="holiday-moon-slot" initial={false} animate={{ height: isExpanded ? 140 : 70 }} transition={screenSpring}>
+          <motion.div
+            className="holiday-moon"
+            initial={false}
+            animate={{ scale: isExpanded ? 1 : 0.5, opacity: isExpanded ? 1 : 0 }}
+            transition={screenSpring}
+          >
+            <img src={chuseokMoonIcon} alt="" />
+          </motion.div>
+        </motion.div>
+        <div className="holiday-nudge-copy">
+          <h2>
+            <span>행복한</span>
+            <span>한가위 되세요!</span>
+          </h2>
+          <p>목요일~ 일요일까지 휴진해요</p>
+        </div>
+        <div className="holiday-nudge-confirm-wrap">
+          <TapButton className="holiday-nudge-confirm" type="button" onClick={onDismiss}>
+            확인했어요
+          </TapButton>
+        </div>
+      </div>
+    </motion.section>
   );
 }
 
@@ -3929,6 +4035,60 @@ function saveStoredPatientName(name: string) {
   }
 
   window.localStorage.removeItem(storedPatientNameStorageKey);
+}
+
+function shouldShowChuseokNudge() {
+  try {
+    if (toDateKey(getToday()) > chuseokNudgeEndDateKey) return false;
+    return window.localStorage.getItem(chuseokNudgeSeenStorageKey) !== "true";
+  } catch {
+    return false;
+  }
+}
+
+function isChuseokNudgeTestMode() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("chuseokTest") === "1";
+  } catch {
+    return false;
+  }
+}
+
+function isChuseokMockBookingTestMode() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("mockBooking") === "1";
+  } catch {
+    return false;
+  }
+}
+
+function withChuseokMockBooking(bookings: Booking[]) {
+  if (!isChuseokMockBookingTestMode()) return bookings;
+
+  const mockBooking: Booking = {
+    id: "test-chuseok-booking-1",
+    patientName: "김정욱",
+    date: "2026-09-30",
+    time: "16:30",
+    treatment: "침구치료",
+    waitMinutes: 2,
+    status: "confirmed",
+    createdAt: new Date().toISOString(),
+    ownerToken: "test-owner-token",
+    ownerTokenHash: "test-owner-token-hash",
+  };
+
+  return dedupeBookings([mockBooking, ...bookings]).filter(isVisibleStoredBooking);
+}
+
+function saveChuseokNudgeSeen() {
+  try {
+    window.localStorage.setItem(chuseokNudgeSeenStorageKey, "true");
+  } catch {
+    // Ignore storage failures; the notice can still be dismissed for the current session.
+  }
 }
 
 function isInstalledAppMode() {
