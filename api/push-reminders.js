@@ -2,8 +2,8 @@ const webpush = require("web-push");
 
 const DEFAULT_SUPABASE_URL = "https://ohwvtwywwjbwlkknwjxe.supabase.co";
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
-const REMINDER_LOOKAHEAD_MINUTES = 100;
-const REMINDER_WINDOW_MINUTES = 60;
+const REMINDER_LOOKAHEAD_MINUTES = 120;
+const REMINDER_WINDOW_MINUTES = 10;
 const REMINDER_BODY = "곧 약속된 진료 시간이에요. 조심히 내원해주세요.";
 
 module.exports = async function handler(request, response) {
@@ -31,7 +31,7 @@ module.exports = async function handler(request, response) {
 
   webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
 
-  const reminderWindow = getReminderWindow();
+  const reminderWindow = getReminderWindow(request);
 
   try {
     const reservations = (await fetchDueReservations(reminderWindow.dateKeys, serviceRoleKey))
@@ -41,6 +41,7 @@ module.exports = async function handler(request, response) {
     if (!reservationIds.length) {
       sendJson(response, 200, {
         ok: true,
+        targetSlot: reminderWindow.targetSlot,
         windowStart: formatKstDateTime(reminderWindow.start),
         windowEnd: formatKstDateTime(reminderWindow.end),
         sent: 0,
@@ -96,6 +97,7 @@ module.exports = async function handler(request, response) {
 
     sendJson(response, 200, {
       ok: true,
+      targetSlot: reminderWindow.targetSlot,
       windowStart: formatKstDateTime(reminderWindow.start),
       windowEnd: formatKstDateTime(reminderWindow.end),
       sent,
@@ -169,18 +171,44 @@ async function supabaseRest(path, serviceRoleKey, options = {}) {
   return JSON.parse(text);
 }
 
-function getReminderWindow() {
-  const kstNow = new Date(Date.now() + KST_OFFSET_MS);
-  kstNow.setUTCSeconds(0, 0);
-  kstNow.setUTCMinutes(0, 0, 0);
-  const start = new Date(kstNow.getTime() + REMINDER_LOOKAHEAD_MINUTES * 60 * 1000);
+function getReminderWindow(request) {
+  const scheduledKstTime = parseScheduledKstTime(request);
+  const start = new Date(scheduledKstTime.getTime() + REMINDER_LOOKAHEAD_MINUTES * 60 * 1000);
   const end = new Date(start.getTime() + REMINDER_WINDOW_MINUTES * 60 * 1000);
   const dateKeys = [...new Set([formatKstDateKey(start), formatKstDateKey(end)])];
   return {
     start,
     end,
     dateKeys,
+    targetSlot: formatKstTime(scheduledKstTime),
   };
+}
+
+function parseScheduledKstTime(request) {
+  const slot = parseReminderSlot(request);
+  const kstNow = new Date(Date.now() + KST_OFFSET_MS);
+  kstNow.setUTCSeconds(0, 0);
+
+  if (!slot) return kstNow;
+
+  const hour = Number(slot.slice(0, 2));
+  const minute = Number(slot.slice(2, 4));
+  const scheduledKstTime = new Date(kstNow);
+  scheduledKstTime.setUTCHours(hour, minute, 0, 0);
+  return scheduledKstTime;
+}
+
+function parseReminderSlot(request) {
+  const url = new URL(request.url || "", "https://local");
+  const querySlot = url.searchParams.get("slot");
+  const pathSlot = url.pathname.match(/\/api\/push-reminders\/(\d{4})$/)?.[1] ?? "";
+  const slot = querySlot || pathSlot;
+  if (!/^\d{4}$/.test(slot)) return "";
+
+  const hour = Number(slot.slice(0, 2));
+  const minute = Number(slot.slice(2, 4));
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return "";
+  return slot;
 }
 
 function formatKstDateKey(kstDate) {
@@ -205,6 +233,10 @@ function parseAppointmentKstDate(dateValue, timeValue) {
 
 function formatKstDateTime(kstDate) {
   return `${formatKstDateKey(kstDate)} ${String(kstDate.getUTCHours()).padStart(2, "0")}:${String(kstDate.getUTCMinutes()).padStart(2, "0")}`;
+}
+
+function formatKstTime(kstDate) {
+  return `${String(kstDate.getUTCHours()).padStart(2, "0")}:${String(kstDate.getUTCMinutes()).padStart(2, "0")}`;
 }
 
 function formatReminderTitle(dateValue, timeValue) {

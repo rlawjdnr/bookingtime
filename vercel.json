@@ -4,6 +4,10 @@
   "devCommand": "npm run dev",
   "rewrites": [
     {
+      "source": "/api/push-reminders/:slot",
+      "destination": "/api/push-reminders?slot=:slot"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/$1"
     },
@@ -14,44 +18,216 @@
   ],
   "crons": [
     {
-      "path": "/api/push-reminders",
+      "path": "/api/push-reminders/0700",
       "schedule": "0 22 * * *"
     },
     {
-      "path": "/api/push-reminders",
+      "path": "/api/push-reminders/0710",
+      "schedule": "10 22 * * *"
+    },
+    {
+      "path": "/api/push-reminders/0720",
+      "schedule": "20 22 * * *"
+    },
+    {
+      "path": "/api/push-reminders/0730",
+      "schedule": "30 22 * * *"
+    },
+    {
+      "path": "/api/push-reminders/0740",
+      "schedule": "40 22 * * *"
+    },
+    {
+      "path": "/api/push-reminders/0750",
+      "schedule": "50 22 * * *"
+    },
+    {
+      "path": "/api/push-reminders/0800",
       "schedule": "0 23 * * *"
     },
     {
-      "path": "/api/push-reminders",
+      "path": "/api/push-reminders/0810",
+      "schedule": "10 23 * * *"
+    },
+    {
+      "path": "/api/push-reminders/0820",
+      "schedule": "20 23 * * *"
+    },
+    {
+      "path": "/api/push-reminders/0830",
+      "schedule": "30 23 * * *"
+    },
+    {
+      "path": "/api/push-reminders/0840",
+      "schedule": "40 23 * * *"
+    },
+    {
+      "path": "/api/push-reminders/0850",
+      "schedule": "50 23 * * *"
+    },
+    {
+      "path": "/api/push-reminders/0900",
       "schedule": "0 0 * * *"
     },
     {
-      "path": "/api/push-reminders",
+      "path": "/api/push-reminders/0910",
+      "schedule": "10 0 * * *"
+    },
+    {
+      "path": "/api/push-reminders/0920",
+      "schedule": "20 0 * * *"
+    },
+    {
+      "path": "/api/push-reminders/0930",
+      "schedule": "30 0 * * *"
+    },
+    {
+      "path": "/api/push-reminders/0940",
+      "schedule": "40 0 * * *"
+    },
+    {
+      "path": "/api/push-reminders/0950",
+      "schedule": "50 0 * * *"
+    },
+    {
+      "path": "/api/push-reminders/1000",
       "schedule": "0 1 * * *"
     },
     {
-      "path": "/api/push-reminders",
+      "path": "/api/push-reminders/1010",
+      "schedule": "10 1 * * *"
+    },
+    {
+      "path": "/api/push-reminders/1020",
+      "schedule": "20 1 * * *"
+    },
+    {
+      "path": "/api/push-reminders/1030",
+      "schedule": "30 1 * * *"
+    },
+    {
+      "path": "/api/push-reminders/1040",
+      "schedule": "40 1 * * *"
+    },
+    {
+      "path": "/api/push-reminders/1050",
+      "schedule": "50 1 * * *"
+    },
+    {
+      "path": "/api/push-reminders/1100",
       "schedule": "0 2 * * *"
     },
     {
-      "path": "/api/push-reminders",
+      "path": "/api/push-reminders/1110",
+      "schedule": "10 2 * * *"
+    },
+    {
+      "path": "/api/push-reminders/1120",
+      "schedule": "20 2 * * *"
+    },
+    {
+      "path": "/api/push-reminders/1130",
+      "schedule": "30 2 * * *"
+    },
+    {
+      "path": "/api/push-reminders/1140",
+      "schedule": "40 2 * * *"
+    },
+    {
+      "path": "/api/push-reminders/1150",
+      "schedule": "50 2 * * *"
+    },
+    {
+      "path": "/api/push-reminders/1200",
       "schedule": "0 3 * * *"
     },
     {
-      "path": "/api/push-reminders",
+      "path": "/api/push-reminders/1210",
+      "schedule": "10 3 * * *"
+    },
+    {
+      "path": "/api/push-reminders/1220",
+      "schedule": "20 3 * * *"
+    },
+    {
+      "path": "/api/push-reminders/1230",
+      "schedule": "30 3 * * *"
+    },
+    {
+      "path": "/api/push-reminders/1240",
+      "schedule": "40 3 * * *"
+    },
+    {
+      "path": "/api/push-reminders/1250",
+      "schedule": "50 3 * * *"
+    },
+    {
+      "path": "/api/push-reminders/1300",
       "schedule": "0 4 * * *"
     },
     {
-      "path": "/api/push-reminders",
+      "path": "/api/push-reminders/1310",
+      "schedule": "10 4 * * *"
+    },
+    {
+      "path": "/api/push-reminders/1320",
+      "schedule": "20 4 * * *"
+    },
+    {
+      "path": "/api/push-reminders/1330",
+      "schedule": "30 4 * * *"
+    },
+    {
+      "path": "/api/push-reminders/1340",
+      "schedule": "40 4 * * *"
+    },
+    {
+      "path": "/api/push-reminders/1350",
+      "schedule": "50 4 * * *"
+    },
+    {
+      "path": "/api/push-reminders/1400",
       "schedule": "0 5 * * *"
     },
     {
-      "path": "/api/push-reminders",
+      "path": "/api/push-reminders/1410",
+      "schedule": "10 5 * * *"
+    },
+    {
+      "path": "/api/push-reminders/1420",
+      "schedule": "20 5 * * *"
+    },
+    {
+      "path": "/api/push-reminders/1430",
+      "schedule": "30 5 * * *"
+    },
+    {
+      "path": "/api/push-reminders/1440",
+      "schedule": "40 5 * * *"
+    },
+    {
+      "path": "/api/push-reminders/1450",
+      "schedule": "50 5 * * *"
+    },
+    {
+      "path": "/api/push-reminders/1500",
       "schedule": "0 6 * * *"
     },
     {
-      "path": "/api/push-reminders",
-      "schedule": "0 7 * * *"
+      "path": "/api/push-reminders/1510",
+      "schedule": "10 6 * * *"
+    },
+    {
+      "path": "/api/push-reminders/1520",
+      "schedule": "20 6 * * *"
+    },
+    {
+      "path": "/api/push-reminders/1530",
+      "schedule": "30 6 * * *"
+    },
+    {
+      "path": "/api/push-reminders/1540",
+      "schedule": "40 6 * * *"
     }
   ]
 }
