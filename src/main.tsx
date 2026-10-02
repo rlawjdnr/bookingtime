@@ -1977,7 +1977,7 @@ function ClinicNotice({ exitHeight, isExpanded, onDismiss }: {
       <div className="clinic-notice-body">
         <div className="clinic-notice-copy">
           <h2 id="clinic-notice-title">진료일 안내 드려요.</h2>
-          <p>이번주 월요일은 정상 진료하고,<br />목,금,토요일은 개인사정으로 휴진해요.</p>
+          <p>이번 주 월요일은 정상 진료하고,<br />목,금,토요일은 개인 사정으로 휴진해요.</p>
         </div>
         <TapButton className="clinic-notice-confirm" type="button" onClick={onDismiss}>확인했어요</TapButton>
       </div>
