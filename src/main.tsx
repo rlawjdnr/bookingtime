@@ -185,6 +185,8 @@ const pushReminderEnabledStorageKey = "hospital-reservation.pushReminderEnabled"
 const pushReminderReservationIdsStorageKey = "hospital-reservation.pushReminderReservationIds";
 const chuseokNudgeSeenStorageKey = "hospital-reservation.chuseokNudgeSeen.2026";
 const chuseokNudgeEndDateKey = "2026-09-26";
+const clinicNoticeSeenStorageKey = "hospital-reservation.clinicNoticeSeen.2026-10-05.v2";
+const clinicNoticeEndDateKey = "2026-10-10";
 let cachedVapidPublicKey = ((import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined) ?? "").trim();
 let vapidPublicKeyRequest: Promise<string> | null = null;
 const otherTreatmentLabel = "기타";
@@ -1828,7 +1830,14 @@ function DateScreen(props: {
   const featuredBooking = upcomingBookings[0] ?? null;
   const shouldShowBookingSummary = props.bookings.length > 0;
   const isHolidayNudgeTest = useMemo(() => isChuseokNudgeTestMode(), []);
-  const shouldMountHolidayNudge = useMemo(() => isHolidayNudgeTest || shouldShowChuseokNudge(), [isHolidayNudgeTest]);
+  const isClinicNoticeTest = useMemo(() => new URLSearchParams(window.location.search).get("clinicNoticeTest") === "1", []);
+  const noticeKind = useMemo(() => {
+    if (isClinicNoticeTest) return "clinic";
+    if (isHolidayNudgeTest || shouldShowChuseokNudge()) return "chuseok";
+    return shouldShowClinicNotice() ? "clinic" : null;
+  }, [isClinicNoticeTest, isHolidayNudgeTest]);
+  const isNoticeTest = isHolidayNudgeTest || isClinicNoticeTest;
+  const shouldMountHolidayNudge = noticeKind !== null;
   const [showHolidayNudge, setShowHolidayNudge] = useState(shouldMountHolidayNudge);
   const [isHolidayNudgeLayoutActive, setIsHolidayNudgeLayoutActive] = useState(shouldMountHolidayNudge);
   const [isHolidayNudgeExpanded, setIsHolidayNudgeExpanded] = useState(false);
@@ -1845,14 +1854,14 @@ function DateScreen(props: {
     setIsHolidayNudgeLayoutActive(true);
     const timer = window.setTimeout(() => {
       setIsHolidayNudgeExpanded(true);
-      if (!isHolidayNudgeTest) saveChuseokNudgeSeen();
+      if (!isNoticeTest) saveNoticeSeen(noticeKind);
     }, 120);
     return () => window.clearTimeout(timer);
-  }, [isHolidayNudgeTest, shouldMountHolidayNudge]);
+  }, [isNoticeTest, noticeKind, shouldMountHolidayNudge]);
 
   function dismissHolidayNudge() {
     setShowHolidayNudge(false);
-    if (!isHolidayNudgeTest) saveChuseokNudgeSeen();
+    if (!isNoticeTest) saveNoticeSeen(noticeKind);
   }
 
   return (
@@ -1871,11 +1880,19 @@ function DateScreen(props: {
       ].filter(Boolean).join(" ")}>
         <AnimatePresence initial={false} onExitComplete={() => setIsHolidayNudgeLayoutActive(false)}>
           {showHolidayNudge && (
-            <ChuseokNudge
-              exitHeight={shouldShowBookingSummary ? 0 : 48}
-              isExpanded={isHolidayNudgeExpanded}
-              onDismiss={dismissHolidayNudge}
-            />
+            noticeKind === "clinic" ? (
+              <ClinicNotice
+                exitHeight={shouldShowBookingSummary ? 0 : 48}
+                isExpanded={isHolidayNudgeExpanded}
+                onDismiss={dismissHolidayNudge}
+              />
+            ) : (
+              <ChuseokNudge
+                exitHeight={shouldShowBookingSummary ? 0 : 48}
+                isExpanded={isHolidayNudgeExpanded}
+                onDismiss={dismissHolidayNudge}
+              />
+            )
           )}
         </AnimatePresence>
         {shouldShowBookingSummary && (
@@ -1923,6 +1940,48 @@ function DateScreen(props: {
         </BottomCTA>
       )}
     </>
+  );
+}
+
+function ClinicNotice({ exitHeight, isExpanded, onDismiss }: {
+  exitHeight: number;
+  isExpanded: boolean;
+  onDismiss: () => void;
+}) {
+  return (
+    <motion.section
+      className="holiday-nudge clinic-notice"
+      aria-labelledby="clinic-notice-title"
+      initial={false}
+      exit={{ height: exitHeight, opacity: 0 }}
+      transition={holidayNudgeExitSpring}
+    >
+      <motion.div className="clinic-notice-calendar-slot" initial={false}
+        animate={{ height: isExpanded ? 144 : 72 }} transition={screenSpring}>
+        <motion.div className="clinic-notice-calendar" initial={false}
+          animate={{ scale: isExpanded ? 1 : 0.5, opacity: isExpanded ? 1 : 0 }} transition={screenSpring}>
+          <div className="clinic-notice-weekdays" aria-hidden="true">
+            {["일", "월", "화", "수", "목", "금", "토"].map(day => <span key={day}>{day}</span>)}
+          </div>
+          <div className="clinic-notice-days">
+            {["4", "10/5", "6", "7", "10/8", "9", "10"].map((day, index) => (
+              <div key={day} className={index === 1 ? "is-open" : index >= 4 ? "is-closed" : ""}>
+                <span>{day}</span>
+                {index === 1 && <small>정상 진료</small>}
+                {index >= 4 && <small>휴진</small>}
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      </motion.div>
+      <div className="clinic-notice-body">
+        <div className="clinic-notice-copy">
+          <h2 id="clinic-notice-title">진료일 안내 드려요.</h2>
+          <p>이번주 월요일은 정상 진료하고,<br />목,금,토요일은 개인사정으로 휴진해요.</p>
+        </div>
+        <TapButton className="clinic-notice-confirm" type="button" onClick={onDismiss}>확인했어요</TapButton>
+      </div>
+    </motion.section>
   );
 }
 
@@ -4037,6 +4096,25 @@ function saveStoredPatientName(name: string) {
   window.localStorage.removeItem(storedPatientNameStorageKey);
 }
 
+function shouldShowClinicNotice() {
+  if (toDateKey(getToday()) > clinicNoticeEndDateKey) return false;
+  try {
+    return window.localStorage.getItem(clinicNoticeSeenStorageKey) !== "true";
+  } catch {
+    return true;
+  }
+}
+
+function saveNoticeSeen(kind: "clinic" | "chuseok" | null) {
+  if (kind === "chuseok") return saveChuseokNudgeSeen();
+  if (kind !== "clinic") return;
+  try {
+    window.localStorage.setItem(clinicNoticeSeenStorageKey, "true");
+  } catch {
+    // Dismissal still works for the current session when storage is unavailable.
+  }
+}
+
 function shouldShowChuseokNudge() {
   try {
     if (toDateKey(getToday()) > chuseokNudgeEndDateKey) return false;
@@ -4067,10 +4145,12 @@ function isChuseokMockBookingTestMode() {
 function withChuseokMockBooking(bookings: Booking[]) {
   if (!isChuseokMockBookingTestMode()) return bookings;
 
+  const mockDate = getToday();
+  mockDate.setDate(mockDate.getDate() + 2);
   const mockBooking: Booking = {
     id: "test-chuseok-booking-1",
     patientName: "김정욱",
-    date: "2026-09-30",
+    date: toDateKey(mockDate),
     time: "16:30",
     treatment: "침구치료",
     waitMinutes: 2,
