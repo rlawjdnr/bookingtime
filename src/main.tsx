@@ -187,6 +187,8 @@ const chuseokNudgeSeenStorageKey = "hospital-reservation.chuseokNudgeSeen.2026";
 const chuseokNudgeEndDateKey = "2026-09-26";
 const clinicNoticeSeenStorageKey = "hospital-reservation.clinicNoticeSeen.2026-10-05.v2";
 const clinicNoticeEndDateKey = "2026-10-10";
+const clinicNoticeDismissedStorageKey = `${clinicNoticeSeenStorageKey}.dismissed`;
+const clinicNoticeExposureCap = 3;
 let cachedVapidPublicKey = ((import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined) ?? "").trim();
 let vapidPublicKeyRequest: Promise<string> | null = null;
 const otherTreatmentLabel = "기타";
@@ -1832,7 +1834,7 @@ function DateScreen(props: {
   const isHolidayNudgeTest = useMemo(() => isChuseokNudgeTestMode(), []);
   const isClinicNoticeTest = useMemo(() => new URLSearchParams(window.location.search).get("clinicNoticeTest") === "1", []);
   const noticeKind = useMemo(() => {
-    if (isClinicNoticeTest) return "clinic";
+    if (isClinicNoticeTest && !isClinicNoticeExpired()) return "clinic";
     if (isHolidayNudgeTest || shouldShowChuseokNudge()) return "chuseok";
     return shouldShowClinicNotice() ? "clinic" : null;
   }, [isClinicNoticeTest, isHolidayNudgeTest]);
@@ -1854,14 +1856,20 @@ function DateScreen(props: {
     setIsHolidayNudgeLayoutActive(true);
     const timer = window.setTimeout(() => {
       setIsHolidayNudgeExpanded(true);
-      if (!isNoticeTest) saveNoticeSeen(noticeKind);
+      if (!isNoticeTest) recordNoticeExposure(noticeKind);
     }, 120);
     return () => window.clearTimeout(timer);
   }, [isNoticeTest, noticeKind, shouldMountHolidayNudge]);
 
-  function dismissHolidayNudge() {
+  useEffect(() => {
+    if (noticeKind === "clinic" && isClinicNoticeExpired(props.now)) {
+      setShowHolidayNudge(false);
+    }
+  }, [noticeKind, props.now]);
+
+  function dismissHolidayNudge(confirmed = false) {
     setShowHolidayNudge(false);
-    if (!isNoticeTest) saveNoticeSeen(noticeKind);
+    if (!isNoticeTest && (confirmed || noticeKind === "chuseok")) saveNoticeSeen(noticeKind);
   }
 
   return (
@@ -1884,13 +1892,13 @@ function DateScreen(props: {
               <ClinicNotice
                 exitHeight={shouldShowBookingSummary ? 0 : 48}
                 isExpanded={isHolidayNudgeExpanded}
-                onDismiss={dismissHolidayNudge}
+                onDismiss={() => dismissHolidayNudge(true)}
               />
             ) : (
               <ChuseokNudge
                 exitHeight={shouldShowBookingSummary ? 0 : 48}
                 isExpanded={isHolidayNudgeExpanded}
-                onDismiss={dismissHolidayNudge}
+                onDismiss={() => dismissHolidayNudge(true)}
               />
             )
           )}
@@ -4096,12 +4104,39 @@ function saveStoredPatientName(name: string) {
   window.localStorage.removeItem(storedPatientNameStorageKey);
 }
 
+function isClinicNoticeExpired(now = new Date()) {
+  const koreanDate = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(now);
+  return koreanDate > clinicNoticeEndDateKey;
+}
+
+function getClinicNoticeExposureCount() {
+  const stored = window.localStorage.getItem(clinicNoticeSeenStorageKey);
+  // The earlier boolean flag represents one exposure, not an explicit dismissal.
+  if (stored === "true") return 1;
+  const count = Number(stored);
+  return Number.isFinite(count) && count > 0 ? Math.floor(count) : 0;
+}
+
 function shouldShowClinicNotice() {
-  if (toDateKey(getToday()) > clinicNoticeEndDateKey) return false;
+  if (isClinicNoticeExpired()) return false;
   try {
-    return window.localStorage.getItem(clinicNoticeSeenStorageKey) !== "true";
+    return window.localStorage.getItem(clinicNoticeDismissedStorageKey) !== "true"
+      && getClinicNoticeExposureCount() < clinicNoticeExposureCap;
   } catch {
     return true;
+  }
+}
+
+function recordNoticeExposure(kind: "clinic" | "chuseok" | null) {
+  if (kind === "chuseok") return saveChuseokNudgeSeen();
+  if (kind !== "clinic") return;
+  try {
+    window.localStorage.setItem(clinicNoticeSeenStorageKey,
+      String(Math.min(clinicNoticeExposureCap, getClinicNoticeExposureCount() + 1)));
+  } catch {
+    // The banner remains usable when browser storage is unavailable.
   }
 }
 
@@ -4109,7 +4144,7 @@ function saveNoticeSeen(kind: "clinic" | "chuseok" | null) {
   if (kind === "chuseok") return saveChuseokNudgeSeen();
   if (kind !== "clinic") return;
   try {
-    window.localStorage.setItem(clinicNoticeSeenStorageKey, "true");
+    window.localStorage.setItem(clinicNoticeDismissedStorageKey, "true");
   } catch {
     // Dismissal still works for the current session when storage is unavailable.
   }
